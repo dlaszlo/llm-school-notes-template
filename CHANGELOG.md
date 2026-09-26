@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.5.0 - 2026-09-26
+
+* New *Reading a book* rule under *References*: a converted book is never loaded whole; its generated `index.md` maps every lesson and printed page to a line range of `document.md` and points to the book's own contents, indexes, and answer key, and only the needed lines are opened. New shared tool `tools/book_index.py` builds the map from the page anchors and the book's own table of contents (README lesson table as fallback).
+* **Migration**: copy `AGENTS.md`, `references/README.md`, and `tools/book_index.py`; run `python3 tools/book_index.py references/<subject>/<book-id>` for every converted book (a README without an offset line needs `--offset N`, or add "printed-page offset: N" to it); check a few lesson ranges against the book; commit the `index.md` files. Index-only books need nothing.
+
 ## 1.4.0 - 2026-09-26
 
 * *References*: new **index-only books** - a book that may not be converted (e.g. the publisher forbids processing it with AI) gets only a hand-made index in its `README.md` (table of contents and subject index: numbers and titles, no text); textbook lines come from it, with the new *index-based note* when the section is chosen by topic. New **Requesting a page** rule: when the notes cannot be understood or checked without a page of an unconverted book, the LLM names the exact page and asks for a photo; the photo is not a source - used only for the check, never stored in the repository, its chat message deleted afterwards; what comes over gets the *textbook label*.
