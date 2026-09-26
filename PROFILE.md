@@ -58,6 +58,8 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | test yourself intro | `*Our own questions (not from the notebook) - try to answer from memory first, then open the answer.*` | `*Saját kérdések (nem a füzetből) - előbb próbáld fejből, aztán nyisd le a választ.*` |
 | explanation label | `💡 **Explanation (not from the notebook):**` | `💡 **Magyarázat (nem a füzetből):**` |
 | addition label | `➕ **Addition (not from the notebook):**` | `➕ **Kiegészítés (nem a füzetből):**` |
+| textbook label | `📗 **From the textbook (not in the notebook):**` | `📗 **Tankönyvből (a füzetben nincs):**` |
+| lesson line | `🗓️ *Lesson: <date>*` | `🗓️ *Óra: <dátum>*` |
 | correction label | `⚠️ **Correction (not from the notebook):**` | `⚠️ **Javítás (nem a füzetből):**` |
 | catch-up notice | `🤒 **Catch-up material** - this page was made from a classmate's notebook because you were absent. Copy it into your own notebook (or learn it), and say when you are done.` | `🤒 **Pótolandó anyag** - ez az oldal egy osztálytárs füzetéből készült, mert hiányoztál. Írd be a saját füzetedbe (vagy tanuld meg), és szólj, ha megvan.` |
 | synthesis notice | `*This page was put together by the LLM (not from the notebook).*` | `*Ezt az oldalt az LLM állította össze (nem a füzetből).*` |
