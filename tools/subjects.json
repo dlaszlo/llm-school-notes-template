@@ -1,0 +1,11 @@
+{
+  "labels": {
+    "topic": "topic",
+    "lesson-notes": "notes",
+    "review": "review",
+    "chapter-summary": "chapter summary",
+    "catch-up": "🤒 catch-up notes",
+    "header": "Header"
+  },
+  "subjects": {}
+}

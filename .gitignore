@@ -1,0 +1,24 @@
+# Agent and vault workspaces
+.claude/
+.obsidian/
+
+# OS junk
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+
+# Editor workspaces
+.vscode/
+.idea/
+*~
+
+# Office lock and temp files
+~$*
+.~lock.*#
+*.tmp
+
+# Tool caches
+__pycache__/
+node_modules/
+package-lock.json
