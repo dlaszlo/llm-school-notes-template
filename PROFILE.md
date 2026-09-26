@@ -1,0 +1,71 @@
+# School notes wiki - profile
+
+> **Not initialized yet.** This wiki has not been set up. Ask the LLM agent to initialize it: it follows the *Bootstrap* workflow in [AGENTS.md](AGENTS.md), asks the setup questions, fills in this file, retitles it, and deletes this notice.
+
+This file holds everything that belongs to **this** wiki; the rules shared by every wiki made from the template are in [AGENTS.md](AGENTS.md), which refers to the sections below by name. The subjects and the banner labels live in [tools/subjects.json](tools/subjects.json).
+
+# Template
+
+* **Template repository**: https://github.com/dlaszlo/llm-school-notes-template (or the fork this wiki was made from).
+* **Template version**: `<recorded at bootstrap and at every template update - the newest CHANGELOG.md entry applied, and the template commit if known>`.
+
+Updates are optional and happen only when the user asks (see *Template updates* in AGENTS.md).
+
+# Setup
+
+*Filled in at bootstrap; each fact has exactly one home here.*
+
+* **Student**: `<first name>` - the wiki is titled after the student's first name (e.g. "Anna's notes"), which is the only personal name the wiki may contain.
+* **Grade and school year**: `<grade>` in `<school year>`.
+* **Wiki language**: `<language>` (see the *Language* rule in AGENTS.md and the *Wording* table below).
+* **Audience**: `<who reads the wiki>` - by default the student, the family, and classmates the student shares it with. The personal-data audience test is applied against this readership, and every explanation is written at the level of its youngest main reader (see *Plain language*).
+* **Notebook recognition**: `<which notebook belongs to which subject, as the user confirms it, e.g. "the plain spiral notebook is Science">`.
+* **Standing authorizations**: the defaults in *Standing authorizations* below, as confirmed (or narrowed) by the user at bootstrap.
+
+# Standing authorizations
+
+The template's defaults, meant to make everyday use as automatic as possible. Bootstrap shows them to the user, who may confirm, narrow, or drop each one; record the outcome here with the date.
+
+* **Raw sources stay unredacted**: raw sources such as exercise-book photos may stay in `sources/` unredacted even when they show grades, names, or similar personal data - no per-ingest confirmation is needed; the data still never reaches `wiki/`.
+* **Automatic ingest**: ingest dropped notes (photos, files, voice notes) right away without a discussion step - pick the subject from the content or the user's word, apply the curation rule, add diagrams where they fit, then commit, push, and bring the result into `main` (fast-forward) without asking again, then delete any working branch that is fully merged into `main`, locally and on the remote; report afterwards what was done, which readings are uncertain, and what stays open. Ask first only when a real decision is the user's: an unclear subject, a secret, or data that fails the audience test.
+* **Duplicate check**: before filing, compare each new file's sha256 with every `content_sha256` already recorded in `wiki/` (and search the wiki for the topic) - the user often is not sure whether a page was sent before; an identical file is not ingested again, just reported.
+* **Illustrations**: a few colorful drawings per the *Illustrations* rule are part of the ingest routine.
+* **Synthesis pages**: see *Synthesis pages - standing authorization* under *Workflows* in AGENTS.md.
+
+# Wording
+
+Every reader-facing string the rules prescribe lives here, in the wiki language - the rules refer to them by the key in the first column. The template ships with English and Hungarian; at bootstrap, keep the column of the wiki language (translate the English one for any other language) and delete the other.
+
+| Key | English | Magyar |
+|---|---|---|
+| wiki title | `<Name>'s notes` | `<Név> jegyzetei` |
+| back link | `[⬅️ Back to the home page](../index.md)` | `[⬅️ Vissza a kezdőlapra](../index.md)` |
+| subjects (root index) | `# 📚 Subjects` | `# 📚 Tantárgyak` |
+| legend (root index) | `# 🔎 Legend` | `# 🔎 Jelmagyarázat` |
+| catch-up | `# 🤒 To catch up` | `# 🤒 Pótolandó` |
+| homework | `# 📌 Homework` - columns `Deadline \| Task \| Status`, values `open` / `✅ done` | `# 📌 Házi feladat` - oszlopok `Határidő \| Feladat \| Állapot`, értékek `nyitott` / `✅ kész` |
+| chapter | `# 📘 Grade <grade>: <chapter>` | `# 📘 <grade>. évfolyam: <chapter>` |
+| lessons | `# 🗓️ Lessons` | `# 🗓️ Órák` |
+| review | `# 🔁 Review` | `# 🔁 Ismétlés` |
+| notes | `# 📝 Notes` | `# 📝 Jegyzetek` |
+| undated lesson | `? (after 2026-09-04, at the latest 2026-09-25)` | `? (2026-09-04 után, legkésőbb 2026-09-25)` |
+| textbook line | `🔖 Textbook: <lesson>, pages <pages>` | `🔖 Tankönyv: <lecke>, <oldalak>. oldal` |
+| in short | `⚡ **In short**` | `⚡ **Röviden**` |
+| summary title / file | `Summary: <chapter>` / `summary-<chapter-slug>.md` | `Összefoglaló: <chapter>` / `osszefoglalo-<chapter-slug>.md` |
+| details link | `➡️ Details: [<title>](<page>.md)` | `➡️ Részletesen: [<title>](<page>.md)` |
+| terms | `# 📖 Terms` | `# 📖 Fogalmak` |
+| test yourself | `# 🧠 Test yourself` | `# 🧠 Kérdezd ki magad` |
+| test yourself intro | `*Our own questions (not from the notebook) - try to answer from memory first, then open the answer.*` | `*Saját kérdések (nem a füzetből) - előbb próbáld fejből, aztán nyisd le a választ.*` |
+| explanation label | `💡 **Explanation (not from the notebook):**` | `💡 **Magyarázat (nem a füzetből):**` |
+| addition label | `➕ **Addition (not from the notebook):**` | `➕ **Kiegészítés (nem a füzetből):**` |
+| correction label | `⚠️ **Correction (not from the notebook):**` | `⚠️ **Javítás (nem a füzetből):**` |
+| catch-up notice | `🤒 **Catch-up material** - this page was made from a classmate's notebook because you were absent. Copy it into your own notebook (or learn it), and say when you are done.` | `🤒 **Pótolandó anyag** - ez az oldal egy osztálytárs füzetéből készült, mert hiányoztál. Írd be a saját füzetedbe (vagy tanuld meg), és szólj, ha megvan.` |
+| synthesis notice | `*This page was put together by the LLM (not from the notebook).*` | `*Ezt az oldalt az LLM állította össze (nem a füzetből).*` |
+| in words | `in words:` | `szövegesen:` |
+| conventional headings | `# Open questions`, `# Examples`, `# Schema`, `# Computation` | `# Nyitott kérdések`, `# Példák`, `# Séma`, `# Számítás` |
+
+The banner labels (page kinds, "catch-up notes", the "Header" alt-text prefix) live in `tools/subjects.json` and are translated there at bootstrap.
+
+# Local decisions
+
+Decisions that concern this wiki only, each with its date (e.g. a house rule for a subject, an exception the user asked for). A rule change here that should apply to other wikis too is proposed to the template separately - that is the user's call.

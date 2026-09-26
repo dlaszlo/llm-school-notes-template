@@ -19,7 +19,7 @@ The template contains no names, school, subjects, textbooks, or notes - everythi
 
 1. Click **Use this template** on GitHub and create a **private** repository (notebook photos and textbooks are private working copies - see below). A repository created from a template starts with a clean history.
 2. Clone it and open it in your agent (Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md`).
-3. Say *"Initialize the wiki"*. The agent asks for the student's first name, grade and school year, the wiki language, the audience, and which standing authorizations you want (e.g. automatic ingest and push), then sets everything up. English and Hungarian wording ship ready; other languages are translated at bootstrap.
+3. Say *"Initialize the wiki"*. The agent asks for the student's first name, grade and school year, the wiki language, the audience, and which standing authorizations you want (e.g. automatic ingest and push), then records everything in `PROFILE.md`. English and Hungarian wording ship ready; other languages are translated at bootstrap.
 4. Drop notes into `sources/` under any name and ask the agent to ingest them (or let it do so automatically if you allowed that). Subjects appear with the first notes.
 
 Daily use: ask questions (useful answers can be filed back as pages), report homework, and request a lint pass now and then. Read the wiki from `wiki/index.md`.
@@ -33,8 +33,10 @@ Daily use: ask questions (useful answers can be filed back as pages), report hom
 ## Layout
 
 ```text
-AGENTS.md           The complete operating manual (rules, page templates, workflows).
-CLAUDE.md           Thin Claude Code adapter importing AGENTS.md.
+AGENTS.md           Shared rules, page templates, and workflows (same in every wiki).
+PROFILE.md          This wiki's own settings: student, language, wording, authorizations.
+CHANGELOG.md        Template versions and migration steps.
+CLAUDE.md           Thin Claude Code adapter importing AGENTS.md and PROFILE.md.
 SPEC.md             Pinned OKF 0.2 specification.
 llm-wiki.md         Original idea document, preserved as background.
 tools/banner.py     Page-header banners; subjects and labels in tools/subjects.json.
@@ -43,7 +45,11 @@ references/         Converted textbooks for checking and citing (private).
 wiki/               Knowledge bundle, index, and update log.
 ```
 
-There is one operating manual, so Claude Code and Codex do not maintain conflicting copies. Automatic loading is documented by [OpenAI](https://developers.openai.com/codex/guides/agents-md/) and [Anthropic](https://code.claude.com/docs/en/memory).
+There is one set of rules plus one profile, so Claude Code and Codex do not maintain conflicting copies. Automatic loading is documented by [OpenAI](https://developers.openai.com/codex/guides/agents-md/) and [Anthropic](https://code.claude.com/docs/en/memory).
+
+## Updating from the template
+
+Your wiki never has to follow the template. When you want a newer version, tell the agent "update the wiki to the latest template": it reads [CHANGELOG.md](CHANGELOG.md), copies the shared files (`AGENTS.md`, `CLAUDE.md`, `tools/banner.py`, ...), migrates the existing pages, and shows you any shared file you changed locally instead of overwriting it. Your own settings stay in `PROFILE.md` and `tools/subjects.json`.
 
 ## Credits
 

@@ -2,4 +2,6 @@
 
 @AGENTS.md
 
-Shared wiki instructions live in AGENTS.md. Edit that file to keep Claude Code and Codex aligned.
+@PROFILE.md
+
+Shared rules live in AGENTS.md (from the template); this wiki's own settings live in PROFILE.md. Codex and other agents read AGENTS.md, which tells them to read PROFILE.md.
