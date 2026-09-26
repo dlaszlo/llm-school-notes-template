@@ -50,6 +50,7 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | notes | `# 📝 Notes` | `# 📝 Jegyzetek` |
 | undated lesson | `? (after 2026-09-04, at the latest 2026-09-25)` | `? (2026-09-04 után, legkésőbb 2026-09-25)` |
 | textbook line | `🔖 Textbook: <lesson>, pages <pages>` | `🔖 Tankönyv: <lecke>, <oldalak>. oldal` |
+| index-based note | `(from the table of contents)` | `(a tartalomjegyzék alapján)` |
 | in short | `⚡ **In short**` | `⚡ **Röviden**` |
 | summary title / file | `Summary: <chapter>` / `summary-<chapter-slug>.md` | `Összefoglaló: <chapter>` / `osszefoglalo-<chapter-slug>.md` |
 | details link | `➡️ Details: [<title>](<page>.md)` | `➡️ Részletesen: [<title>](<page>.md)` |
