@@ -9,6 +9,7 @@ Feladat: {keres}. Tanuló: {relevans_profil}. Források: {wikioldalak_es_verziok
 Olvasd végig az érintett jegyzeteket és kövesd a szükséges forráshivatkozásokat. Ne generálj médiát.
 Készíts rövid munkalapot ezekkel a mezőkkel:
 CONTEXT: Mi ez a téma, milyen tágabb kérdésbe tartozik, miért érdemes megérteni? Csak a megértéshez szükséges háttérdimenziókat válaszd ki a forrásból.
+Történelmi témánál a CONTEXT kötelező része az igazolt korszak/időszak és a földrajzi hely: tágabb régió, és ha segít, a mai elhelyezkedés. Ne keverd a lecke dátumával; a különböző korszakokat válaszd szét. Ez látható/hallható tanulási tartalom, nem rejtett metaadat.
 SCOPE: Ellenőrizd a tanulási döntést az aktuális leckével: relevancia, elvárt műveleti mélység, indokolt emelt szint, opcionális kitekintés. Követelményből csak pontos helyhez és szinthez kötött elvárást használj, ne adj hozzá teljes tantervi témakört.
 GOAL: Mit tudjon a tanuló az anyag után saját szavaival elmagyarázni vagy elvégezni?
 BRIDGE: Mely előfeltételek szükségesek? Mi igazoltan ismert a profilból, és mit kell itt röviden megtanítani?
@@ -52,6 +53,7 @@ Rögzíts közös megjelenést: címhely, szöveghierarchia, következetes fogal
 ```text
 A {tartalmi_szerzodes} alapján tervezz {wiki_nyelv} nyelvű infografikát a {profil} tanulójának. Őrizd meg a célnyelvi példák és funkcionális szövegek eredeti nyelvét.
 Fogalmazd meg a fő üzenetet és az egy pillantással felismerhető szerkezetet. A CORE valamennyi elemének legyen helye; a részletek fontossági hierarchiája látszódjon.
+A képgenerálás előtt nevezd meg a tartalom szerkezetét (közös rendszer, folyamat, összehasonlítás vagy más), és indokold a hozzá választott kompozíciót. Ha van elfogadott, ideillő korábbi minta, nézd meg és őrizd meg a tanulást segítő tulajdonságait. Egy központ köré szerveződő rendszert ne bonts külön kártyákra csak a nyilak könnyebb ellenőrzése miatt. Ha körforgás, folyamat, irányított kapcsolat vagy összefüggő csoportok szerepelnek, a teljes kapcsolatrendszer egyben legyen követhető. A csoportosítás ne vágja el a kapcsolatokat; külön panel csak akkor indokolt, ha segíti a megértést és a panelek viszonya egyértelmű marad. Körforgást csak akkor rajzolj, ha a tartalom ténylegesen azt mutatja. A szereplők helye legyen következetes; a kölcsönös kapcsolatot külön, jól elkülönített nyilak mutassák. A fekvő tájolás nem jelent négypaneles elrendezést. Történelmi képen a cím mellett rövid, igazolt időbeli és földrajzi eligazítás is legyen.
 Válassz a témához illő vizuális rendezést. Add meg a címeket, pontos rövid feliratokat, olvasási sorrendet, csoportokat, kapcsolatokat és feltételeket.
 Az elrendezésből legyen világos, mi mivel függ össze és miért; nyilat csak jelentéssel használj. A szükséges alapfogalmat röviden magyarázd meg.
 Válaszd külön a megértéshez szükséges fontos tartalmat az összes elérhető adattól. Ne zsúfold rá a teljes jegyzetet.
@@ -87,6 +89,7 @@ Vizsgáld meg a {tenyleges_kimenet} teljes tartalmát. Az összehasonlítás ala
 Először ellenőrizd, hogy a szerződés hű-e a forrásokhoz; a hibás tervet a pontos képgenerálás sem javítja meg.
 Keresd a kihagyott CORE-elemeket, hozzáadott állításokat, elveszett feltételeket, hibás neveket/számokat, képi irányokat, magyarázat nélkül használt fogalmakat és ugrásokat.
 Válaszold meg kizárólag a kész anyagból a tanulási célt és a kulcskérdéseket. Ne egészítsd ki fejben hiányzó háttértudással. A modell válasza ellenőrzési jelzés, nem tanulói megértés bizonyítéka.
+Külön értékeld a tanulási szerkezetet: felismerhető-e az egész fő összefüggése, állandó helyen vannak-e a szereplők, kell-e fejben összerakni szétszedett kapcsolatokat, megvan-e a szükséges időbeli/földrajzi kontextus? A helyes nyíllista önmagában nem elég. Ha a prompt írta elő a rossz elrendezést, előbb a tervet javítsd.
 Képnél vizsgáld a tényleges feliratokat, nyilakat, vágásokat és A4-olvashatóságot. PDF-nél minden oldalt és a teljes sorrendet; tanulási jegyzetnél a kijelölhető szöveget, szürkeárnyalatos olvashatóságot és a külön válaszrész helyességét is. Hangnál a szöveghűséget, érthetőséget, kiejtést, hangazonosságot és illesztéseket.
 Hibánként add meg: pontos hely, megfigyelés, forrás szerinti helyes állapot, szükséges változtatás. Az el nem érhető bizonyítékot jelöld ellenőrizetlennek.
 Ha megfelel, állj meg. Javításhoz csak konkrét hibából indulj ki, nevezd meg a megőrzendő helyes részeket. Utána az egész érintett képet/oldalt/szegmenst és a kapcsolódó átmeneteket vizsgáld újra.

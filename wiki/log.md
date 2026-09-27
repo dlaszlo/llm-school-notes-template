@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: Shared release [1.11.4](../CHANGELOG.md) adds historical time/place orientation and relationship-led infographic planning with separate learning-design checks. The template remains uninitialized.
+
 * **Update**: Shared release [1.11.3](../CHANGELOG.md) adds self-contained clarification and decision questions, and reconciles the existing handwriting rule from 1.11.2. The template remains uninitialized.
 
 ## 2026-09-27

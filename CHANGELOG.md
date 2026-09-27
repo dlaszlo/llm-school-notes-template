@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.4 - 2026-09-28
+
+* Historical notes and standalone media establish verified time and geographical context at the beginning. A readable banner may repeat it; the body must retain it.
+* Infographic planning now chooses composition by semantic structure, compares accepted relevant examples, and checks whole-system understanding separately from individual arrows. Record prompt-design failures and learner feedback before retrying; preserve budget and orientation rules.
+* **Migration**: synchronize the shared set and record the template commit in local profiles. Apply on new or revisited content; no bulk rewrite, banner regeneration or additional paid run is authorized by this release. Keep the template uninitialized.
+
 ## 1.11.3 - 2026-09-28
 
 * Added *Ask self-contained, useful questions*: context, concrete uncertainty/problem, genuine alternatives where helpful, and an evidence-based recommendation or next step. Applies to conversation, note questions, review and handoff; self-tests keep their solutions hidden.
