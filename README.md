@@ -58,7 +58,9 @@ There is one set of rules plus one profile, so Claude Code and Codex do not main
 
 ## Updating from the template
 
-Your wiki never has to follow the template. When you want a newer version, tell the agent "update the wiki to the latest template": it reads [CHANGELOG.md](CHANGELOG.md), copies the shared files (`AGENTS.md`, `CLAUDE.md`, `tools/banner.py`, ...), migrates the existing pages, and shows you any shared file you changed locally instead of overwriting it. Your own settings stay in `PROFILE.md` and `tools/subjects.json`.
+Updates are opt-in. When you request one, the agent follows [CHANGELOG.md](CHANGELOG.md), preserves local settings and copies the complete set in [shared-files.json](shared-files.json). Shared files are byte-identical across linked wikis on the same release; settings stay in `PROFILE.md`, `tools/subjects.json` and `tools/book-index.json`. Run `uv run tools/check_shared.py --template <template-checkout>` to detect drift. Both learner profiles record the canonical template URL, release and commit.
+
+The common [media workflows](instructions/media-workflows.md), [prompts](instructions/media-prompts.md) and [handoff contract](instructions/media-handoff.md) apply to authorized work with locally configured tools. The template remains uninitialized; bootstrap supplies the learner and language settings.
 
 ## Credits
 

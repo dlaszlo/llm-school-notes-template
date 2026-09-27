@@ -2,12 +2,13 @@
 
 > **Not initialized yet.** This wiki has not been set up. Ask the LLM agent to initialize it: it follows the *Bootstrap* workflow in [AGENTS.md](AGENTS.md), asks the setup questions, fills in this file, retitles it, and deletes this notice.
 
-This file holds everything that belongs to **this** wiki; the rules shared by every wiki made from the template are in [AGENTS.md](AGENTS.md), which refers to the sections below by name. The subjects and the banner labels live in [tools/subjects.json](tools/subjects.json).
+This file holds everything that belongs to **this** wiki; the rules shared by every wiki made from the template are in [AGENTS.md](AGENTS.md), which refers to the sections below by name. The subjects and the banner labels live in [tools/subjects.json](tools/subjects.json); reference-index wording lives in `tools/book-index.json`.
 
 # Template
 
 * **Template repository**: https://github.com/dlaszlo/llm-school-notes-template (or the fork this wiki was made from).
-* **Template version**: `<recorded at bootstrap and at every template update - the newest CHANGELOG.md entry applied, and the template commit if known>`.
+* **Template version**: `<recorded at bootstrap and at every template update from shared-files.json>`.
+* **Template commit**: `<exact template commit recorded at bootstrap and every template update>`.
 
 Updates are optional and happen only when the user asks (see *Template updates* in AGENTS.md).
 

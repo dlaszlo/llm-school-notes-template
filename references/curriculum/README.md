@@ -1,6 +1,6 @@
 # Curriculum references
 
-This directory can hold a private, locally installed collection of curriculum and examination requirements. The public template ships the navigation tool and these instructions, not a student's references, family settings or converted source documents. Requirements guide relevant depth and prerequisites; they are not lessons to ingest or a checklist to impose on every topic. See *Curriculum-aware learning* in [AGENTS.md](../../AGENTS.md).
+This directory can hold a private, locally installed collection of curriculum and examination requirements. The uninitialized public template ships the navigation tool and these instructions, not a student's references, family settings or converted source documents. An initialized private wiki may hold its own authorized collection; its `index.md`, `catalog.json` and optional `collection.md` describe that local installation. Requirements guide relevant depth and prerequisites; they are not lessons to ingest or a checklist to impose on every topic. See *Curriculum-aware learning* in [AGENTS.md](../../AGENTS.md).
 
 ## Installing a collection
 

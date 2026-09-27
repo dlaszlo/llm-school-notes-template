@@ -16,3 +16,9 @@ Layout: `references/<subject>/<book-id>/` - one subdirectory per book, holding `
 A book that may not be converted (for example because its publisher forbids processing it with AI systems) is *index-only*: its directory holds only a `README.md` with a hand-made index - table of contents and subject index, numbers and titles only. See *Index-only books* in [AGENTS.md](../AGENTS.md).
 
 Optional curriculum requirements are a separate reference collection; follow [curriculum navigation](curriculum/README.md) and the learner profile. The public template includes guidance and tools, not private requirements or textbook copies.
+
+## Local navigation and checks
+
+When local references exist, their `index.md` lists the installed books and collections. Keep bibliographic facts and checked navigation overrides beside the relevant book, rather than editing this shared README. `tools/book-index.json` holds the local navigation language. A checked README lesson table can override an incomplete converted contents table with `<!-- book-index: readme -->` or `--readme`; the general indexer retains both English and Hungarian page-offset recognition.
+
+Apply *Visual evidence checks* in `AGENTS.md` to relevant images and conversion metadata. A crop may be incomplete even without a warning; an available `manifest.json` or `provenance.json` is diagnostic, not proof of accuracy. Read the local evidence index when it exists. Never infer that a figure is decoration solely because it lacks a machine description.

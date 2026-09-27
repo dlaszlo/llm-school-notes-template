@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.10.0 - 2026-09-27
+
+* Shared files are strictly identical and listed once in `shared-files.json`; `tools/check_shared.py` reports missing or divergent files against a local template checkout. Local configuration never belongs in shared policy or code.
+* Reusable media planning, prompt and handoff instructions now live in `instructions/` and ship to every linked wiki. Family deployment records remain private and do not imply installed tools or spending authority.
+* Banner wording, colors, currency mark and optional decorative symbols live in `tools/subjects.json`. Reference-index wording lives in `tools/book-index.json`. The common indexer preserves checked README overrides (`--readme` or the existing marker) and both English/Hungarian offset recognition.
+* **Migration**: preserve existing configuration, source data, evidence and generated assets. Extract local hard-coded banner settings before replacing the tool; move local reference listings out of shared README files into local indexes. Copy every file listed by the manifest, record the same canonical template URL/version/commit structure in each profile and template link in each README, then run the shared-file checker and relevant tool regression tests. Do not regenerate teaching pages or assets merely to synchronize tools. The template remains uninitialized with empty subjects and no tracked learner references.
+
 ## 1.9.0 - 2026-09-27
 
 * Added direct visual-evidence checks, optional conversion diagnostics, notebook-first image ordering, shared reviewer evidence and learning-value selection of teacher images. Original teaching files receive visible links; dated source filenames no longer imply completed ingest.

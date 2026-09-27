@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Header banner at the top of every wiki page.
 
-Usage: python3 tools/banner.py wiki/<subject>/<page>.md [...]
+Usage: uv run tools/banner.py wiki/<subject>/<page>.md [...]
 
 For each page it writes wiki/assets/banner/<page>.svg (subject color and
 icon, with the page title) and, if the page body does not start with an
@@ -18,7 +18,7 @@ Subjects and reader-facing labels come from tools/subjects.json:
 
 The key is the subject's directory name under wiki/. Icons: bubble
 (language), book (literature), column (history), coins (economics; optional
-"mark", e.g. "$"), flask (science), briefcase (careers), math, globe
+"mark", e.g. "$"; optional subject-specific "doodles" list), flask (science), briefcase (careers), math, globe
 (geography, foreign languages), pencil (anything else). A ready palette of
 dark/light pairs: #1f6fb2/#d6eaf8 blue, #7d3c98/#ebdef0 purple,
 #a0640a/#fbeee0 brown, #1e8449/#d5f5e3 green, #117a65/#d0ece7 teal,
@@ -65,9 +65,11 @@ DOODLES = {"bubble": ["Aa", "?!", "...", "abc", "«»", "@"], "book": ["✎", "�
            "math": ["π", "∑", "√", "∞", "x²", "≠"], "globe": ["N", "⛰", "☀", "✈", "⚓", "☁"],
            "pencil": ["✎", "★", "?", "!", "✦", "✓"]}
 
-def doodles(kind, c, seed=""):
+def doodles(kind, c, seed="", symbols=None):
     """Small, faint decoration on the right-hand side."""
-    k = DOODLES.get(kind, DOODLES["pencil"])
+    k = symbols if symbols is not None else DOODLES.get(kind, DOODLES["pencil"])
+    if not k:
+        return ""
     h = sum(ord(ch) * (i + 7) for i, ch in enumerate(seed))
     k = [k[(h + 5 * i) % len(k)] for i in range(3)]
     if len(set(k)) < 3:
@@ -92,7 +94,7 @@ def banner_svg(title, subject, kind_label, header):
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{light}"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
   <rect width="900" height="170" rx="18" fill="url(#g)"/>
   <rect x="0" y="160" width="900" height="10" rx="4" fill="{dark}" opacity="0.85"/>
-  {doodles(kind, dark, title)}
+  {doodles(kind, dark, title, subject.get("doodles"))}
   <circle cx="90" cy="86" r="58" fill="{light}" stroke="{dark}" stroke-width="4"/>
   {icon(kind, dark, subject.get("mark", "$"))}
   <rect x="178" y="14" width="{len(label) * 8.2 + 24:.0f}" height="26" rx="13" fill="{dark}"/>

@@ -1,0 +1,30 @@
+{
+  "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
+  "version": "1.10.0",
+  "files": [
+    ".gitattributes",
+    ".gitignore",
+    ".env.example",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "SPEC.md",
+    "llm-wiki.md",
+    "CHANGELOG.md",
+    "shared-files.json",
+    "pyproject.toml",
+    "uv.lock",
+    "sources/README.md",
+    "references/README.md",
+    "references/curriculum/README.md",
+    "instructions/media-workflows.md",
+    "instructions/media-prompts.md",
+    "instructions/media-handoff.md",
+    "tools/banner.py",
+    "tools/book_index.py",
+    "tools/prepare_photo.py",
+    "tools/curriculum.py",
+    "tools/test_curriculum.py",
+    "tools/check_shared.py",
+    "tools/test_shared_tools.py"
+  ]
+}
