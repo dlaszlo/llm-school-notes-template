@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.0 - 2026-09-27
+
+* Added the system handbook for learning, blog preparation, operating lookup and full-system reconstruction, including Hermes roles/routing, repositories, media, Drive and scheduled review. Distinguish live components from plans and retain private deployment facts separately.
+* Added the reproducible Drive OAuth helper, bounded media uploader and Hermes skill. Uploads use configured learner destinations/outboxes, private durable request records, preallocated Drive IDs, resumable transfers and complete SHA-256 readback. Sharing and deletion are not implemented; shared-user shell access is not OS isolation.
+* **Migration**: synchronize the complete shared set; configure credentials, actual folder IDs and outboxes outside Git; install both skill and script following `instructions/install-drive.md`. Never overwrite an existing token/config/ledger during an update. Preserve the template's uninitialized profile. Run unit tests and destination checks before enabling the skill; intended-reader access and separate bot executors remain independent checks.
+
 ## 1.10.0 - 2026-09-27
 
 * Shared files are strictly identical and listed once in `shared-files.json`; `tools/check_shared.py` reports missing or divergent files against a local template checkout. Local configuration never belongs in shared policy or code.

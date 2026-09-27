@@ -42,6 +42,10 @@ The rest of the structure and vocabulary emerges from the content that gets inge
 
 **This file and `PROFILE.md` are the complete operating manual** - everything needed to run the wiki is in them. The pattern originates from Andrej Karpathy's llm-wiki idea, kept verbatim in [llm-wiki.md](llm-wiki.md) as background reading only: it is not part of the wiki, is never ingested, and wherever it differs from this file, this file wins.
 
+## System documentation
+
+Maintain the [system handbook](instructions/system-guide.md) alongside every authorized configuration, integration or operating change. It serves learning, blog preparation, operational lookup and rebuilding the complete solution, not only installation. Record purpose and decisions, exact versions/configuration locations, commands, observed checks, limitations and rollback. Distinguish implemented behavior from planned bots or controls. Keep reusable explanations and sanitized examples shared; keep deployment-specific IDs, private evidence and configuration inventories outside public template history, and secrets outside documentation entirely. A successful component test does not establish a fully verified system.
+
 ## Principles
 
 Software-engineering principles translate well to wiki maintenance. When no specific rule below covers a decision, these are the tiebreakers:

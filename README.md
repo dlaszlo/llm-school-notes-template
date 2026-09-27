@@ -66,3 +66,7 @@ The common [media workflows](instructions/media-workflows.md), [prompts](instruc
 
 * The LLM-wiki pattern is by [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f), preserved in [llm-wiki.md](llm-wiki.md).
 * The OKF specification is from [Google Cloud Platform knowledge-catalog](https://github.com/GoogleCloudPlatform/knowledge-catalog), pinned in [SPEC.md](SPEC.md).
+
+## System handbook
+
+Start with the [complete system handbook](instructions/system-guide.md) to learn the architecture, find operating/configuration details, prepare a blog article, or follow the rebuild instructions. It covers Hermes and the bot roles, the wiki, media generation, Drive and scheduled review, with explicit implemented/planned status.
