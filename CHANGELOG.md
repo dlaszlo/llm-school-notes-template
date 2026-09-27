@@ -4,7 +4,7 @@ Newest first. Each entry says what changed in the shared files and what an exist
 
 ## 1.6.1 - 2026-09-27
 
-* *Teacher materials*: images from material to learn may be used where they teach and our own drawing could not replace them (maps, experiment photos, artworks, cross-sections); never decorative, never from the textbook or background material. They go to `wiki/assets/orai/` with the *class-image caption*; for maps a freely licensed map (Wikimedia Commons) is preferred.
+* *Teacher materials*: images from material to learn may be used where they teach and our own drawing could not replace them (maps, complex diagrams, historical objects and artworks, buildings, sites and rooms, experiment photos, cross-sections); never decorative, never from the textbook or background material. They go to `wiki/assets/orai/` with the *class-image caption*; for maps, objects, artworks and places a freely licensed image (Wikimedia Commons) is preferred.
 * **Migration**: copy `AGENTS.md`; add the *class-image caption* key to the *Wording* table in `PROFILE.md` (translated).
 
 ## 1.6.0 - 2026-09-27
