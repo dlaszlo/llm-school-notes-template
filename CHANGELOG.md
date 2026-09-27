@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.7.0 - 2026-09-27
+
+* New *Sources* rule: photos are filed with the new shared tool `tools/prepare_photo.py` - same resolution, upright, JPEG quality 90, all metadata (GPS, device, date) removed; the stored copy is the source (read at ingest, checked by the review, hashed). Keeps the repository growing several times slower and strips location data.
+* **Migration**: copy `AGENTS.md` and `tools/prepare_photo.py` (needs Pillow; `pillow-heif` optional for iPhone HEIC). Existing photos stay as they are - their hashes are recorded. If an agent's channel prompt says to copy incoming files into `sources/`, change it to file photos with the script.
+
 ## 1.6.1 - 2026-09-27
 
 * *Teacher materials*: images from material to learn may be used where they teach and our own drawing could not replace them (maps, complex diagrams, historical objects and artworks, buildings, sites and rooms, experiment photos, cross-sections); never decorative, never from the textbook or background material. They go to `wiki/assets/orai/` with the *class-image caption*; for maps, objects, artworks and places a freely licensed image (Wikimedia Commons) is preferred.
