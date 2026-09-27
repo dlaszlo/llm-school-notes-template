@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.5 - 2026-09-28
+
+* Added an open, learning-task-led visual repertoire and explicit OTHER/ELSE path, including custom/mixed forms, reuse and no new image. Topology applies only when relationships matter; reciprocal flows are not automatically a cycle.
+* Added the requested Astra xhigh research rationale and revised planning, generation, review and role-handoff prompts. Rich meaningful illustrations remain supported.
+* Made the existing arrow review explicit per edge: source, arrowhead/direction, target, label and condition, compared with evidence rather than only the prompt.
+* **Migration**: synchronize shared files and local template references. Apply to authorized generation/review; no new generation is triggered by this update.
+
 ## 1.11.4 - 2026-09-28
 
 * Historical notes and standalone media establish verified time and geographical context at the beginning. A readable banner may repeat it; the body must retain it.

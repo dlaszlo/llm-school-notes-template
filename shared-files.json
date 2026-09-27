@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.11.4",
+  "version": "1.11.5",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -19,6 +19,7 @@
     "instructions/media-workflows.md",
     "instructions/media-prompts.md",
     "instructions/media-handoff.md",
+    "instructions/media-design-rationale.md",
     "tools/banner.py",
     "tools/book_index.py",
     "tools/prepare_photo.py",
