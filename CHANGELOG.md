@@ -2,6 +2,17 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.3 - 2026-09-28
+
+* Added *Ask self-contained, useful questions*: context, concrete uncertainty/problem, genuine alternatives where helpful, and an evidence-based recommendation or next step. Applies to conversation, note questions, review and handoff; self-tests keep their solutions hidden.
+* Reconciled the previously authorized 1.11.2 handwriting rule into the template without removing the index-only or evidence safeguards.
+* **Migration**: synchronize the full shared set and record this release and exact template commit in local profiles. Apply the question rule when creating or revisiting relevant questions; this does not authorize a bulk content rewrite or change every page's label layout. Keep the template uninitialized.
+
+## 1.11.2 - 2026-09-27
+
+* *Reading handwritten sources*: readings are resolved from context and subject knowledge before they become open questions, in every subject (recalculation, unit conversion, arrows and later steps, table and sign patterns, sentence meaning, textbook and standard facts). Visible slips stay visible on the Source summary and get a *correction* or *addition* label on the topic page; open questions remain only for doubts that change what is learned. Reviewers apply the same test.
+* **Migration**: copy the shared set. Existing open questions may be re-examined under the new rule during the next review; resolved ones move to labeled content, never silently.
+
 ## 1.11.1 - 2026-09-27
 
 * Restored the accidentally removed *Index-only books* rule verbatim. Existing index-only restrictions and profile decisions remain in force.

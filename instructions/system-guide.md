@@ -55,6 +55,8 @@ Hermes connects conversations, models, skills and scheduled work. Discord channe
 6. Upload accepted artifacts to the recorded learner destination, verify bytes, establish intended-reader access, then publish the versioned link and evidence within the user's Git authorization.
 7. Review against the same source versions and actual images/audio. Apply justified corrections, record disagreement or missing evidence, and flag affected derivatives for rechecking.
 
+When asking for clarification or a decision, apply *Ask self-contained, useful questions* in [AGENTS.md](../AGENTS.md#workflows): supply the context, concrete problem, real alternatives if any, and a recommendation or next step. Keep confirmed facts separate from unknown expectations; reviewers use the same rule. Self-test solutions remain hidden until requested.
+
 ## Documentation contract for every change
 
 For a completed step, record: purpose and alternatives; exact version; prerequisite; configuration key/path; installation or change command; resulting behavior; verification and limits; rollback; and links to dependent components. Record the date and whether a statement is observed, user-confirmed, inferred, proposed or unresolved. Never turn a plan into a claimed deployment just by copying it into a guide.

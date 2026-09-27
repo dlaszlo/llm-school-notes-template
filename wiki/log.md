@@ -1,5 +1,9 @@
 # Wiki Update Log
 
+## 2026-09-28
+
+* **Update**: Shared release [1.11.3](../CHANGELOG.md) adds self-contained clarification and decision questions, and reconciles the existing handwriting rule from 1.11.2. The template remains uninitialized.
+
 ## 2026-09-27
 
 * **Update**: Added the [system handbook](../instructions/system-guide.md), [Drive setup guide](../instructions/install-drive.md), bounded uploader and Hermes skill in shared release 1.11.0. Kept credentials and deployment-specific receipts outside the template.
