@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.6.0 - 2026-09-27
+
+* New *Teacher materials* rule under *Sources*: material a teacher shares (pptx, pdf, docx, photo of a handout) is either *to learn* - a source like the notebook, its content on the topic pages with lesson lines and footnotes, no label - or *background* - a reference with its map, labeled with the new *background label*. The student names the kind with one word when sending; if it is missing, the LLM asks before ingesting, even under automatic ingest, and offers its own guess. The notebook itself is always material to learn.
+* **Migration**: copy `AGENTS.md`; add the *background label* and *teacher-material words* keys to the *Wording* table in `PROFILE.md` (translated); add the background label to the *legend* section of the root index. If an agent's channel prompt says that every file sent is a source, add: "except teacher materials - follow the Teacher materials rule of AGENTS.md (ask before ingesting when the kind is not given)".
+
 ## 1.5.0 - 2026-09-26
 
 * New *Reading a book* rule under *References*: a converted book is never loaded whole; its generated `index.md` maps every lesson and printed page to a line range of `document.md` and points to the book's own contents, indexes, and answer key, and only the needed lines are opened. New shared tool `tools/book_index.py` builds the map from the page anchors and the book's own table of contents (README lesson table as fallback).
