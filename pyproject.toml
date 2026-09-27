@@ -1,0 +1,13 @@
+[project]
+name = "school-notes-tools"
+version = "0"
+description = "Helper tools of the school-notes wiki (tools/*.py). Not a package: run them with `uv run tools/<name>.py`."
+requires-python = ">=3.10"
+dependencies = [
+    "pillow>=10",        # tools/prepare_photo.py - photos filed into sources/
+    "python-pptx>=1.0",  # reading teacher slides (Teacher materials)
+    "python-docx>=1.1",  # reading teacher documents (Teacher materials)
+]
+
+[tool.uv]
+package = false

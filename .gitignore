@@ -22,3 +22,6 @@ desktop.ini
 __pycache__/
 node_modules/
 package-lock.json
+
+# Python environment (uv)
+.venv/

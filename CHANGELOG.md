@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.8.0 - 2026-09-27
+
+* The tools became a uv project: `pyproject.toml` and `uv.lock` (shared files) list their Python dependencies (Pillow, python-pptx, python-docx), and every tool runs with `uv run tools/<name>.py` - no `pip install` or system packages. New *Tools* rule under *Sources*; all tool commands in `AGENTS.md` now use `uv run`. `.venv/` is gitignored.
+* **Migration**: copy `AGENTS.md`, `pyproject.toml`, and `uv.lock`; add `.venv/` to `.gitignore`; make sure `uv` is installed where the agent runs. In agent prompts and scheduled jobs, replace `python3 tools/...` with `uv run tools/...`.
+
 ## 1.7.1 - 2026-09-27
 
 * *Reading a book*: book figures are opened only for a specific check and only when `document.md` describes them; figures without any description or printed text, and image files `document.md` does not reference (barcodes, logos, QR codes, decoration), are never opened.
