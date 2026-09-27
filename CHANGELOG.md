@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.6.1 - 2026-09-27
+
+* *Teacher materials*: images from material to learn may be used where they teach and our own drawing could not replace them (maps, experiment photos, artworks, cross-sections); never decorative, never from the textbook or background material. They go to `wiki/assets/orai/` with the *class-image caption*; for maps a freely licensed map (Wikimedia Commons) is preferred.
+* **Migration**: copy `AGENTS.md`; add the *class-image caption* key to the *Wording* table in `PROFILE.md` (translated).
+
 ## 1.6.0 - 2026-09-27
 
 * New *Teacher materials* rule under *Sources*: material a teacher shares (pptx, pdf, docx, photo of a handout) is either *to learn* - a source like the notebook, its content on the topic pages with lesson lines and footnotes, no label - or *background* - a reference with its map, labeled with the new *background label*. The student names the kind with one word when sending; if it is missing, the LLM asks before ingesting, even under automatic ingest, and offers its own guess. The notebook itself is always material to learn.

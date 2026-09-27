@@ -62,6 +62,7 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | textbook label | `📗 **From the textbook (not in the notebook):**` | `📗 **Tankönyvből (a füzetben nincs):**` |
 | background label | `📗 **From background material (not in the notebook):**` | `📗 **Háttéranyagból (a füzetben nincs):**` |
 | teacher-material words | *to learn* / *background* | `tanulni` / `olvasnivaló` |
+| class-image caption | `Image from class material (slide <N>)` | `Kép az órai anyagból (<N>. dia)` |
 | lesson line | `🗓️ *Lesson: <date>*` | `🗓️ *Óra: <dátum>*` |
 | correction label | `⚠️ **Correction (not from the notebook):**` | `⚠️ **Javítás (nem a füzetből):**` |
 | catch-up notice | `🤒 **Catch-up material** - this page was made from a classmate's notebook because you were absent. Copy it into your own notebook (or learn it), and say when you are done.` | `🤒 **Pótolandó anyag** - ez az oldal egy osztálytárs füzetéből készült, mert hiányoztál. Írd be a saját füzetedbe (vagy tanuld meg), és szólj, ha megvan.` |
