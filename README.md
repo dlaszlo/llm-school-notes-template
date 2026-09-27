@@ -4,7 +4,7 @@ Photograph your notebook, and an AI agent turns it into clear, curated study pag
 
 This is a template for a knowledge base (an "LLM wiki") built from one student's school notes. You drop in photos of exercise-book pages, downloaded notes, or voice notes; an LLM agent - [Claude Code](https://code.claude.com/), [Codex](https://developers.openai.com/codex/), or any agent that can read `AGENTS.md` (e.g. Hermes Agent) - files them, reads them, and maintains a wiki: one directory per subject, one page per topic, plus a page per set of lesson notes. The storage format is the [Open Knowledge Format 0.2](SPEC.md): plain markdown with YAML frontmatter, readable on GitHub, in Obsidian, or with `cat`.
 
-The template contains no names, school, subjects, textbooks, or notes - everything specific is set up by the LLM on the first run.
+The template contains no student identities, school, subjects, textbooks, or notes - everything specific is set up by the LLM on the first run. The canonical repository is [llm-school-notes-template](https://github.com/dlaszlo/llm-school-notes-template).
 
 ## What the pages look like
 
@@ -14,6 +14,14 @@ The template contains no names, school, subjects, textbooks, or notes - everythi
 * **Plain language** at the student's level (ISO 24495-1 principles), phone-friendly tables, LaTeX math, Mermaid diagrams, and colorful header banners (`tools/banner.py`).
 * **Catch-up support**: notes copied from a classmate's notebook are marked 🤒 until the student has caught up; homework from the e-diary goes into a 📌 table.
 * **Textbook references**: textbooks (converted to text) in `references/` are used to check readings and cite printed page numbers - never copied.
+
+## Learning evidence and optional media
+
+Source images and relevant textbook figures are checked directly, including crop limitations and available conversion metadata. Private evidence records let later reviewers inspect the same material. Selected teacher-material images can support learning; textbook images remain evidence, not copied wiki illustrations. Original teaching files receive visible links in private lesson notes.
+
+Optional [curriculum references](references/curriculum/README.md) guide relevant depth without turning every requirement into homework. Precise diagrams keep editable SVG; useful overview infographics can use a configured image generator, with checked labels/arrows and a factual image-description comment. Printable study notes are a separate A4 PDF output with selectable text and separate self-check answers. These rules do not install bots, grant account access or authorize unlimited generation.
+
+For local media experiments, copy `.env.example` to the gitignored `.env` and configure the intended models and provider key. A sample environment file does not enforce a spending cap; paid generation requires a configured limit and bounded repairs. Never commit real keys, private family plans or supplied reference collections to this public template.
 
 ## Getting started
 
@@ -40,6 +48,7 @@ CLAUDE.md           Thin Claude Code adapter importing AGENTS.md and PROFILE.md.
 SPEC.md             Pinned OKF 0.2 specification.
 llm-wiki.md         Original idea document, preserved as background.
 tools/banner.py     Page-header banners; subjects and labels in tools/subjects.json.
+tools/curriculum.py Bounded navigation of an optional private requirements collection.
 sources/            Immutable source material (private).
 references/         Converted textbooks for checking and citing (private).
 wiki/               Knowledge bundle, index, and update log.

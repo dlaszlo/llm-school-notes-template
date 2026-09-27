@@ -75,3 +75,15 @@ The banner labels (page kinds, "catch-up notes", the "Header" alt-text prefix) l
 # Local decisions
 
 Decisions that concern this wiki only, each with its date (e.g. a house rule for a subject, an exception the user asked for). A rule change here that should apply to other wikis too is proposed to the template separately - that is the user's call.
+
+# Learning scope and curriculum
+
+Fill this section only with user-confirmed settings when relevant; do not infer a closed subject list, examination target, ability or personal beliefs from supplied documents.
+
+* **Declared training and professional package**: `<if supplied; otherwise unknown>`.
+* **Current lesson and learning goals**: `<the notebook, teacher material or explicit request sets the immediate core>`.
+* **Requirements and applicability**: `<installed reference IDs and versions; distinguish declared training from verified cohort/examination applicability>`.
+* **Depth**: accessible explanation and application first; advanced material only with a concrete learning reason and prerequisite bridge. Related cultural enrichment remains brief and optional.
+* **Media settings**: `<available tools, chosen models, private delivery destination and explicitly configured spending caps; empty means not configured>`.
+
+Keep actual credentials outside tracked files. The shared learning, image-checking, media and printable-note rules are in `AGENTS.md`; a role name does not establish live tool access.

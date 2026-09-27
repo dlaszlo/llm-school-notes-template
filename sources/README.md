@@ -4,7 +4,7 @@
 
 Drop source documents here under any name - this directory is the wiki's inbox and archive. Full rules live in [AGENTS.md](../AGENTS.md).
 
-* At ingest the agent renames each file to `YYYY-MM-DD-short-title.<ext>` (acquisition date). A date-prefixed name therefore means the file has been ingested; any other name means it is still pending.
+* At ingest the agent renames each file to `YYYY-MM-DD-short-title.<ext>` (acquisition date). A date prefix records filing, not completed ingestion: an uploaded dated file may still be pending. Check its Source summary, log entry and content hash.
 * URL-only sources are materialized: the agent fetches the content and saves it here before ingesting, so this directory stays complete.
 * Only drop material meant to be ingested - a file shared just as context for a discussion does not belong here.
 * Never drop a file containing live secrets (passwords, keys, tokens): provide a redacted copy instead - secrets never get committed, and a flagged file blocks all commits until resolved.

@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.9.0 - 2026-09-27
+
+* Added direct visual-evidence checks, optional conversion diagnostics, notebook-first image ordering, shared reviewer evidence and learning-value selection of teacher images. Original teaching files receive visible links; dated source filenames no longer imply completed ingest.
+* Added curriculum-aware scope and bounded reference navigation, selective SVG/raster visuals with actual-image descriptions, bounded ingest-time infographic generation and printable A4 study notes. Existing precise diagrams remain valid; no blanket replacement or automatic paid batch is implied.
+* Added optional media environment placeholders and standard-library curriculum tools with synthetic regression tests. The public template includes no private source collections, family plans or media-trial evidence.
+* **Migration**: merge these shared rule changes with local school rules rather than replacing local profiles or teaching pages. Copy `tools/curriculum.py`, `tools/test_curriculum.py`, `references/curriculum/README.md` and the updated source-status guidance. Configure learner-specific requirements and any media access explicitly in `PROFILE.md`; retain existing subject/banner settings. Do not copy another learner's professional package or create empty evidence indexes. No existing notes or assets need rewriting solely to adopt this version.
+
 ## 1.8.0 - 2026-09-27
 
 * The tools became a uv project: `pyproject.toml` and `uv.lock` (shared files) list their Python dependencies (Pillow, python-pptx, python-docx), and every tool runs with `uv run tools/<name>.py` - no `pip install` or system packages. New *Tools* rule under *Sources*; all tool commands in `AGENTS.md` now use `uv run`. `.venv/` is gitignored.
