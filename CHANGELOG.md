@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.1 - 2026-09-27
+
+* Restored the accidentally removed *Index-only books* rule verbatim. Existing index-only restrictions and profile decisions remain in force.
+* Clarified that textbook-only labels exclude content also present in teacher material to learn, and that apparent source contradictions require reopening the original notebook photo before treating its earlier transcription as evidence.
+* Added a shared review-closure workflow for correcting agents and reviewers, with archived reports, correction commits, evidence and separately recorded unresolved questions. Added explicit semantic-removal and profile-reference checks to template migration.
+* **Migration**: copy the full shared set, update the applied release and exact template commit in local profiles, and preserve each learner's settings. Do not mark an old report resolved without performing its relevant checks. The template remains uninitialized; it receives no learner evidence or review index.
+
 ## 1.11.0 - 2026-09-27
 
 * Added the system handbook for learning, blog preparation, operating lookup and full-system reconstruction, including Hermes roles/routing, repositories, media, Drive and scheduled review. Distinguish live components from plans and retain private deployment facts separately.
