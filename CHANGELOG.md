@@ -5,6 +5,7 @@ Newest first. Each entry says what changed in the shared files and what an exist
 ## 1.8.0 - 2026-09-27
 
 * The tools became a uv project: `pyproject.toml` and `uv.lock` (shared files) list their Python dependencies (Pillow, python-pptx, python-docx), and every tool runs with `uv run tools/<name>.py` - no `pip install` or system packages. New *Tools* rule under *Sources*; all tool commands in `AGENTS.md` now use `uv run`. `.venv/` is gitignored.
+* *Teacher materials*: a teacher's material may be uploaded pre-converted - a dated `sources/` directory with the original file, `document.md`, and `figures/`; the conversion stays next to the original (the original is authoritative and hashed). When a book's `figures/` are missing, the description is only a guide and a doubtful reading needs *Requesting a page*.
 * **Migration**: copy `AGENTS.md`, `pyproject.toml`, and `uv.lock`; add `.venv/` to `.gitignore`; make sure `uv` is installed where the agent runs. In agent prompts and scheduled jobs, replace `python3 tools/...` with `uv run tools/...`.
 
 ## 1.7.1 - 2026-09-27
