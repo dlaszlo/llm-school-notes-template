@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.7 - 2026-09-28
+
+* Clarified that image generation is not itself an agent-added explanation. Replaced the blanket image author footer from 1.11.6 with scoped content provenance; technical maker credits stay in evidence/comments.
+* Source labels now explicitly attach to the affected passage or named image content. Mixed-source images identify the reference-only contribution rather than labeling the entire image indiscriminately.
+* Indented expandable answers with the shared HTML wrapper and reduced spacing inside mixed answers to ordinary paragraph gaps. Only the end of an answer gets the optional extra break.
+* **Migration**: synchronize shared rules/examples and apply to the same two-page preview only. Keep existing sources, assets and teaching facts unchanged; no new paid generation or bulk migration.
+
 ## 1.11.6 - 2026-09-28
 
 * Restored explicit semantic icons beside machine-authorship labels: `💡 Drax🤖 magyarázata`, `➕ Drax🤖 kiegészítése`, `⚠️ Drax🤖 javítása`, using the actual author and localized role. Textbook/background labels keep 📗 and their sources; lesson content remains the unlabeled default.

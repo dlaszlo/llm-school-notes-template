@@ -43,33 +43,39 @@ Use one standalone `<br />` between substantial sections or adjacent callout blo
 ```markdown
 <details><summary>1. Mit állít a tanult anyag?</summary>
 
+<dl><dd>
+
 Az egyszerű, forráshű válasz itt áll, robotcímke nélkül.
 
-A válaszhoz szükséges külön magyarázat.
-<br /><sub>💡 Drax🤖 magyarázata</sub>
+A válaszhoz szükséges külön magyarázat.<br /><sub>💡 Drax🤖 magyarázata</sub>
+
+A forrásban szereplő hiba helyesbítése, az indokával és hivatkozásával.<br /><sub>⚠️ Drax🤖 javítása</sub>
 
 <br />
 
-A forrásban szereplő hiba helyesbítése, az indokával és hivatkozásával.
-<br /><sub>⚠️ Drax🤖 javítása</sub>
-
-<br />
+</dd></dl>
 
 </details>
 
 <details><summary>2. Mi a következő fogalom jelentése?</summary>
 
+<dl><dd>
+
 A rövid válasz.
 
 <br />
 
+</dd></dl>
+
 </details>
 ```
 
-The questions remain compact when closed; the spacing is inside the opened answer. A question does not acquire an agent label merely because it was generated. Do not put alert syntax inside the disclosure. Preserve the distinction between the taught answer and a separate optional explanation or correction.
+The questions remain compact when closed. The `<dl><dd>` wrapper indents only the opened answer using ordinary HTML, without a code block, visible bullet or quote color. Preserve blank lines so the answer remains Markdown. Exact indentation is viewer-dependent. Within one answer use ordinary paragraphs, not an extra standalone `<br />` between explanation and source passage; reserve at most one such break for the answer end inside the wrapper. A question does not acquire an agent label merely because it was generated. Do not put alert syntax inside the disclosure. Preserve the distinction between the taught answer and a separate optional explanation or correction.
 
 ## Explanatory images and exports
 
-For an agent-authored teaching diagram or infographic, place a small role/authorship label immediately below its Markdown embed, for example `<sub>💡 Codex🤖 magyarázata</sub>`. The author's name identifies who prepared the explanation; references identify what supports it. Retain a textbook-only qualifier where a particular part comes only from the textbook. Do not add a robot to a teacher photograph or a book-source label merely because an agent embedded it. Banners do not need visible generator credits. Exact model, prompt, cost, hashes and visual observations stay in comments and evidence records, not learner-facing prose.
+Distinguish **what the content is based on** from **who generated the image**. An agent arranging textbook or teacher facts visually has not thereby added a new explanation. Do not label every generated image with "Codex's explanation" or the equivalent. Keep the maker, image model and prompt in comments/evidence. A visible role/author label is for a substantive agent-added explanation, addition or correction, attached only to that contribution. This applies equally to prose and images.
+
+Source labels must have a clear scope. Attach a paragraph's small label to that paragraph; a NOTE block can enclose a longer reference-only explanation. For a source-based image, name the relevant content in a short caption when needed: for example, identify the two clauses being compared and which reference supports each. For a mixed-source image, identify the textbook-only part rather than tagging the whole image as textbook-only. Do not leave a generic source label floating between prose and an image, and do not use a machine label to replace factual attribution. References and prose retain the teaching meaning. Teacher photos keep their class-material attribution. Decorative banners need no maker credit; exact model, prompt, cost, hashes and observations stay in comments/evidence. A caption-only correction does not authorize regeneration.
 
 Keep the teaching content and source markers as ordinary text so non-GitHub viewers and future PDF rendering retain their meaning. An export may style the small labels consistently, but cannot remove their meaning or use color alone to distinguish provenance. This document defines Markdown layout, not an implemented PDF pipeline.

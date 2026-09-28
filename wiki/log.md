@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: Shared release [1.11.7](../CHANGELOG.md) distinguishes sourced visual content from image-maker credit and tightens [expandable-answer spacing and indentation](../instructions/note-formatting.md). The template remains uninitialized.
+
 * **Update**: Shared release [1.11.6](../CHANGELOG.md) defines semantic icons plus machine-authorship labels and compact, spacious [Markdown patterns](../instructions/note-formatting.md). This is a staged formatting change; the template stays uninitialized.
 
 * **Update**: Shared release [1.11.5](../CHANGELOG.md) adopts the requested Astra xhigh research: an open learning-task-led visual repertoire with OTHER/ELSE, conditional topology and per-arrow source-based verification. The template remains uninitialized.
