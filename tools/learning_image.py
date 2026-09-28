@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import urllib.error
 import urllib.request
 
 from PIL import Image
@@ -222,6 +223,33 @@ def api_key(config):
     if not key:
         raise ValueError('Missing OPENROUTER_API_KEY')
     return key
+
+
+def provider_check(config):
+    """Read only key limits; never expose key labels, raw responses or error bodies."""
+    req = urllib.request.Request('https://openrouter.ai/api/v1/key',
+                                 headers={'Authorization': 'Bearer ' + api_key(config)})
+
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    try:
+        with urllib.request.build_opener(NoRedirect).open(req, timeout=20) as response:
+            data = json.load(response)['data']
+        # Whitelist types as well as fields: no provider-supplied text is echoed.
+        result = {'authenticated': True}
+        for field in ('limit', 'limit_remaining', 'usage'):
+            value = data[field]
+            result[field] = None if value is None else str(money(value))
+        reset = data.get('limit_reset')
+        result['limit_reset'] = reset if reset in (None, 'daily', 'weekly', 'monthly') else 'other'
+        result['image_generation_tested'] = False
+        return result
+    except urllib.error.HTTPError as exc:
+        raise ValueError(f'Provider credential check failed: HTTP {exc.code}') from None
+    except (OSError, ValueError, KeyError, TypeError, InvalidOperation):
+        raise ValueError('Provider credential check failed: connection or response invalid') from None
 
 
 def api_call(payload, config):
@@ -473,7 +501,8 @@ def main():
         if command == 'review':
             p.add_argument('--report', required=True)
     sub.add_parser('status')
-    sub.add_parser('check')
+    sub.add_parser('check').add_argument('--provider', action='store_true',
+                                       help='Read-only authenticated key/limit check; no image generation')
     sub.add_parser('init-state', help='Initialize a NEW request only; restore state for resumed work')
     args = parser.parse_args()
     try:
@@ -497,6 +526,8 @@ def main():
                 result['spending_enabled'] = money(config['max_total_usd']) > 0
                 result['model'] = MODEL
                 result['repositories_exist'] = all(Path(v['repo']).is_dir() for v in config['learners'].values())
+                if args.provider:
+                    result['provider'] = provider_check(config)
             print(json.dumps(result, ensure_ascii=False))
         elif args.command in ('validate', 'prompt'):
             job, _ = load_job(config, args.job)

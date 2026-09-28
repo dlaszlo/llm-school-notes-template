@@ -31,6 +31,40 @@ class ExecutorTest(unittest.TestCase):
     def save(self):
         m.write(self.path, self.job)
 
+    def test_provider_check_only_reads_limits_and_hides_identifiers(self):
+        body = {'data': {'limit': 10, 'limit_remaining': 8.5, 'usage': 1.5,
+                         'limit_reset': None, 'label': 'PRIVATE_KEY_LABEL',
+                         'creator_user_id': 'PRIVATE_USER'}}
+        before = (Path(self.config['state_dir'])/'ledger.json').read_bytes()
+        with patch.object(m, 'api_key', return_value='test-key'), patch.object(m.urllib.request, 'build_opener') as build:
+            build.return_value.open.return_value = io.BytesIO(json.dumps(body).encode())
+            result = m.provider_check(self.config)
+            request = build.return_value.open.call_args.args[0]
+            self.assertEqual(request.get_method(), 'GET')
+            self.assertEqual(request.full_url, 'https://openrouter.ai/api/v1/key')
+            self.assertIsNone(request.data)
+        self.assertEqual(result['limit_remaining'], '8.5')
+        self.assertNotIn('PRIVATE', json.dumps(result))
+        self.assertFalse(result['image_generation_tested'])
+        self.assertEqual(before, (Path(self.config['state_dir'])/'ledger.json').read_bytes())
+
+    def test_provider_check_redacts_failure_and_forbids_redirects(self):
+        error = m.urllib.error.HTTPError('https://openrouter.ai/api/v1/key', 401,
+                                         'PRIVATE_ERROR', {}, io.BytesIO(b'PRIVATE_BODY'))
+        with patch.object(m, 'api_key', return_value='test-key'), patch.object(m.urllib.request, 'build_opener') as build:
+            build.return_value.open.side_effect = error
+            with self.assertRaisesRegex(ValueError, '^Provider credential check failed: HTTP 401$'):
+                m.provider_check(self.config)
+            handler = build.call_args.args[0]()
+            self.assertIsNone(handler.redirect_request(None, None, 302, '', {}, 'https://other.invalid/'))
+
+    def test_provider_check_rejects_unexpected_limit_text(self):
+        body = {'data': {'limit': 'PRIVATE_UNEXPECTED_TEXT'}}
+        with patch.object(m, 'api_key', return_value='test-key'), patch.object(m.urllib.request, 'build_opener') as build:
+            build.return_value.open.return_value = io.BytesIO(json.dumps(body).encode())
+            with self.assertRaisesRegex(ValueError, '^Provider credential check failed: connection or response invalid$'):
+                m.provider_check(self.config)
+
     def fake(self, payload, config):
         self.calls += 1
         out=io.BytesIO();Image.new('RGB',(420,180),(255-self.calls,255,255)).save(out,format='PNG')

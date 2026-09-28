@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.7 - 2026-09-28
+
+* Added explicit `learning_image.py check --provider`: a read-only authenticated key-limit check with whitelisted output, redacted errors and no redirects or image generation. Plain `check` remains offline.
+* Documented protected per-user credential files and cumulative incoming-lesson budgets without resetting previous request state. No Hermes program, global skill or role changes.
+* **Migration**: synchronize shared files and record version/commit. Existing request IDs, credentials and ledgers remain valid; optional verification does not change them.
+
 ## 1.14.6 - 2026-09-28
 
 * Added optional lossless WebP publication for generated infographics, with decoded pixel equality and a separate reviewed publication hash. No resizing, paid generation or SVG conversion occurs during compression.

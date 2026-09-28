@@ -28,6 +28,18 @@ uv run tools/learning_image.py check
 
 For a resumed request, restore the complete existing state instead; a clone does not restore spending history. Never initialize a fresh balance for an already-spent request.
 
+After installing the approved credential, verify authentication without generating an image:
+
+```sh
+uv run tools/learning_image.py check --provider
+```
+
+This explicitly calls OpenRouter's [current-key endpoint](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key). It reports authentication and numeric key limits/usage only; no key, label, provider error body, learning content or image is sent to output. Ordinary `check` remains offline. A successful provider check does not test image generation, model availability, an agent's visual inspection or Discord delivery. A null provider limit means no key-specific cap was returned; keep the authorized local cap and configure the provider ceiling separately. No limit is raised by this check.
+
+An already configured key may live in a protected per-user file outside every checkout, such as `~/.config/school-notes/openrouter.env`, containing only `OPENROUTER_API_KEY=...`. Set `env_file` to that exact path. Directory permissions should be 700 and the file 600. The existing explicit transfer-approval rule still applies; this is an example path, not automatic secret discovery.
+
+For a newly authorized batch of incoming lessons, record its combined budget, separate learner allocations if applicable, the active executor machine and initially empty exact-page allowlists in the private profiles/configuration. Add the actual page path only when that lesson is requested and exists; keep the same request ID, state directory, cumulative budget and repair counts across lessons. Do not refresh the balance for each upload. Archive the superseded nonsecret request configuration as historical evidence and retain its original state. A Git clone does not migrate earlier spending history. Empty target lists allow setup checks, not generation.
+
 5. Have the agent prepare the source-checked job described in [execution](learning-image-execution.md), including output language and exact visible text. Then run:
 
 ```sh
