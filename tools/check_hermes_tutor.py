@@ -71,6 +71,7 @@ def main():
     names = sorted(d.get('function', d)['name'] for d in definitions)
     permitted = {'read_file', 'write_file', 'patch', 'search_files', 'vision_analyze', 'clarify'}
     checks = {}
+    image_observations = {}
     checks['only_expected_tools'] = set(names) <= permitted
     checks['file_reader_available'] = 'read_file' in names
     if not all(checks.values()):
@@ -111,9 +112,12 @@ def main():
                 try:
                     image = asyncio.run(resolve_image_source(
                         str(directory / 'canary.png'), ResolveContext(task_id='default')))
+                    image_observations[label] = {'origin': image.origin,
+                        'matches_fixture': image.data == png(), 'fixture_path': str(directory / 'canary.png')}
                     checks[label + '_image_' + ('read' if label == 'snapshot' else 'denied')] = (
                         label == 'snapshot' and image.data == png())
-                except ImageResolutionError:
+                except ImageResolutionError as exc:
+                    image_observations[label] = {'denial': type(exc).__name__, 'reason': str(exc)}
                     checks[label + '_image_' + ('read' if label == 'snapshot' else 'denied')] = label != 'snapshot'
         else:
             # Contains synthetic probe paths only, never a real secret's contents.
@@ -128,11 +132,20 @@ def main():
         for item in inspections:
             mounts = [{k: m.get(k) for k in ('Source', 'Destination', 'RW')} for m in item['Mounts']]
             # The selected checkout and this fresh profile's own media caches only.
-            mounts_ok = all((m['Source'] == str(snapshot) and not m['RW']) or
-                            (Path(m['Source']).is_relative_to(home) and
-                             Path(m['Source']).relative_to(home).parts[0] in
-                             {'cache', 'images', 'image_cache', 'audio_cache', 'video_cache',
-                              'temp_vision_images', 'temp_video_files'}) for m in mounts)
+            def allowed_mount(m):
+                if m['Source'] == str(snapshot):
+                    return not m['RW'] and m['Destination'] == str(snapshot)
+                source = Path(m['Source'])
+                if not source.is_relative_to(home):
+                    return False
+                relative = source.relative_to(home)
+                if relative.as_posix() in ('sandboxes/docker/default/home',
+                                          'sandboxes/docker/default/workspace'):
+                    return m['Destination'] in ('/root', '/workspace')
+                return (not m['RW'] and relative.parts[0] in
+                        {'cache', 'images', 'attachments', 'skills', 'image_cache',
+                         'audio_cache', 'video_cache', 'temp_vision_images', 'temp_video_files'})
+            mounts_ok = all(allowed_mount(m) for m in mounts)
             env_names = sorted(e.split('=', 1)[0] for e in item['Config'].get('Env', []))
             checks['mounts_and_network_' + item['Id'][:12]] = (
                 mounts_ok and any(m['Source'] == str(snapshot) and not m['RW'] for m in mounts)
@@ -141,7 +154,8 @@ def main():
             containers.append({'id': item['Id'][:12], 'mounts': mounts,
                                'network': item['HostConfig']['NetworkMode'], 'env_names': env_names})
     report = {'passed': all(checks.values()), 'checks': checks, 'tools': names,
-              'containers': containers, 'config_sha256': hashlib.sha256((home / 'config.yaml').read_bytes()).hexdigest(),
+              'containers': containers, 'image_observations': image_observations,
+              'config_sha256': hashlib.sha256((home / 'config.yaml').read_bytes()).hexdigest(),
               'limits': 'No model call; image resolver tested, not semantic vision. CLI conversational pilot required.'}
     print(json.dumps(report, indent=2))
     return 0 if report['passed'] else 1
