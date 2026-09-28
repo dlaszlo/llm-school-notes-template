@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: Added private active-policy discovery and single-writer budget transfer instructions for the [image executor](../instructions/learning-image-execution.md).
+
 * **Update**: [1.12.0](../CHANGELOG.md) implements the visual decision/prompt/QA plan and a shared [bounded image executor](../instructions/learning-image-execution.md) with a Hermes entrypoint. The template remains uninitialized.
 
 * **Update**: Shared release [1.11.9](../CHANGELOG.md) requires numbered, self-contained open questions and adds a [formatting example](../instructions/note-formatting.md). The template remains uninitialized.

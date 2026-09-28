@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.12.1 - 2026-09-28
+
+* Missing credentials now fail before a cost reservation or network attempt; a regression check covers the deployment failure found during the Hermes pilot.
+* Added explicit private active-policy discovery for installed agents and a single-writer budget handoff when execution moves between machines. Deployment settings remain separate from the shared skill.
+* Corrected the installation inventory to reflect the implemented image executor; registry/CLI checks remain distinct from Discord end-to-end checks.
+* **Migration**: sync the shared set, update the installed skill, and maintain the private active-policy index without expanding authorization.
+
 ## 1.12.0 - 2026-09-28
 
 * Applied the accepted Astra visual plan: task-led banner/infographic decisions, standalone context, conditional visual forms, checked transfer examples, and source-grounded final-image QA. Precise SVG/code remains the choice where exact relationships or geometry matter.

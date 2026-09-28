@@ -145,7 +145,7 @@ def spent(ledger):
     return sum((money(a['cost_usd']) for j in ledger['jobs'].values() for a in j['attempts'] if a.get('cost_usd') is not None), Decimal(0))
 
 
-def api_call(payload, config):
+def api_key(config):
     # Explicit env file; never print it, return it, or use shell evaluation.
     values = dict(os.environ)
     if config.get('env_file'):
@@ -157,6 +157,11 @@ def api_call(payload, config):
     key = values.get('OPENROUTER_API_KEY')
     if not key:
         raise ValueError('Missing OPENROUTER_API_KEY')
+    return key
+
+
+def api_call(payload, config):
+    key = api_key(config)
     req = urllib.request.Request(API, data=json.dumps(payload).encode(), headers={
         'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
     # Avoid forwarding authorization through redirects. No retries.
@@ -191,6 +196,8 @@ def finish_response(folder, result, attempt):
 
 def run_generate(config, job_path, repair=None, transport=None):
     job, repo = load_job(config, job_path)
+    if transport is None:
+        api_key(config)  # Missing credentials are a preflight failure, not an unknown paid attempt.
     transport = transport or api_call
     fingerprint = hashlib.sha256(json.dumps(job, sort_keys=True).encode()).hexdigest()
     logical = job['learner'] + ':' + job['target'] + ':' + job['role']

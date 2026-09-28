@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from PIL import Image
 import learning_image as m
 
@@ -41,6 +42,15 @@ class ExecutorTest(unittest.TestCase):
         p=self.root/'review.json'
         m.write(p, {'sha256':result['sha256'],'verifier':'test','checked_at':m.now(),'observed':'Synthetic near-white test image, not teaching content','decision':decision,'checks':dict.fromkeys(m.CHECKS,'pass'),'material_defects':['test rejection'] if decision=='rejected' else []})
         return p
+
+    def test_missing_credential_fails_before_reservation_or_network(self):
+        empty=self.root/'empty.env';empty.write_text('OPENROUTER_API_KEY=\n')
+        self.config['env_file']=str(empty)
+        with patch.dict(m.os.environ,{},clear=True), patch.object(m.urllib.request,'build_opener') as network:
+            with self.assertRaisesRegex(ValueError,'Missing OPENROUTER_API_KEY'):
+                m.run_generate(self.config,self.path)
+            network.assert_not_called()
+        self.assertFalse((self.root/'state/ledger.json').exists())
 
     def test_duplicate_does_not_spend_and_requires_review(self):
         r=self.generate();self.assertEqual(self.generate()['state'],'generated');self.assertEqual(self.calls,1)

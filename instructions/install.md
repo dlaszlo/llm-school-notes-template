@@ -12,7 +12,7 @@ This is the maintained entry point for rebuilding the school-note system. It dis
 | Hermes base runtime | Recorded Hermes Git commit, package-manager lock and private configuration | Existing deployment; a fresh full-machine rebuild has not yet been exercised |
 | Drive authentication, upload and skill | [Drive installation](install-drive.md) | Implemented and tested against two configured destinations |
 | Separate learner/role executors, Discord identities and routing | Approved private bot plan plus future deployment record | Planned; shared-profile access is not isolation |
-| Media generation and bounded spending | Shared media instructions plus future protected provider adapter and budget configuration | Workflow specified; full bot automation not yet installed |
+| Media generation and bounded spending | Common image executor, installed skill, private active-policy index and persistent budget state | Banner/infographic CLI implemented; verify each deployment separately from Discord automation |
 | Nightly review and correction | Private scheduler record, timezone, repository, model/effort and trusted channel IDs | Existing jobs audited separately; profile migration still pending |
 | OAuth informational website | Public app description and actual privacy page on an owned domain | Deferred by user; not part of the Drive data path |
 

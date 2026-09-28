@@ -90,3 +90,9 @@ Review rejection permits one targeted repair with `generate --repair /private/re
 * Run `uv run python -m unittest discover -s tools -p test_learning_image.py` after executor changes. The synthetic suite exercises retries, unknown charges, bounds, changed sources, path/learner rejection, concurrency and review-hash checks. A live job additionally proves the configured provider path; it does not prove future error-free outputs or Discord routing.
 
 For Hermes, install the [thin skill entrypoint](../integrations/hermes/learning-images/SKILL.md) into the selected profile's skills directory (copy the file into a `learning-images` directory). Configure the trusted policy location in private deployment settings. Keep the repository tools current; do not duplicate the CLI into another unversioned script. The generic template supplies no credentials, child IDs or private references.
+
+## Active deployment discovery
+
+An installed agent locates private policies through `~/.config/school-media/active.json`, maintained by the operator. Use a `requests` list containing `request_id`, absolute `policy`, allowed `learners`, and a short scope description. Do not store keys there or infer new authorization from an entry. Keep the installed skill equal to the versioned entrypoint and store deployment-specific settings separately.
+
+When moving execution between machines, retain one writable budget authority. Either migrate the complete ledger with verified artifact paths or freeze the previous executor and allocate only the unspent remainder to the new one. Record the previous spent amount, the frozen policy and the new cap; their sum must stay within the original authorization. Never leave two independent executors each able to spend the original full cap. Test discovery with the installed runtime registry, source validation, rejected targets and a real reviewed image. A terminal/API test is distinct from a Discord conversation test.
