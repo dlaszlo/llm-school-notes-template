@@ -2,6 +2,14 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.3 - 2026-09-28
+
+* Generalized preservation from technical drawings to all precision-dependent teaching structures, including mathematical and linguistic analyses. Preserve classroom notation, source cases/order and meaningful orientation through the existing coverage check. A generative redraw is not preservation; composites retain the exact authored layer and the accessible separate diagram.
+* Explicitly permit a useful supplementary infographic in every subject. Adapt style and palette to supported topic context and related image series, preserving legibility and semantic notation instead of imposing subject-wide visual stereotypes.
+* Added compact banner/infographic design decisions for viewpoint, comparison, hierarchy, abstraction, density, emotional tone, accessibility and implied visual claims. These map to existing job fields and relevant prompt/QA stages, not a new mandatory form or curriculum retrieval cycle.
+* Incorporates the requested Astra xhigh curriculum-based planning supplement and Fable high critique. No generator API, credentials, agent installation or paid retry policy changed.
+* **Migration**: synchronize the shared set and record the template revision. Apply the guidance to authorized new or changed visuals; this release does not trigger bulk regeneration. The template remains uninitialized.
+
 ## 1.13.2 - 2026-09-28
 
 * Preserve every instructional technical drawing from notebook/teacher material in precise editable form, with source-to-page coverage checks. Generated infographics may add understanding but never replace those drawings; the rule applies across subjects.
