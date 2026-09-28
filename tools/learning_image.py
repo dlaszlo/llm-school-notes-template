@@ -109,7 +109,8 @@ def load_job(config, job_path):
 def compile_prompt(job):
     p = job['plan']
     kind = 'széles, alacsony tanulási fejlécet' if job['role'] == 'banner' else 'önállóan érthető tanító infografikát'
-    lines = [f'Készíts {kind}, magyar nyelven.', 'Tanulási cél: ' + p['goal'],
+    language = p.get('language', 'magyar')
+    lines = [f'Készíts {kind}, {language} nyelven.', 'Tanulási cél: ' + p['goal'],
              'Látható bevezetés és kontextus: ' + p['context'],
              'Kompozíció és olvasási sorrend: ' + p['composition'],
              'Kizárólag az alábbi szövegek jelenjenek meg feliratként, pontosan, ebben az olvasási sorrendben. Minden más tervmező rajzolási utasítás, nem képfelirat; ne másold a képre a munkafolyamatot vagy az ellenőrzési szempontokat:',
@@ -128,17 +129,80 @@ def compile_prompt(job):
     return '\n\n'.join(lines) + '\n'
 
 
+def load_config(path):
+    path = Path(path).resolve()
+    config = read(path)
+    nonempty(config, ['request_id', 'state_dir', 'learners'])
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,99}', config['request_id']):
+        raise ValueError('Invalid request ID')
+    for field in ('state_dir', 'env_file'):
+        if config.get(field):
+            config[field] = str((path.parent / Path(config[field]).expanduser()).resolve())
+    for learner in config['learners'].values():
+        learner['repo'] = str((path.parent / Path(learner['repo']).expanduser()).resolve())
+        money(learner['max_usd'])
+    money(config['max_total_usd'])
+    money(config['reservation_usd'])
+    if not 1 <= int(config.get('max_attempts', 3)) <= 3:
+        raise ValueError('Executor supports at most three attempts')
+    return config
+
+
+def initialize_state(config):
+    """Explicitly initialize a NEW request. Never reset or replace existing state."""
+    state = Path(config['state_dir']).resolve()
+    ledger = state / 'ledger.json'
+    if ledger.exists():
+        if read(ledger)['request_id'] != config['request_id']:
+            raise ValueError('Existing state belongs to another request')
+        return {'state': 'already-initialized', 'request_id': config['request_id']}
+    if state.exists() and any(state.iterdir()):
+        raise ValueError('State artifacts exist without ledger; restore the ledger, do not reset')
+    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with ledger.open('x') as stream:
+        json.dump({'request_id': config['request_id'], 'jobs': {}}, stream, indent=2)
+        stream.write('\n')
+        stream.flush()
+        os.fsync(stream.fileno())
+    return {'state': 'initialized', 'request_id': config['request_id']}
+
+
+def read_ledger(config):
+    ledger_path = Path(config['state_dir']) / 'ledger.json'
+    if not ledger_path.is_file():
+        raise ValueError('State missing: restore existing request state, or explicitly init-state for a NEW request')
+    ledger = read(ledger_path)
+    if ledger['request_id'] != config['request_id']:
+        raise ValueError('Existing state belongs to another request; do not reset it')
+    return ledger
+
+
 @contextmanager
 def locked(config):
-    state = Path(config['state_dir']).expanduser().resolve()
-    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    state = Path(config['state_dir']).resolve()
+    read_ledger(config)  # A missing ledger must never silently grant a fresh budget.
     with (state / 'executor.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        ledger_path = state / 'ledger.json'
-        ledger = read(ledger_path) if ledger_path.exists() else {'request_id': config['request_id'], 'jobs': {}}
-        if ledger['request_id'] != config['request_id']:
-            raise ValueError('Existing state belongs to another request; do not reset it')
-        yield state, ledger_path, ledger
+        yield state, state / 'ledger.json', read_ledger(config)
+
+
+def attempt_folder(config, job, attempt):
+    number = attempt['number']
+    if type(number) is not int or number < 1:
+        raise ValueError('Invalid attempt number')
+    # Derive location from the restored state tree, never trust an old absolute path.
+    return within(config['state_dir'], job['id'] + '/' + str(number))
+
+
+def status(config):
+    ledger_path = Path(config['state_dir']) / 'ledger.json'
+    if not ledger_path.exists():
+        return {'state': 'not-initialized', 'request_id': config['request_id'], 'spent_usd': None}
+    ledger = read_ledger(config)
+    return {'state': 'configured', 'request_id': config['request_id'], 'spent_usd': str(spent(ledger)),
+            'cap_usd': config['max_total_usd'], 'jobs': [
+                {'id': j['id'], 'attempts': len(j['attempts']), 'state': j['attempts'][-1]['state']}
+                for j in ledger['jobs'].values()]}
 
 
 def spent(ledger):
@@ -215,7 +279,7 @@ def run_generate(config, job_path, repair=None, transport=None):
             if any(a['state'] == 'unknown' or a.get('cost_usd') is None for a in other['attempts']):
                 raise ValueError('Reconcile pending provider call/cost before new spending')
         if entry and entry['attempts'][-1]['state'] == 'generated':
-            return {'state': 'needs-review', **entry['attempts'][-1]}
+            return {'state': 'needs-review', **entry['attempts'][-1], 'folder': str(attempt_folder(config, job, entry['attempts'][-1]))}
         if entry and (not repair or entry['attempts'][-1]['state'] != 'rejected'):
             raise ValueError('Repair requires a recorded rejected review and targeted instructions')
         if entry and len(entry['attempts']) >= int(config.get('max_attempts', 3)):
@@ -240,14 +304,14 @@ def run_generate(config, job_path, repair=None, transport=None):
         (folder / 'prompt.txt').write_text(prompt)
         payload = {'model': MODEL, 'prompt': prompt, 'quality': 'high', 'aspect_ratio': job['plan']['aspect_ratio'], 'n': 1}
         write(folder / 'request.json', payload)
-        attempt = {'number': attempt_no, 'state': 'unknown', 'started_at': now(), 'reserved_usd': str(reserve), 'cost_usd': None, 'folder': str(folder)}
+        attempt = {'number': attempt_no, 'state': 'unknown', 'started_at': now(), 'reserved_usd': str(reserve), 'cost_usd': None, 'folder': str(folder.relative_to(state))}
         entry['attempts'].append(attempt)
         write(ledger_path, ledger)  # Durable reservation BEFORE any network activity.
         try:
             result = transport(payload, config)
             finish_response(folder, result, attempt)
             write(ledger_path, ledger)
-            return {'job': job['id'], **attempt, 'total_usd': str(spent(ledger))}
+            return {'job': job['id'], **attempt, 'folder': str(folder), 'total_usd': str(spent(ledger))}
         except Exception as exc:
             # Preserve reserved/unknown; never print raw provider errors or secrets.
             attempt['failure_type'] = type(exc).__name__
@@ -261,7 +325,7 @@ def reconcile(config, job_path):
         attempt = ledger['jobs'][job['id']]['attempts'][-1]
         if attempt['state'] != 'unknown':
             return {'state': attempt['state'], 'no_change': True}
-        folder = Path(attempt['folder'])
+        folder = attempt_folder(config, job, attempt)
         if not (folder / 'response.json').exists():
             raise ValueError('No saved response: obtain provider billing/output evidence; do not reset or retry')
         finish_response(folder, read(folder / 'response.json'), attempt)
@@ -286,7 +350,7 @@ def review(config, job_path, review_path):
         attempt = candidates[-1]
         if attempt.get('cost_usd') is None or attempt['state'] == 'unknown':
             raise ValueError('Unresolved provider cost/status')
-        file = Path(attempt['folder']) / 'image.png'
+        file = attempt_folder(config, job, attempt) / 'image.png'
         if sha(file) != report['sha256']:
             raise ValueError('Image changed since review')
         if entry.get('accepted'):
@@ -315,7 +379,7 @@ def review(config, job_path, review_path):
         evidence = within(repo, 'docs/evidence/media/' + job['id'])
         evidence.mkdir(parents=True, exist_ok=True)
         write(evidence / 'job.json', job)
-        (evidence / f"prompt-{attempt['number']}.txt").write_text((Path(attempt['folder']) / 'prompt.txt').read_text())
+        (evidence / f"prompt-{attempt['number']}.txt").write_text((attempt_folder(config, job, attempt) / 'prompt.txt').read_text())
         write(evidence / f"review-{attempt['number']}.json", report)
         write(evidence / f"receipt-{attempt['number']}.json", {k: v for k, v in attempt.items() if k not in ('folder', 'review')})
         write(ledger_path, ledger)
@@ -324,7 +388,7 @@ def review(config, job_path, review_path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', required=True, help='Trusted private policy, outside Git')
+    parser.add_argument('--config', help='Explicit policy; default: learning-images.json in this checkout')
     sub = parser.add_subparsers(dest='command', required=True)
     for command in ('validate', 'prompt', 'generate', 'review', 'reconcile'):
         p = sub.add_parser(command)
@@ -334,14 +398,31 @@ def main():
         if command == 'review':
             p.add_argument('--report', required=True)
     sub.add_parser('status')
+    sub.add_parser('check')
+    sub.add_parser('init-state', help='Initialize a NEW request only; restore state for resumed work')
     args = parser.parse_args()
     try:
-        config = read(args.config)
-        if not 1 <= int(config.get('max_attempts', 3)) <= 3:
-            raise ValueError('Default executor supports at most three attempts; explicit exceptions require reviewed policy change')
-        if args.command == 'status':
-            with locked(config) as (_, _, ledger):
-                print(json.dumps({'request_id': config['request_id'], 'spent_usd': str(spent(ledger)), 'cap_usd': config['max_total_usd'], 'jobs': [{ 'id': j['id'], 'attempts': len(j['attempts']), 'state': j['attempts'][-1]['state']} for j in ledger['jobs'].values()]}, ensure_ascii=False))
+        config_path = Path(args.config).resolve() if args.config else Path(__file__).resolve().parent.parent / 'learning-images.json'
+        if not config_path.exists():
+            if args.command in ('status', 'check'):
+                print(json.dumps({'state': 'not-configured', 'setup': 'instructions/install-learning-images.md'}))
+                return 0
+            raise ValueError('No image configuration. Follow instructions/install-learning-images.md')
+        config = load_config(config_path)
+        if args.command == 'init-state':
+            print(json.dumps(initialize_state(config)))
+        elif args.command in ('status', 'check'):
+            result = status(config)
+            if args.command == 'check':
+                try:
+                    api_key(config)
+                    result['credential_available'] = True
+                except (OSError, ValueError):
+                    result['credential_available'] = False
+                result['spending_enabled'] = money(config['max_total_usd']) > 0
+                result['model'] = MODEL
+                result['repositories_exist'] = all(Path(v['repo']).is_dir() for v in config['learners'].values())
+            print(json.dumps(result, ensure_ascii=False))
         elif args.command in ('validate', 'prompt'):
             job, _ = load_job(config, args.job)
             print(compile_prompt(job) if args.command == 'prompt' else json.dumps({'valid': True, 'id': job['id']}))

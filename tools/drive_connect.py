@@ -1,4 +1,5 @@
 """One-time private Drive OAuth setup. No third-party dependencies."""
+import argparse
 import base64
 import datetime as dt
 import getpass
@@ -12,7 +13,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = Path.home() / '.config/hermes-drive'
+BASE = Path(__file__).resolve().parent.parent / '.drive-state'
 SCOPE = 'https://www.googleapis.com/auth/drive.file'
 REDIRECT = 'http://localhost:1'
 TOKEN_URI = 'https://oauth2.googleapis.com/token'
@@ -62,11 +63,18 @@ def metadata(token, ids):
     return result
 
 def main():
+    global BASE
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=['start', 'start-basic', 'finish', 'check'])
+    parser.add_argument('--config-dir', type=Path, default=BASE,
+                        help='Private credentials/state directory; default: this checkout/.drive-state')
+    args = parser.parse_args()
+    BASE = args.config_dir.expanduser().resolve()
     os.umask(0o077)
     BASE.mkdir(parents=True,exist_ok=True)
     BASE.chmod(0o700)
     client=read('client_secret.json')['installed']
-    action=sys.argv[1]
+    action=args.action
     if action in ('start', 'start-basic'):
         if (BASE/'token.json').exists():
             raise SystemExit('Token already exists; refusing to replace existing authorization.')

@@ -74,3 +74,7 @@ Before publishing, derive a separate reviewed article from these records. Remove
 ## Runnable banner and infographic path
 
 The [learning-image execution guide](learning-image-execution.md) is the canonical operational entry: versioned lesson/scope -> reviewed JSON plan -> compiled provider prompt -> one bounded call -> direct visual review -> hash-checked asset -> wiki embed/evidence. `tools/learning_image.py` implements local spending reservations, attempt persistence and review-gated copying. It does not deploy Discord roles or provide OS isolation. The private deployment record distinguishes a successful CLI trial from a live Hermes/Discord run.
+
+## Repository-only execution
+
+Use [optional image setup](install-learning-images.md) and [Drive setup](install-drive.md) directly from a Git checkout. The shared CLI programs and instructions do not depend on global agent skills. Private host inventory and historical rollout experiments are not prerequisites for a new user.

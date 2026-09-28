@@ -30,3 +30,7 @@ package-lock.json
 .env
 .env.*
 !.env.example
+
+# Private generated request state and optional Drive credentials
+.learning-images-state/
+.drive-state/

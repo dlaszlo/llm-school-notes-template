@@ -1,13 +1,13 @@
 # Hermes, bots and scheduled work
 
-Read this as part of the [system handbook](system-guide.md). It explains the proposed role model and the known deployment baseline separately. Actual settings, routes and access tests belong in the private deployment inventory; this public template contains no configured child identities or channel IDs.
+This is an optional deployment example, not a prerequisite or a statement about a new user's installation. Read it as part of the [system handbook](system-guide.md). It explains the proposed role model and the known deployment baseline separately. Actual settings, routes and access tests belong in the private deployment inventory; this public template contains no configured child identities or channel IDs.
 
 ## What each component does
 
 * A **Discord bot identity** is an application/bot token and visible sender. A display name does not grant authority.
 * A **Hermes profile** holds an agent's configuration, model/provider, effort, tools, memory and session context. Merely creating a profile does not prove filesystem isolation.
 * The **gateway** receives platform messages and selects the profile using trusted routing metadata. User/channel allowlists decide admission; profile routing does not replace admission checks.
-* A **skill** supplies task-specific instructions and helpers. The Drive skill invokes the bounded uploader through the terminal; no additional MCP server is installed for it.
+* A **skill** supplies task-specific instructions and helpers. Our optional media tools run directly from the repository through the terminal; no global skill or additional MCP server is required.
 * A **scheduler job** is an independent invocation with its own model/effort, repository, timezone, instructions and delivery target. It need not be a fifth conversational bot.
 
 ## Roles and intended model allocation
@@ -16,7 +16,7 @@ Read this as part of the [system handbook](system-guide.md). It explains the pro
 |---|---|---|---|
 | Groot | Explain existing learning material, practice and answer questions; no ingest in the separated design | GPT-6 Sol / medium | Existing shared bot currently also performs ingest; role separation pending |
 | Drax | Ingest and verify notes; choose an appropriate visual and request/create an authorized infographic | GPT-6 Astra / medium | Separate role pending |
-| Mantis | Plan, create and inspect media; deliver accepted versions and maintain their scoped links | GPT-6 Astra / high | Separate role pending; common media instructions and Drive skill available |
+| Mantis | Plan, create and inspect media; deliver accepted versions and maintain their scoped links | GPT-6 Astra / high | Separate role pending; common repository media instructions and Drive CLI available |
 | Rocket | General conversation without school repositories | GPT-6 Sol / medium | Separate role/channel pending |
 
 These are user-discussed starting choices, not a benchmark or a statement of model availability on every account. The audited shared bot used GPT-6 Astra / medium through the existing subscription provider. Verify every model/effort pair in the actual Hermes account before deployment. Image/TTS provider settings are separate from the conversational model; selecting a role model does not configure image or voice generation.
@@ -55,4 +55,4 @@ Upstream references: [profiles](https://hermes-agent.nousresearch.com/docs/user-
 
 ## Common image executor
 
-The [learning-images entrypoint](../integrations/hermes/learning-images/SKILL.md) routes to the checked-in [CLI and setup guide](learning-image-execution.md). It can be used by the current ingest bot or a later Drax/Mantis profile with trusted private configuration. The caller plans and directly views the image; the executor enforces local source/target, budget, attempt and review-hash checks. This capability does not require a new bot, and its local CLI test does not establish live gateway routing or OS separation.
+Read the checked-in [CLI and setup guide](learning-image-execution.md) directly from the selected repository; no globally installed skill is needed. It can be used by the current ingest bot or a later Drax/Mantis profile with trusted private configuration. The caller plans and directly views the image; the executor enforces local source/target, budget, attempt and review-hash checks. This capability does not require a new bot, and its local CLI test does not establish live gateway routing or OS separation.

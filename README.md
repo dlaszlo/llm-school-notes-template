@@ -21,12 +21,12 @@ Source images and relevant textbook figures are checked directly, including crop
 
 Optional [curriculum references](references/curriculum/README.md) guide relevant depth without turning every requirement into homework. Precise diagrams keep editable SVG; useful overview infographics can use a configured image generator, with checked labels/arrows and a factual image-description comment. Printable study notes are a separate A4 PDF output with selectable text and separate self-check answers. These rules do not install bots, grant account access or authorize unlimited generation.
 
-For local media experiments, copy `.env.example` to the gitignored `.env` and configure the intended models and provider key. A sample environment file does not enforce a spending cap; paid generation requires a configured limit and bounded repairs. Never commit real keys, private family plans or supplied reference collections to this public template.
+For optional generated banners and infographics, follow the [repository-local setup](instructions/install-learning-images.md). All programs and instructions run from this checkout. No global skill, Hermes installation, Discord account or machine-specific configuration is required. Ordinary notes and SVG diagrams work without paid image generation.
 
 ## Getting started
 
 1. Click **Use this template** on GitHub and create a **private** repository (notebook photos and textbooks are private working copies - see below). A repository created from a template starts with a clean history.
-2. Clone it and open it in your agent (Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md`).
+2. Clone it, install the helper dependencies with `uv sync --locked` (Python 3.10+ and [uv](https://docs.astral.sh/uv/) are needed), and open it in your agent (Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md`).
 3. Say *"Initialize the wiki"*. The agent asks for the student's first name, grade and school year, the wiki language, the audience, and which standing authorizations you want (e.g. automatic ingest and push), then records everything in `PROFILE.md`. English and Hungarian wording ship ready; other languages are translated at bootstrap.
 4. Drop notes into `sources/` under any name and ask the agent to ingest them (or let it do so automatically if you allowed that). Subjects appear with the first notes.
 
@@ -69,4 +69,4 @@ The common [media workflows](instructions/media-workflows.md), [prompts](instruc
 
 ## System handbook
 
-Start with the [complete system handbook](instructions/system-guide.md) to learn the architecture, find operating/configuration details, prepare a blog article, or follow the rebuild instructions. It covers Hermes and the bot roles, the wiki, media generation, Drive and scheduled review, with explicit implemented/planned status.
+For optional integrations, start with the [system handbook](instructions/system-guide.md) to learn the architecture, find operating/configuration details, prepare a blog article, or follow the rebuild instructions. It covers Hermes and the bot roles, the wiki, media generation, Drive and scheduled review, with explicit implemented/planned status.

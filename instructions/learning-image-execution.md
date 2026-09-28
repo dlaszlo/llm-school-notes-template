@@ -6,19 +6,19 @@ This is the runnable banner/infographic path. The author reads the relevant [wor
 
 From the configured repository, run `uv sync --locked`. Python 3.10+, Pillow and Linux `flock` are sufficient. Keep the OpenRouter key in a protected file outside Git or the environment. The selected provider/model is `openai/gpt-image-2.5-sunburst`, fixed in the executor; no silent provider fallback. The [OpenRouter image API](https://openrouter.ai/docs/guides/overview/multimodal/image-generation) returns an inline raster and usage metadata. A missing cost or interrupted response is unresolved, not free.
 
-Create a trusted private policy, for example `~/.config/school-media/history.json`, with owner-only permissions. Configure actual absolute paths and an explicitly authorized request scope; these placeholders are not an initialized template:
+Start with [repository-local setup](install-learning-images.md). Copy `learning-images.example.json` to `learning-images.json` and configure your own authorized request. This nonsecret, repository-specific policy is tracked in your private wiki; paths are relative to the policy file. Keys and runtime state stay ignored. `--config` also supports explicit legacy absolute policies; there is no global discovery fallback. Example:
 
 ```json
 {
   "request_id": "authorized-request-id",
-  "env_file": "/private/path/openrouter.env",
-  "state_dir": "/private/persistent/state/authorized-request-id",
+  "env_file": ".env",
+  "state_dir": ".learning-images-state",
   "max_total_usd": "3.00",
   "reservation_usd": "0.25",
   "max_attempts": 3,
   "learners": {
     "configured-learner": {
-      "repo": "/private/path/learner-repository",
+      "repo": ".",
       "targets": ["wiki/subject/topic.md"],
       "max_usd": "3.00"
     }
@@ -41,6 +41,7 @@ Store a reviewed job in the learner repository's private `docs/evidence/media/<i
   "role": "banner",
   "sources": [{"path": "wiki/subject/topic.md", "sha256": "actual-sha256"}],
   "plan": {
+    "language": "English",
     "goal": "The concrete learner task",
     "scope": "Relative scope-record reference and selected depth",
     "decision_reason": "Why this image helps",
@@ -89,10 +90,14 @@ Review rejection permits one targeted repair with `generate --repair /private/re
 * The path/target and spending checks are cooperative guardrails. An unrestricted shell user with the key can bypass them. This is not OS isolation or proof that separate Hermes role profiles are deployed.
 * Run `uv run python -m unittest discover -s tools -p test_learning_image.py` after executor changes. The synthetic suite exercises retries, unknown charges, bounds, changed sources, path/learner rejection, concurrency and review-hash checks. A live job additionally proves the configured provider path; it does not prove future error-free outputs or Discord routing.
 
-For Hermes, install the [thin skill entrypoint](../integrations/hermes/learning-images/SKILL.md) into the selected profile's skills directory (copy the file into a `learning-images` directory). Configure the trusted policy location in private deployment settings. Keep the repository tools current; do not duplicate the CLI into another unversioned script. The generic template supplies no credentials, child IDs or private references.
+Any agent with repository access and a terminal can follow this guide directly. No installed skill is required. Read AGENTS.md and PROFILE.md from the selected repository, then invoke its checked-in CLI. The default policy is that checkout's learning-images.json, regardless of the current shell directory. The job path is an ordinary command-line path; use the repository directory or an absolute job path.
 
-## Active deployment discovery
+## State, relocation and compatibility
 
-An installed agent locates private policies through `~/.config/school-media/active.json`, maintained by the operator. Use a `requests` list containing `request_id`, absolute `policy`, allowed `learners`, and a short scope description. Do not store keys there or infer new authorization from an entry. Keep the installed skill equal to the versioned entrypoint and store deployment-specific settings separately.
+`status` and `check` are read-only and work without credentials. A missing configuration reports `not-configured`; a missing ledger reports `not-initialized`, never a fresh available balance. `validate` and `prompt` do not create state. For a genuinely new authorized request, explicitly run `uv run tools/learning_image.py init-state`. For resumed work restore the entire existing state tree instead. Initialization refuses a different existing request or artifacts with a missing ledger.
 
-When moving execution between machines, retain one writable budget authority. Either migrate the complete ledger with verified artifact paths or freeze the previous executor and allocate only the unspent remainder to the new one. Record the previous spent amount, the frozen policy and the new cap; their sum must stay within the original authorization. Never leave two independent executors each able to spend the original full cap. Test discovery with the installed runtime registry, source validation, rejected targets and a real reviewed image. A terminal/API test is distinct from a Discord conversation test.
+Back up the ledger and attempt artifacts together. Artifact lookup uses `<state_dir>/<job-id>/<attempt-number>`, so a restored complete tree works at a new path. Legacy absolute `folder` values are retained as history, not followed as filesystem authority. New records use relative folder paths. Missing artifacts or unknown charges block recovery rather than granting a fresh attempt. Never change a request ID to evade limits. Keep only one active executor per request.
+
+Do not modify an attempted job to add a language field: its hash must remain stable. Existing jobs without `language` retain Hungarian behavior; new jobs specify their output language. The supported image model remains fixed as documented, independent of unused environment variables.
+
+On code rollback, preserve secrets and spending state. Pre-1.13 executors do not understand newly written relative folder fields; do not run them against new state. A rollback after new attempts requires an explicitly reviewed compatibility migration with a preserved original snapshot, not deletion/reset of records.

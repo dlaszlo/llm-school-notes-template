@@ -23,6 +23,7 @@ class ExecutorTest(unittest.TestCase):
         self.path = self.root / 'job.json'
         self.save()
         self.calls = 0
+        m.initialize_state(self.config)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -46,11 +47,12 @@ class ExecutorTest(unittest.TestCase):
     def test_missing_credential_fails_before_reservation_or_network(self):
         empty=self.root/'empty.env';empty.write_text('OPENROUTER_API_KEY=\n')
         self.config['env_file']=str(empty)
+        before=(self.root/'state/ledger.json').read_bytes()
         with patch.dict(m.os.environ,{},clear=True), patch.object(m.urllib.request,'build_opener') as network:
             with self.assertRaisesRegex(ValueError,'Missing OPENROUTER_API_KEY'):
                 m.run_generate(self.config,self.path)
             network.assert_not_called()
-        self.assertFalse((self.root/'state/ledger.json').exists())
+        self.assertEqual((self.root/'state/ledger.json').read_bytes(),before)
 
     def test_duplicate_does_not_spend_and_requires_review(self):
         r=self.generate();self.assertEqual(self.generate()['state'],'generated');self.assertEqual(self.calls,1)
@@ -131,6 +133,70 @@ class ExecutorTest(unittest.TestCase):
         self.assertNotIn(str(self.repo),text)
         self.assertNotIn('wiki/history',text)
         self.assertNotIn('child',text)
+
+    def test_missing_state_blocks_generation_and_readonly_status(self):
+        other = self.root/'missing-state'
+        self.config['state_dir'] = str(other)
+        self.assertEqual(m.status(self.config)['state'], 'not-initialized')
+        self.assertFalse(other.exists())
+        with self.assertRaisesRegex(ValueError, 'State missing'):
+            self.generate()
+        self.assertEqual(self.calls, 0)
+        self.assertFalse(other.exists())
+
+    def test_initialize_preserves_existing_request_and_refuses_partial_restore(self):
+        self.generate()
+        original = (self.root/'state/ledger.json').read_bytes()
+        self.assertEqual(m.initialize_state(self.config)['state'], 'already-initialized')
+        self.assertEqual((self.root/'state/ledger.json').read_bytes(), original)
+        (self.root/'state/ledger.json').unlink()
+        with self.assertRaisesRegex(ValueError, 'artifacts exist'):
+            m.initialize_state(self.config)
+
+    def test_relative_config_does_not_use_home(self):
+        cfg = self.root/'learning-images.json'
+        value = dict(self.config, state_dir='state', env_file='.env',
+                     learners={'child': {'repo': 'repo', 'targets': [self.job['target']], 'max_usd': '1'}})
+        m.write(cfg, value)
+        loaded = m.load_config(cfg)
+        self.assertEqual(loaded['state_dir'], str(self.root/'state'))
+        self.assertEqual(loaded['env_file'], str(self.root/'.env'))
+        self.assertEqual(loaded['learners']['child']['repo'], str(self.repo))
+
+    def test_relocated_state_preserves_cost_review_and_reuse(self):
+        import shutil
+        r = self.generate()
+        ledger_path = self.root/'state/ledger.json'
+        ledger = m.read(ledger_path)
+        # A legacy absolute folder is ignored; use the canonical restored tree.
+        ledger['jobs'][self.job['id']]['attempts'][0]['folder'] = '/missing/old/machine/path'
+        m.write(ledger_path, ledger)
+        moved = self.root/'relocated'
+        shutil.move(self.root/'state', moved)
+        self.config['state_dir'] = str(moved)
+        pending = self.generate()
+        self.assertEqual(self.calls, 1)
+        self.assertEqual(Path(pending['folder']), moved/self.job['id']/'1')
+        m.review(self.config, self.path, self.report(r))
+        self.assertTrue(self.generate()['reused'])
+        self.assertEqual(m.status(self.config)['spent_usd'], '0.1')
+        self.assertEqual(self.calls, 1)
+
+    def test_relocated_unknown_still_blocks(self):
+        import shutil
+        def fail(payload, config): raise TimeoutError()
+        with self.assertRaises(ValueError):
+            m.run_generate(self.config, self.path, transport=fail)
+        moved = self.root/'relocated'
+        shutil.move(self.root/'state', moved)
+        self.config['state_dir'] = str(moved)
+        with self.assertRaisesRegex(ValueError, 'Reconcile'):
+            self.generate()
+
+    def test_explicit_language_and_no_implicit_model_setting(self):
+        self.job['plan']['language'] = 'English'
+        self.assertIn('English nyelven', m.compile_prompt(self.job))
+        self.assertNotIn('magyar nyelven', m.compile_prompt(self.job))
 
 
 if __name__=='__main__':unittest.main()

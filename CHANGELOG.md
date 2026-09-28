@@ -2,6 +2,16 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.0 - 2026-09-28
+
+* Optional image generation now starts from a repository-owned nonsecret policy and disabled example; relative paths resolve against that policy. No global active index or installed agent skill is required. Explicit legacy `--config` remains supported.
+* Added read-only `check`/`status`, explicit new-request state initialization, portable attempt-artifact lookup and cold-start command-line tests. Missing state never grants a fresh balance. Existing request history and unknown charges survive relocation.
+* New jobs may specify output language; old jobs preserve their original prompt. Clarified the fixed supported image model instead of advertising an ignored environment setting.
+* Drive programs run directly from the checkout, with optional `--config-dir` for existing private credentials/state; fresh setups default to ignored project state. No credential migration is implicit.
+* Removed global image/Drive skill adapters and the image-skill installer. Their instruction content is available in repository guides; no teaching rule was removed. Removed the Hermes-specific deployment paragraph from AGENTS.md: installation/security procedures belong in installation documentation, not the agent-neutral lesson rules.
+* **Migration**: synchronize this shared release through Git, remove the two obsolete skill adapters, image installer and its test from initialized repositories, and update profile references. Keep local policy, secrets and persistent state separate from shared files. Existing global adapters require a separately recorded, exact-binding cleanup; never remove unrelated skills or reset accounts. Do not overwrite a local credential file from the changed `.env.example`.
+* **Rollback**: repository changes are reversible through Git. Preserve all state and credentials. Pre-1.13 image code cannot read new relative attempt folders without a reviewed path-only compatibility migration; do not roll back and discard the ledger.
+
 ## 1.12.2 - 2026-09-28
 
 * Require Git deployment for all repository content; only Hermes-local configuration is an exception. This replaces the ad hoc terminal-copy path used in the pilot, not the content or spending rules.

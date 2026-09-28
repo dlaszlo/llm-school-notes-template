@@ -10,9 +10,9 @@ This is the maintained entry point for rebuilding the school-note system. It dis
 | Python note tools | pyproject.toml and uv.lock | Implemented; use uv run, not system pip |
 | Curriculum references | Learner's own professional package, general reference package, supplied hashes and catalog | Implemented; raw references remain private; never copy the other learner's package |
 | Hermes base runtime | Recorded Hermes Git commit, package-manager lock and private configuration | Existing deployment; a fresh full-machine rebuild has not yet been exercised |
-| Drive authentication, upload and skill | [Drive installation](install-drive.md) | Implemented and tested against two configured destinations |
+| Drive authentication and upload | [Drive installation](install-drive.md) | Repository CLI available; validate your own configured destinations |
 | Separate learner/role executors, Discord identities and routing | Approved private bot plan plus future deployment record | Planned; shared-profile access is not isolation |
-| Media generation and bounded spending | Common image executor, installed skill, private active-policy index and persistent budget state | Banner/infographic CLI implemented; verify each deployment separately from Discord automation |
+| Media generation and bounded spending | Repository image executor, project policy and persistent budget state | Banner/infographic CLI implemented; verify each deployment separately from Discord automation |
 | Nightly review and correction | Private scheduler record, timezone, repository, model/effort and trusted channel IDs | Existing jobs audited separately; profile migration still pending |
 | OAuth informational website | Public app description and actual privacy page on an owned domain | Deferred by user; not part of the Drive data path |
 
@@ -20,7 +20,7 @@ This is the maintained entry point for rebuilding the school-note system. It dis
 
 Use a dedicated Linux service account, persistent storage and working HTTPS/DNS. Record the OS release, architecture, timezone, system Python and the actual Hermes runtime interpreter separately. The Drive helper uses only the Python standard library on Linux and needs Python 3.10+; Hermes has its own managed runtime and dependencies. Do not infer that invoking the managed Python binary directly activates Hermes packages.
 
-Install Hermes using its [official installer and service-user instructions](https://hermes-agent.nousresearch.com/docs/getting-started/installation/). Save the installer and its hash, the resulting Git commit and package-manager lock with the deployment record. The moving installer URL is not an exact-version pin. The existing audited baseline is Hermes `d0288be5b3330d2442e3907185b8e9d0958297bb`; use the matching upstream installation/PM instructions when rebuilding that version, and verify the resulting commit rather than silently installing the latest version. This document does not claim a clean-machine reproduction of that baseline has already passed.
+Install Hermes using its [official installer and service-user instructions](https://hermes-agent.nousresearch.com/docs/getting-started/installation/). Save the installer and its hash, the resulting Git commit and package-manager lock with the deployment record. The moving installer URL is not an exact-version pin. Keep the actual installed Hermes commit in your private deployment inventory; use the matching upstream installation instructions when rebuilding it and verify the resulting revision. This document does not claim a clean-machine reproduction of that baseline has already passed.
 
 Clone the public template from `https://github.com/dlaszlo/llm-school-notes-template`; record the exact checkout commit. Keep it uninitialized. Create or restore separate child repositories and their local profiles. A new repository follows AGENTS.md Bootstrap; a restored one retains its original settings and content. Run:
 
@@ -51,6 +51,4 @@ Rebuild on an empty machine from the pinned inputs, restore or freshly authorize
 
 ## Banner and infographic executor
 
-Use the [Git-only image installation procedure](install-learning-images.md). Repository content travels through Git; only Hermes-local configuration is set up outside it. The versioned installer binds the committed skill without copying runtime code.
-
-Run `uv sync --locked` in the chosen repository, then follow [learning-image execution](learning-image-execution.md) to create private policy/credential locations and persistent state. Use the checked-in Hermes skill entrypoint with the same repository CLI, without an unversioned script copy. Run the synthetic suite, validate a source-pinned job, inspect its prompt, execute one authorized real image, inspect it directly and save its hash-bound review. Record the actual code commit, paths, cost, output and checks in the private deployment record. Do not claim a live Discord invocation from a local CLI trial. Recovery uses saved responses and the same ledger; rollback restores the previous skill/tool revision while preserving attempts and costs.
+Follow [repository-local setup](install-learning-images.md). All executable code and instructions remain in a Git checkout. No global skill or agent-program modification is required. Test the ordinary unconfigured wiki first; then configure only the requested optional services. Actual private credentials and historical state are separate restore inputs and never supplied by a clone.

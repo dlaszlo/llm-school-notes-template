@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Upload checked artifacts to configured Drive folders; no sharing/delete API.
 
-Requires Python 3.10+, Linux, and private ~/.config/hermes-drive/{token,uploader}.json.
+Requires Python 3.10+, Linux, and private configured {token,uploader}.json.
 This CLI constrains its own operations, not an agent with unrestricted shell access.
 """
 import argparse
@@ -273,9 +273,10 @@ def main():
     parser.add_argument('--learner', required=True)
     parser.add_argument('--request-id')
     parser.add_argument('--file', type=Path)
+    parser.add_argument('--config-dir', type=Path, default=Path(__file__).resolve().parent.parent / '.drive-state', help='Private config/state directory; no global skill required')
     args = parser.parse_args()
     os.umask(0o077)
-    home = Path.home() / '.config/hermes-drive'
+    home = args.config_dir.expanduser().resolve()
     try:
         config = private_json(home / 'uploader.json')
         dest = target(config, args.learner)
