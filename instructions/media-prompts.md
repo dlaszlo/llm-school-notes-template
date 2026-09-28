@@ -28,10 +28,11 @@ Ha egy nélkülözhetetlen hiány nem tisztázható a rendelkezésre álló bizo
 A lecke érvényes SCOPE–GOAL–BRIDGE–CORE–OPTIONAL döntéséből válassz képi célt.
 Döntés: meglévő kép / pontos SVG-kód / új tanító infografika / nincs új kép; bannernél konkrét bevezető szerep, kapcsolódó motívum vagy dekoráció.
 Indokold a hozzáadott tanulási értéket. Két képet csak két külön, hasznos tanulói feladathoz tervezz.
+A füzet és a tanulandó tanári anyag minden tananyagot hordozó műszaki rajzát vedd át pontos, szerkeszthető SVG/kód formában. A forrásábrák eseteit, jelöléseit, méreteit, irányait és feltételeit vesd össze a kész oldal ábráival; a lefedettséget a meglévő ellenőrzési rekordban rögzítsd. Bizonytalan részletet ellenőrizz vagy jelölj nyitottnak, ne hagyd el és ne találd ki. A generált infografika ehhez csak indokolt kiegészítés lehet, bármely tantárgynál.
 Írd meg a képen látható kontextust: mi ez a rendszer, tárgy vagy szöveg; mi a kérdés; mit jelent a nélkülözhetetlen fogalom vagy számozott hivatkozás.
 A kötelező szöveget végleges formában, olvasási sorrendben add meg. A generátor ne válasszon tényeket, példát vagy prioritást.
 A sorrend jelentését, összehasonlítás szempontjait, csoportosítást, topológiát vagy metaforát csak akkor részletezd, ha a választott kép használja. MÁS/ELSE: tervezz indokolt új vagy vegyes megjelenítést.
-Példánál rögzítsd az ellenőrzött esetet, feltételeket, következményt és megengedett tanulságot. Mérlegeld, hogy az elv másik esete jobban tanítja-e az általánosítást.
+Példánál rögzítsd az ellenőrzött esetet, feltételeket, következményt és megengedett tanulságot. Válassz életszerű, felismerhető problémát vagy különbséget: miért számít itt a tanított összefüggés? Hasonlíts össze lehetséges példákat; a fizikailag helyes, de a hasznot elfedő vagy mesterkélt helyzet helyett válassz egyértelműbbet. Ez a szemléltető bannerre is érvényes. Mérlegeld, hogy az elv másik esete jobban tanítja-e az általánosítást.
 A szolgáltatónak átadott prompt: cél/felhasználás; látható bevezetés; pontos kötelező tartalom és kompozíció; opcionális motívumok; stílus/méret; releváns korlátok. A privát profil, forrásútvonalak és belső munkalap maradjanak a munkarekordban.
 ```
 
@@ -120,6 +121,7 @@ Vizsgáld meg a {tenyleges_kimenet} teljes tartalmát. Az összehasonlítás ala
 Először ellenőrizd, hogy a szerződés hű-e a forrásokhoz; a hibás tervet a pontos képgenerálás sem javítja meg.
 Keresd a kihagyott CORE-elemeket, hozzáadott állításokat, elveszett feltételeket, hibás neveket/számokat, képi irányokat, magyarázat nélkül használt fogalmakat és ugrásokat.
 Vizsgáld meg, hogy a scope vállalt mélysége, magja és szükséges hídja megmaradt-e, és nem lett-e opcionális részletből kötelező tananyag. Példánál a tanulság következzen a látható esetből; metafora ne váljon hamis tényállítássá.
+Ellenőrizd, hogy a forrás minden tananyagot hordozó műszaki rajza és külön esete megmaradt-e pontos formában; egy infografika nem számít a műszaki rajz átvételének. A szemléltető jelenetben tényleg felismerhető-e a probléma vagy különbség, amely miatt az összefüggés fontos?
 Válaszold meg kizárólag a kész anyagból a tanulási célt és a kulcskérdéseket. Ne egészítsd ki fejben hiányzó háttértudással. A modell válasza ellenőrzési jelzés, nem tanulói megértés bizonyítéka.
 Képnél értékeld a formát a tanulói feladat alapján: a látható képből megoldható-e a vállalt feladat? Ne követelj kapcsolati hálót attól, ami más természetű tartalmat tanít. Formafüggően ellenőrizd a részek azonosítását, térbeli helyeket, időrendet, összehasonlítási szempontokat, arányokat, skálákat vagy folyamatlépéseket.
 MINDEN tényleges nyilat külön vizsgálj: mit jelent; honnan indul; hol és merre áll a nyílhegy; mi a célja; mely felirat és feltétel tartozik hozzá. A tartalmi kapcsolatot a forrás igazolja; a megnevező jelölés a helyes tárgyrészhez mutasson. Keresd a hiányzó, többlet-, fordított, tévesen kétirányú és félreérthető nyilakat. A helyes nyíllista önmagában nem bizonyít jó tanulási tervet.

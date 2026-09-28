@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.2 - 2026-09-28
+
+* Preserve every instructional technical drawing from notebook/teacher material in precise editable form, with source-to-page coverage checks. Generated infographics may add understanding but never replace those drawings; the rule applies across subjects.
+* Choose realistic illustrative examples whose problem or contrast makes the taught relationship useful. Apply the same criterion during planning and final-image review, including banners.
+* **Migration**: synchronize the shared files and record the template revision. No automatic regeneration or broad content rewrite is required; apply coverage checks when ingesting or changing the relevant pages.
+
 ## 1.13.1 - 2026-09-28
 
 * Removed the remaining system-deployment documentation mandate from AGENTS.md. Daily note workflows stay in the agent rules; installation, configuration and rollback documentation remain discoverable through README and the system handbook.
