@@ -101,6 +101,16 @@ class ExecutorTest(unittest.TestCase):
         self.assertTrue((self.repo / accepted['path']).exists())
         self.assertEqual(m.read_ledger(self.config)['jobs'][self.job['id']]['revisions'][0]['previous_job']['plan']['visible_text'], ['Title'])
 
+    def test_revision_keeps_verified_original_when_old_publication_was_compressed(self):
+        result = self.generate()
+        accepted = m.review(self.config, self.path, self.report(result))
+        (self.repo / accepted['path']).unlink()
+        previous = self.root / 'previous.json'
+        m.write(previous, self.job)
+        event = m.revise(self.config, previous, self.path, 'Later review after lossless compression')
+        self.assertEqual(event['attempts_used'], 1)
+        self.assertEqual(event['total_usd'], '0.1')
+
     def test_revision_cannot_reset_attempts_or_budget_or_identity(self):
         result = self.generate()
         m.review(self.config, self.path, self.report(result))

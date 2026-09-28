@@ -390,8 +390,11 @@ def revise(config, previous_job_path, job_path, reason):
             raise ValueError('Revision cannot exceed the existing spending bounds')
         accepted = entry['accepted']
         output = within(repo, accepted['path'])
-        if sha(output) != accepted.get('published_sha256', accepted['sha256']):
-            raise ValueError('Previously published image changed or is missing')
+        if output.exists() and sha(output) != accepted.get('published_sha256', accepted['sha256']):
+            raise ValueError('Previously published image changed')
+        original = next((a for a in entry['attempts'] if a.get('sha256') == accepted['sha256']), None)
+        if original is None or sha(attempt_folder(config, job, original) / 'image.png') != accepted['sha256']:
+            raise ValueError('Previously accepted original is missing or changed')
         revision = {'number': len(entry.get('revisions', [])) + 1,
                     'opened_at': now(), 'reason': reason.strip(),
                     'previous_job': previous, 'previous_fingerprint': entry['fingerprint'],
