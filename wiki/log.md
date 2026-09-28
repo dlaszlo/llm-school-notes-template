@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: Shared release [1.11.8](../CHANGELOG.md) adds opening and closing breathing room only inside [expandable answers](../instructions/note-formatting.md). Closed questions remain compact; the template stays uninitialized.
+
 * **Update**: Shared release [1.11.7](../CHANGELOG.md) distinguishes sourced visual content from image-maker credit and tightens [expandable-answer spacing and indentation](../instructions/note-formatting.md). The template remains uninitialized.
 
 * **Update**: Shared release [1.11.6](../CHANGELOG.md) defines semantic icons plus machine-authorship labels and compact, spacious [Markdown patterns](../instructions/note-formatting.md). This is a staged formatting change; the template stays uninitialized.

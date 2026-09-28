@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.8 - 2026-09-28
+
+* Added one opening break and two closing breaks inside expandable answers, following the user's GitHub preview feedback. Closed questions remain compact; spacing within multi-part answers stays unchanged.
+* **Migration**: synchronize the shared rule and examples, then update only the two authorized preview pages. No teaching content or image changes.
+
 ## 1.11.7 - 2026-09-28
 
 * Clarified that image generation is not itself an agent-added explanation. Replaced the blanket image author footer from 1.11.6 with scoped content provenance; technical maker credits stay in evidence/comments.

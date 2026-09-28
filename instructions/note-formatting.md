@@ -45,13 +45,15 @@ Use one standalone `<br />` between substantial sections or adjacent callout blo
 
 <dl><dd>
 
+<br />
+
 Az egyszerű, forráshű válasz itt áll, robotcímke nélkül.
 
 A válaszhoz szükséges külön magyarázat.<br /><sub>💡 Drax🤖 magyarázata</sub>
 
 A forrásban szereplő hiba helyesbítése, az indokával és hivatkozásával.<br /><sub>⚠️ Drax🤖 javítása</sub>
 
-<br />
+<br /><br />
 
 </dd></dl>
 
@@ -61,16 +63,18 @@ A forrásban szereplő hiba helyesbítése, az indokával és hivatkozásával.<
 
 <dl><dd>
 
+<br />
+
 A rövid válasz.
 
-<br />
+<br /><br />
 
 </dd></dl>
 
 </details>
 ```
 
-The questions remain compact when closed. The `<dl><dd>` wrapper indents only the opened answer using ordinary HTML, without a code block, visible bullet or quote color. Preserve blank lines so the answer remains Markdown. Exact indentation is viewer-dependent. Within one answer use ordinary paragraphs, not an extra standalone `<br />` between explanation and source passage; reserve at most one such break for the answer end inside the wrapper. A question does not acquire an agent label merely because it was generated. Do not put alert syntax inside the disclosure. Preserve the distinction between the taught answer and a separate optional explanation or correction.
+The questions remain compact when closed. The `<dl><dd>` wrapper indents only the opened answer using ordinary HTML, without a code block, visible bullet or quote color. Preserve blank lines so the answer remains Markdown. Exact indentation is viewer-dependent. Within one answer use ordinary paragraphs, not an extra standalone `<br />` between explanation and source passage; use one standalone `<br />` before the first answer paragraph and `<br /><br />` after the last paragraph, inside the wrapper. These boundary spacers are the explicit exception to avoiding stacked breaks elsewhere. Both are inside `<details>`: when closed, neither affects the spacing between questions. A question does not acquire an agent label merely because it was generated. Do not put alert syntax inside the disclosure. Preserve the distinction between the taught answer and a separate optional explanation or correction.
 
 ## Explanatory images and exports
 
