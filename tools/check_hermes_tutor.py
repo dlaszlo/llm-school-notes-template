@@ -123,9 +123,10 @@ def main():
             # Contains synthetic probe paths only, never a real secret's contents.
             print(json.dumps({'snapshot_read_error': result}))
 
-        # Inspect only containers of this profile; do not change or stop others.
+        # Inspect only this profile's probe task, not concurrent tutoring sessions.
         ids = subprocess.check_output(['docker', 'ps', '-q', '--filter',
-                                       f'label=hermes-profile={home.name}'], text=True).split()
+                                       f'label=hermes-profile={home.name}', '--filter',
+                                       'label=hermes-task-id=default'], text=True).split()
         inspections = json.loads(subprocess.check_output(['docker', 'inspect', *ids], text=True)) if ids else []
         checks['container_found'] = bool(inspections)
         containers = []

@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.2 - 2026-09-28
+
+* Added an opt-in Hermes Docker tutor integration probe: actual file reads/write denial, cross-checkout and host canaries, local-image resolution, effective tools and container mounts. It uses the installed Hermes runtime without changing it or calling a model.
+* Documented invocation, native profile scratch/cache mounts, test limits and the distinction between a configured tutor pilot and a deployed Discord bot. The probe's synthetic host fixture is explicitly outside Hermes's redirected temporary cache.
+* **Migration**: synchronize the shared files and record the revision. Hermes and Docker remain optional; the probe is operator-invoked, not a daily note workflow. No automatic installation, profile activation or lesson change.
+
 ## 1.14.1 - 2026-09-28
 
 * Added short repository-owned `study-notes`, `ingest-notes` and `learning-media` skill entries alongside `learning-visuals`. Existing shared policies remain their authoritative references; no global skill installation is required.

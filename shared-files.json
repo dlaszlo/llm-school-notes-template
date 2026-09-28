@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -93,6 +93,7 @@
     ".agents/skills/study-notes/SKILL.md",
     ".agents/skills/ingest-notes/SKILL.md",
     ".agents/skills/learning-media/SKILL.md",
-    "instructions/agent-capabilities.md"
+    "instructions/agent-capabilities.md",
+    "tools/check_hermes_tutor.py"
   ]
 }

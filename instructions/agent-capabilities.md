@@ -61,4 +61,26 @@ Prepare and review the actual machine-local configuration before applying it. A 
 
 An execution backend such as Docker is one supported isolation option, not a template dependency. Container-network restrictions do not by themselves disable host-side provider calls. Test the chosen configuration end to end before claiming isolation.
 
+### Reproducible access probe
+
+The optional [check_hermes_tutor.py](../tools/check_hermes_tutor.py) runs on the operator's host with the installed Hermes Python runtime. It imports that installation's configuration resolver and actual tool handlers, creates temporary synthetic fixtures, checks them through the configured Docker backend, then removes the fixtures. It does not install software, change configuration, call a model or inspect real secret contents. Read its prerequisites before running it; it deliberately depends on audited Hermes internal interfaces, and an incompatible version requires a fresh audit.
+
+Use a separate, disconnected non-default profile, a fresh learner Git snapshot without `.env`, and a different checkout for the sibling-canary test. The profile must explicitly configure Docker, one snapshot bind mount at the same absolute path with `:ro`, no forwarded environment, no network, and no automatic current-directory mount. Check native profile cache/scratch mounts too. The probe permits its profile's read-only media/skill directories and the native per-task scratch home/workspace; it does not permit mounting the whole Hermes profile or host home. The scratch directories are writable working space, not access to the real host home.
+
+From the Git checkout, substitute the locally discovered paths:
+
+```sh
+/path/to/hermes-python -I tools/check_hermes_tutor.py \
+  --hermes-root /path/to/hermes-agent \
+  --profile-home /path/to/.hermes/profiles/tutor-pilot \
+  --snapshot /path/to/readonly/learner-notes \
+  --other-repo /path/to/other-notes
+```
+
+Use the ordinary Hermes user's Docker permissions, not a root-owned Hermes session. `hermes --print-runtime-command` identifies the runtime in installations that support it. A new login or `sg docker -c '<command>'` activates newly granted group membership for the pilot without restarting the existing gateway. This is an operator action, not a tool exposed to the tutor.
+
+The JSON result records individual checks, resolved tools, mount paths, environment variable **names**, and the configuration hash. It first proves an allowed read works; a broken backend cannot pass merely by denying every operation. Temporary fixtures are created under ignored `.visual-runs/` in the two checkouts and under `/var/tmp` on the host. Hermes may redirect Python's default temporary directory to its own permitted media cache; that cache is not a valid denied-host fixture. The image checks exercise the real image-source resolver without a paid semantic vision call.
+
+After a pass, run a bounded, source-linked study question with the normal profile CLI and verify tool events, answer and unchanged repository state. Confirm selected model/effort through actual execution. A passing probe does not prove all future tools, arbitrary sandbox escapes, Discord routing, semantic image accuracy or a hard disk quota. The native Docker backend may retain its labeled test container and profile-local scratch after the process exits; record and stop that pilot container when done, without touching other containers. A storage-driver warning about missing disk quotas must remain visible in the deployment record.
+
 For rollback, disconnect the new route/profile first, stop its test session/container and restore only the configuration changed in that step. Remove a runtime only after checking that no other service uses it. Leave the existing gateway, learner history, provider state and source repositories intact. Record tests, limits, pending approval and the next stage in the [system inventory](system-guide.md#documentation-contract-for-every-change).
