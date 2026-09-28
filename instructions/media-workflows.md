@@ -42,25 +42,11 @@ In the job, put the learner operation in `goal`, viewpoint/hierarchy/layout in `
 
 The repertoire stays open. For example, a grammatical analysis may need exact node relationships or word boundaries while its usage context benefits from an infographic; a mathematical or economic graph needs correct axes and conditions while an adjacent overview can explain applications. Statics may combine a precise force diagram with a scene showing the problem it models. A historical map or a literary rhythm scheme can need precision too. These are decision examples, not curriculum obligations or a closed subject list. Use the current lesson and, only for unresolved depth/relevance questions, the applicable curriculum passages.
 
-For precision-dependent details in any visual, use the [technical visual guide](technical-visuals.md): choose source/parameter/geometry/notation checks before production, then inspect the final export. For requested sample reviews, keep human viewing/acceptance separate from machine verification.
+Once the learning task is established, use the [visual selection guide](technical-visuals.md) to choose and specify the representation and production method, then apply its relevant semantic/numerical/geometric and export checks. Reuse this workflow’s compact plan; do not create a second decision record. For requested sample reviews, keep human viewing/acceptance separate from machine verification.
 
 ## Infographic
 
-Start with what the learner needs to recognize, explain, compare or do and which content must become visible. Select the form from that task and actual reading size, not from a preferred topology. This open repertoire offers examples, not an exhaustive taxonomy or subject mapping:
-
-| Learning task | Possible visual form |
-|---|---|
-| Recognize something or identify parts | Annotated object/scene, cutaway, detail enlargement |
-| Locate something in space | Map, plan, spatial section |
-| Locate events in time or follow change | Timeline, parallel time bands, states over time |
-| Compare | Matched views, comparison table or panels with the same criteria |
-| Understand quantities, proportions or trends | Accurate chart, scale or part-whole diagram |
-| Classify | Groups, hierarchy or set diagram |
-| Follow a procedure or transformation | Steps, state transition, conditional branch or worked example |
-| Understand why something happens | Explanatory scene or causal mechanism |
-| Understand a connected system | Hub-and-spoke, network, true cycle or mixed structure |
-
-**OTHER / ELSE:** if none fits, identify the actual learning task and content nature, then justify a custom or mixed representation. If a new image adds no meaningful learning value, reuse a suitable existing visual or prefer the text/table without generating an image. A mixed view needs a clear main purpose and explicit connections between its parts; more views are not automatically better. [Research basis and limitations](media-design-rationale.md).
+Start with the learner operation and content established by this workflow. Use the [visual selection guide](technical-visuals.md) for representation, available tool capabilities, concrete drawing specification and relevant checks; this is the single detailed selection policy for authored and generated visuals alike. Its examples are open, not a subject/type whitelist. An infographic can be the primary explanation when it best serves the task. A mixed view needs explicit relationships between its parts, and no new image is required when it adds no learning value. [Research basis and limitations](media-design-rationale.md).
 
 1. Record a compact plan before paid generation: learning goal/main message, chosen form and reason, composition/reading order, exact labels, essential claims with source locations and conditions, size, context and format-specific checks. Detail only fields relevant to the task. Compare an available accepted example for the same learning purpose without copying an unsuitable layout. Keep precision-dependent geometry, formal/linguistic structure, symbols and quantitative charts on checkable editable foundations, preserving their source coverage. Use the relevant [design decisions](#banner-and-infographic-design-decisions) for the composition and style.
 2. **Only where relationships matter:** identify their meaning, endpoints, directed/undirected nature and conditions. A hub with reciprocal exchanges is not automatically a cycle. A true cycle, path, hierarchy or complex network should reflect the evidence. Grouping must not sever meaningful relationships; split into panels only when this aids the task and their relationship remains explicit. Keep participants and notation consistent. Use no arrowhead for an undirected relationship, one at the receiving end for a one-way relationship, and separate labeled arrows for reciprocal flows with different meanings. Distinguish a part-label leader line, an order marker and a substantive relationship; none is a decorative arrow.
@@ -117,20 +103,13 @@ Large audio/PDF/image artifacts use the configured protected media store, such a
 
 The author chooses the content before invoking the image model. Start from the current lesson and its scope record: goal, required core, prerequisite bridge, optional depth and source versions. Reuse an applicable decision; do not repeat curriculum retrieval for each banner or format. Read fresh requirement passages only when priority, depth or applicability remains uncertain. Scope and requirement hashes stay in the private record, not in the provider prompt.
 
-Record a compact plan: goal; scope reference; required precise representations and optional additional imagery (reuse/new/no new image); learning value; exact source locations and conditions; visible introduction; final mandatory labels and visual claims; example if useful; composition/reading order; optional motifs; production method; final size and QA. Preserve precision-dependent teaching structures in checkable editable form; an additional infographic is possible in any subject. Apply the relevant [design decisions](#banner-and-infographic-design-decisions), without creating a second plan.
+Record a compact plan: goal; scope reference; required source representations and the visuals needed for the chosen learning tasks (reuse/new/no new image); learning value; exact source locations and conditions; visible introduction; final mandatory labels and visual claims; example if useful; composition/reading order; optional motifs; production method; final size and QA. Preserve precision-dependent teaching structures in checkable editable form. A generated illustration or infographic may be the primary visual for its own learning task in any subject; preserve other required representations alongside it. Apply the relevant [design decisions](#banner-and-infographic-design-decisions), without creating a second plan.
 
 Banner role preference: useful orientation/overview or characteristic cue; representative application, example or detail; related motif or understandable visual metaphor; topic-related decoration when nothing more useful fits. These are options, not a mandatory ladder or fixed fact count. Keep the wide, low shape and phone-sized main reading clear. Beautiful detail is welcome when it supports the topic; it must not imply unsupported geography, chronology or reconstruction.
 
 For infographics, identify what the learner can recognize, explain, compare or do from the image. Context must be visible in the image itself: identify the object/system/text, the central question and indispensable terms before using them. A clause number, abbreviation or symbol is not an explanation. A correct but opaque picture fails. If the core cannot fit readably, narrow the visual focus or split into distinct useful figures before spending; preserve the full lesson in prose.
 
-Use form-specific constraints only where relevant:
-
-* Sequence: identify what the order means, actual stages, transitions and whether spacing is time-scaled. Chronology does not prove causation, improvement or a cycle.
-* Contrast: keep the same criteria and the viewpoint, scale, units and notation needed for an interpretable comparison; distinguish typical cases, theoretical endpoints and extremes. Do not turn a continuum into a false binary or imply a numerical scale without data.
-* Relationships: choose topology from semantic links, with endpoints, direction, labels and conditions. A hub exchanging with its neighbors is not a circular process. Check EVERY visible arrow, including unexpected ones.
-* Grouping: identify membership or part-whole basis; preserve overlaps. Proximity does not imply causation or rank.
-* Metaphor: name the intended correspondence and important misleading implications to avoid. Do not let decoration masquerade as a literal fact.
-* OTHER: recognize the actual content and choose a justified novel or mixed representation, reuse, or no new image. Infographics need learning value; banners can be decoration.
+Apply the relevant [meaning-specific constraints](technical-visuals.md#meaning-specific-constraints) and checks from the shared visual selection guide. Include only those needed by this image in the provider prompt.
 
 Choose examples to teach recognition, transfer or limits. A verified case different from the concrete wording of an everyday principle can demonstrate generalization. The prompt supplies the checked situation, conditions, consequence and allowed conclusion; the image model must not invent a historical event, law, quote or number. A fictional explanatory case is explicitly identified as an example.
 

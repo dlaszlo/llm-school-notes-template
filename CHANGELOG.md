@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.6 - 2026-09-28
+
+* Added a context-sensitive visual decision process, executable drawing specifications, an open capability-based toolkit (including Matplotlib and PlantUML), faithful fallbacks and reusable planning/review prompts. Professional correctness applies across learning levels; artistic and precise representations are chosen by their task, without a subject/type whitelist or universal tool ranking.
+* Consolidated detailed representation selection and form-specific constraints in `instructions/technical-visuals.md`; media workflows retain scope, delivery/style and the existing compact record. Replaced the former five-row selection table with the fuller guide; its safeguards remain. No source-preservation, image QA, animation or feedback rule was removed.
+* Applied Astra xhigh planning and Fable high document-review corrections: implicit visual claims, two-way suitability, historical time/space uncertainty, numerical/formal checks, viewer-aware fallbacks and no duplicate mandatory planning records. Recorded acceptance of the nine additional pilot samples.
+* **Migration**: synchronize the shared set and record the revision. Documentation and prompt change only; no new runtime dependency, installation, model access or automatic lesson regeneration. The template stays uninitialized.
+
 ## 1.13.5 - 2026-09-28
 
 * Added a second optional gallery with three Graphviz relationship/decision diagrams, three headless FreeCAD models with TechDraw views and three genuinely spatial POV-Ray scenes. Sources, checked previews and bounded measurements are reproducible from the checkout.

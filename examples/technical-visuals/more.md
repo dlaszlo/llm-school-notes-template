@@ -2,7 +2,7 @@
 
 A teljes magyar magyarázatot a [helyi galériában](more.html) találod. A HTML-t a Git-checkoutból böngészőben nyisd meg; a GitHub a forrását mutatja. Az alábbi képek itt a GitHubon is megjelennek. A képre kattintva nagyíthatsz.
 
-Ez a második sorozat még felhasználói megtekintésre és visszajelzésre vár. Az első három mintára kapott pozitív visszajelzés nem fogadja el automatikusan ezeket. A bemutatók nem kerültek be a tanulói jegyzetekbe.
+A második sorozat kilenc mintájára is pozitív felhasználói visszajelzés érkezett 2026-09-28-án. A bemutatók nem kerültek be a tanulói jegyzetekbe.
 
 ## G1. Másodfokú egyenlet: döntési fa
 
