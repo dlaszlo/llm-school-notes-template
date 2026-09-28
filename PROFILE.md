@@ -58,14 +58,16 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | terms | `# 📖 Terms` | `# 📖 Fogalmak` |
 | test yourself | `# 🧠 Test yourself` | `# 🧠 Kérdezd ki magad` |
 | test yourself intro | `*Our own questions (not from the notebook) - try to answer from memory first, then open the answer.*` | `*Saját kérdések (nem a füzetből) - előbb próbáld fejből, aztán nyisd le a választ.*` |
-| explanation label | `💡 **Explanation (not from the notebook):**` | `💡 **Magyarázat (nem a füzetből):**` |
-| addition label | `➕ **Addition (not from the notebook):**` | `➕ **Kiegészítés (nem a füzetből):**` |
-| textbook label | `📗 **From the textbook (not in the notebook):**` | `📗 **Tankönyvből (a füzetben nincs):**` |
-| background label | `📗 **From background material (not in the notebook):**` | `📗 **Háttéranyagból (a füzetben nincs):**` |
+| explanation label | `💡 <author>🤖 explanation` | `💡 <szerző>🤖 magyarázata` |
+| addition label | `➕ <author>🤖 addition` | `➕ <szerző>🤖 kiegészítése` |
+| textbook label | `📗 From the textbook` | `📗 Tankönyvből` |
+| background label | `📗 From background material` | `📗 Háttéranyagból` |
 | teacher-material words | *to learn* / *background* | `tanulni` / `olvasnivaló` |
 | class-image caption | `Image from class material (slide <N>)` | `Kép az órai anyagból (<N>. dia)` |
-| lesson line | `🗓️ *Lesson: <date>*` | `🗓️ *Óra: <dátum>*` |
-| correction label | `⚠️ **Correction (not from the notebook):**` | `⚠️ **Javítás (nem a füzetből):**` |
+| lesson line | `🗓️ Lesson: <date>` | `🗓️ Óra: <dátum>` |
+| correction label | `⚠️ <author>🤖 correction` | `⚠️ <szerző>🤖 javítása` |
+| unknown-author label | `<role icon> 🤖 <role>` | `<szerepikon> 🤖 <szerep>` |
+| machine-authorship legend | `🤖 marks a machine-authored explanation, addition or correction. It is not a verification mark.` | `A 🤖 gépi magyarázatot, kiegészítést vagy javítást jelöl. Nem hitelesítési jel.` |
 | catch-up notice | `🤒 **Catch-up material** - this page was made from a classmate's notebook because you were absent. Copy it into your own notebook (or learn it), and say when you are done.` | `🤒 **Pótolandó anyag** - ez az oldal egy osztálytárs füzetéből készült, mert hiányoztál. Írd be a saját füzetedbe (vagy tanuld meg), és szólj, ha megvan.` |
 | synthesis notice | `*This page was put together by the LLM (not from the notebook).*` | `*Ezt az oldalt az LLM állította össze (nem a füzetből).*` |
 | in words | `in words:` | `szövegesen:` |

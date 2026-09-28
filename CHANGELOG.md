@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.6 - 2026-09-28
+
+* Restored explicit semantic icons beside machine-authorship labels: `💡 Drax🤖 magyarázata`, `➕ Drax🤖 kiegészítése`, `⚠️ Drax🤖 javítása`, using the actual author and localized role. Textbook/background labels keep 📗 and their sources; lesson content remains the unlabeled default.
+* Replaced the mandatory bold label at the start of a callout with a small trailing label. This intentional layout change preserves the distinction between explanation, addition, correction and reference content; it does not erase provenance or rename earlier authors.
+* Added shared note-formatting examples for small metadata, spacious sections, image captions and mixed expandable answers. Self-tests keep their spacing inside the disclosure and do not acquire an author label for ordinary answers.
+* **Migration**: synchronize shared files, localized Wording and the root legend. Apply the page layout only to requested pages; the first preview covers Mezopotamia and Hammurapi. Existing other pages remain valid during staged migration. No new ingest, image generation, bulk rewrite or PDF build is triggered. Keep the template uninitialized.
+
 ## 1.11.5 - 2026-09-28
 
 * Added an open, learning-task-led visual repertoire and explicit OTHER/ELSE path, including custom/mixed forms, reuse and no new image. Topology applies only when relationships matter; reciprocal flows are not automatically a cycle.

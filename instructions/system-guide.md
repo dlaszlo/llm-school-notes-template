@@ -10,6 +10,7 @@ This handbook explains the complete solution: why its parts exist, how they work
 | What do the bots do, and how are they routed? | [Hermes and bots](hermes-and-bots.md) |
 | How does a notebook become a checked lesson? | AGENTS.md Sources, Visual evidence checks, Curriculum-aware learning and Workflows |
 | What is common and what belongs to one learner? | [AGENTS.md](../AGENTS.md), [PROFILE.md](../PROFILE.md), [shared-files.json](../shared-files.json) |
+| How do source labels and machine-authorship icons look? | [Note formatting and reusable Markdown examples](note-formatting.md) |
 | How do we make images, podcasts, slides and printable notes? | [Media workflows](media-workflows.md), [prompt stages](media-prompts.md), [handoff contract](media-handoff.md) |
 | How does Drive authentication and upload work? | [Drive configuration and operations](install-drive.md) |
 | How do we rebuild from zero? | [Installation sequence and inventory](install.md) |
