@@ -1,0 +1,15 @@
+// Illustrative hierarchy, not a complete classification of physical forces.
+digraph Example {
+  graph [rankdir=LR, bgcolor="white", pad=0.25, nodesep=0.35, ranksep=0.45];
+  node [shape=box, style="rounded,filled", fillcolor="#edf4fb", color="#245475", fontname="DejaVu Sans", fontsize=20, margin="0.18,0.12"];
+  edge [color="#245475", arrowsize=0.8];
+  force [label="Az erő leírása"];
+  magnitude [label="Nagyság\nérték és mértékegység"];
+  direction [label="Irány és értelem"];
+  application [label="Támadáspont"];
+  action [label="Hatásvonal"];
+  force -> magnitude;
+  force -> direction;
+  force -> application;
+  force -> action;
+}

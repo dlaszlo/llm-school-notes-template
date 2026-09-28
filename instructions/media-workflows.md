@@ -42,6 +42,8 @@ In the job, put the learner operation in `goal`, viewpoint/hierarchy/layout in `
 
 The repertoire stays open. For example, a grammatical analysis may need exact node relationships or word boundaries while its usage context benefits from an infographic; a mathematical or economic graph needs correct axes and conditions while an adjacent overview can explain applications. Statics may combine a precise force diagram with a scene showing the problem it models. A historical map or a literary rhythm scheme can need precision too. These are decision examples, not curriculum obligations or a closed subject list. Use the current lesson and, only for unresolved depth/relevance questions, the applicable curriculum passages.
 
+For precision-dependent details in any visual, use the [technical visual guide](technical-visuals.md): choose source/parameter/geometry/notation checks before production, then inspect the final export. For requested sample reviews, keep human viewing/acceptance separate from machine verification.
+
 ## Infographic
 
 Start with what the learner needs to recognize, explain, compare or do and which content must become visible. Select the form from that task and actual reading size, not from a preferred topology. This open repertoire offers examples, not an exhaustive taxonomy or subject mapping:

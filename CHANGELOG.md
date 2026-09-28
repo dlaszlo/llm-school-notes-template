@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.4 - 2026-09-28
+
+* Added tool-independent checks for precision-dependent visual details, distinguishing geometry, notation, final rendering and animation behavior. Preserve the existing source/evidence workflow.
+* Added optional reproducible Graphviz, FreeCAD headless and POV-Ray examples with a local gallery, measured results and explicit verification limits. These install nothing and do not replace learner content.
+* Track requested human sample review separately from automated checks; no implicit viewing or acceptance.
+* **Migration**: synchronize the shared set and record the revision. No new runtime, addon, credential or agent configuration is required; no automatic content regeneration.
+
 ## 1.13.3 - 2026-09-28
 
 * Generalized preservation from technical drawings to all precision-dependent teaching structures, including mathematical and linguistic analyses. Preserve classroom notation, source cases/order and meaningful orientation through the existing coverage check. A generative redraw is not preservation; composites retain the exact authored layer and the accessible separate diagram.

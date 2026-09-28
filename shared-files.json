@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.13.3",
+  "version": "1.13.4",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -40,6 +40,20 @@
     "instructions/learning-image-execution.md",
     "instructions/install-learning-images.md",
     "learning-images.example.json",
-    "tools/test_repo_setup.py"
+    "tools/test_repo_setup.py",
+    "instructions/technical-visuals.md",
+    "examples/technical-visuals/README.md",
+    "examples/technical-visuals/gear.py",
+    "examples/technical-visuals/index.html",
+    "examples/technical-visuals/lever.pov",
+    "examples/technical-visuals/measure.py",
+    "examples/technical-visuals/preview/gear.svg",
+    "examples/technical-visuals/preview/lever-end.png",
+    "examples/technical-visuals/preview/lever-middle.png",
+    "examples/technical-visuals/preview/lever-start.png",
+    "examples/technical-visuals/preview/lever.mp4",
+    "examples/technical-visuals/preview/structure.svg",
+    "examples/technical-visuals/preview/timings.json",
+    "examples/technical-visuals/structure.dot"
   ]
 }
