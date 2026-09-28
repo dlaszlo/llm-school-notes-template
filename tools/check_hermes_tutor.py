@@ -89,7 +89,7 @@ def main():
         (root / '.visual-runs').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='tutor-probe-', dir=snapshot / '.visual-runs') as inside, \
          tempfile.TemporaryDirectory(prefix='tutor-probe-', dir=other / '.visual-runs') as sibling, \
-         tempfile.TemporaryDirectory(prefix='tutor-host-canary-') as outside:
+         tempfile.TemporaryDirectory(prefix='tutor-host-canary-', dir='/var/tmp') as outside:
         dirs = [Path(inside), Path(sibling), Path(outside)]
         tokens = ['CANARY_' + uuid.uuid4().hex for _ in dirs]
         for directory, token in zip(dirs, tokens):
