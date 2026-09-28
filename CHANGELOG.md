@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.12.2 - 2026-09-28
+
+* Require Git deployment for all repository content; only Hermes-local configuration is an exception. This replaces the ad hoc terminal-copy path used in the pilot, not the content or spending rules.
+* Added a versioned, idempotent skill-binding installer and a concrete clone/update/configure/verify/restore guide. The installer rejects uncommitted skill content and refuses to overwrite existing different bindings; it makes no network or paid call.
+* **Migration**: synchronize the shared set through Git, preserve any deployment working changes, bind the skill from the committed checkout, and record remaining deployment/rebuild checks separately.
+
 ## 1.12.1 - 2026-09-28
 
 * Missing credentials now fail before a cost reservation or network attempt; a regression check covers the deployment failure found during the Hermes pilot.

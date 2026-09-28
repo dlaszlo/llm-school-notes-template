@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -39,6 +39,9 @@
     "tools/learning_image.py",
     "tools/test_learning_image.py",
     "instructions/learning-image-execution.md",
-    "integrations/hermes/learning-images/SKILL.md"
+    "integrations/hermes/learning-images/SKILL.md",
+    "tools/install_hermes_images.py",
+    "instructions/install-learning-images.md",
+    "tools/test_install_hermes_images.py"
   ]
 }

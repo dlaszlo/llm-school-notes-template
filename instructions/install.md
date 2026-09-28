@@ -51,4 +51,6 @@ Rebuild on an empty machine from the pinned inputs, restore or freshly authorize
 
 ## Banner and infographic executor
 
+Use the [Git-only image installation procedure](install-learning-images.md). Repository content travels through Git; only Hermes-local configuration is set up outside it. The versioned installer binds the committed skill without copying runtime code.
+
 Run `uv sync --locked` in the chosen repository, then follow [learning-image execution](learning-image-execution.md) to create private policy/credential locations and persistent state. Use the checked-in Hermes skill entrypoint with the same repository CLI, without an unversioned script copy. Run the synthetic suite, validate a source-pinned job, inspect its prompt, execute one authorized real image, inspect it directly and save its hash-bound review. Record the actual code commit, paths, cost, output and checks in the private deployment record. Do not claim a live Discord invocation from a local CLI trial. Recovery uses saved responses and the same ledger; rollback restores the previous skill/tool revision while preserving attempts and costs.
