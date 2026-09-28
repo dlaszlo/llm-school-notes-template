@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.1 - 2026-09-28
+
+* Removed the remaining system-deployment documentation mandate from AGENTS.md. Daily note workflows stay in the agent rules; installation, configuration and rollback documentation remain discoverable through README and the system handbook.
+* No executable behavior or lesson content changed. **Migration**: synchronize the shared set and record the template revision.
+
 ## 1.13.0 - 2026-09-28
 
 * Optional image generation now starts from a repository-owned nonsecret policy and disabled example; relative paths resolve against that policy. No global active index or installed agent skill is required. Explicit legacy `--config` remains supported.

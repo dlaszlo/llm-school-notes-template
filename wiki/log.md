@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: [1.13.1](../CHANGELOG.md) keeps system-deployment documentation out of daily agent rules; installation guidance remains in the handbook.
+
 * **Update**: [1.13.0](../CHANGELOG.md) makes optional image and Drive execution repository-local, removes global skill installation, and adds portable-state and clean-setup checks. The template remains uninitialized.
 
 * **Update**: [1.12.2](../CHANGELOG.md) requires Git-based deployment and adds a versioned [Hermes image-skill installer](../instructions/install-learning-images.md); local configuration stays outside Git.
