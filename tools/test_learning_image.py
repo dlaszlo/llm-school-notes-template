@@ -44,6 +44,39 @@ class ExecutorTest(unittest.TestCase):
         m.write(p, {'sha256':result['sha256'],'verifier':'test','checked_at':m.now(),'observed':'Synthetic near-white test image, not teaching content','decision':decision,'checks':dict.fromkeys(m.CHECKS,'pass'),'material_defects':['test rejection'] if decision=='rejected' else []})
         return p
 
+    def test_banner_preview_requires_its_own_hash_review(self):
+        result = self.generate()
+        preview = m.preview_banner(self.config, self.path)
+        self.assertEqual(self.calls, 1)
+        self.assertFalse((self.repo/'wiki/assets/banner/topic-banner.webp').exists())
+        report = self.report(result)
+        data = m.read(report)
+        data['publication'] = {'format':'webp', 'quality':85, 'sha256':'incorrect',
+                               'checked':True, 'observed':'Synthetic compressed banner inspected'}
+        m.write(report, data)
+        with self.assertRaisesRegex(ValueError, 'preview hash mismatch'):
+            m.review(self.config, self.path, report)
+        data['publication']['sha256'] = preview['sha256']
+        m.write(report, data)
+        accepted = m.review(self.config, self.path, report)
+        self.assertEqual(m.sha(self.repo/accepted['path']), preview['sha256'])
+        self.assertEqual(accepted['sha256'], result['sha256'])
+        self.assertEqual(accepted['published_sha256'], preview['sha256'])
+        with Image.open(self.repo/accepted['path']) as image:
+            self.assertEqual(image.size, (420, 180))
+        self.assertTrue(self.generate()['reused'])
+        self.assertEqual(self.calls, 1)
+
+    def test_precise_nonbanner_not_implicitly_compressed(self):
+        self.job['role'] = 'infographic'
+        self.save()
+        result = self.generate()
+        with self.assertRaisesRegex(ValueError, 'banners only'):
+            m.preview_banner(self.config, self.path)
+        accepted = m.review(self.config, self.path, self.report(result))
+        self.assertTrue(accepted['path'].endswith('.png'))
+        self.assertEqual(m.sha(self.repo/accepted['path']), result['sha256'])
+
     def test_missing_credential_fails_before_reservation_or_network(self):
         empty=self.root/'empty.env';empty.write_text('OPENROUTER_API_KEY=\n')
         self.config['env_file']=str(empty)

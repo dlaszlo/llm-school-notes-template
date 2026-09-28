@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.5 - 2026-09-28
+
+* Added an optional, hash-reviewed WebP publication preview for generated banners; original resolution and source candidate are retained, with no additional paid generation. Exact diagrams and infographics retain their existing format.
+* Clarified authorized whole-subject maintenance as a repository workflow usable by the current writing agent, independent of future bot separation.
+* **Migration**: synchronize shared files and record version/commit. No automatic legacy-image rewrite, history rewrite, service change or paid batch. Existing PNG jobs remain compatible.
+
 ## 1.14.4 - 2026-09-28
 
 * Subject tables of contents also have a wide, low subject-level banner after their text heading, before navigation. Choose a motif from the subject's actual scope; keep navigation readable and apply the existing visual checks and spending limits.

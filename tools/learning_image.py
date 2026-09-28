@@ -333,6 +333,37 @@ def reconcile(config, job_path):
         return attempt
 
 
+def banner_webp(file):
+    """Encode a publication preview without resizing or changing source pixels in place."""
+    output = io.BytesIO()
+    with Image.open(file) as im:
+        # Preserve transparency; compression is restricted to illustrative banners.
+        im.convert('RGBA' if 'A' in im.getbands() else 'RGB').save(
+            output, format='WEBP', quality=85, method=6)
+    return output.getvalue()
+
+
+def preview_banner(config, job_path):
+    job, _ = load_job(config, job_path)
+    if job['role'] != 'banner':
+        raise ValueError('WebP preview is for banners only; precise figures retain their format')
+    with locked(config) as (state, ledger_path, ledger):
+        entry = ledger['jobs'][job['id']]
+        if entry['fingerprint'] != hashlib.sha256(json.dumps(job, sort_keys=True).encode()).hexdigest():
+            raise ValueError('Job changed since generation')
+        attempt = entry['attempts'][-1]
+        if attempt.get('cost_usd') is None or not attempt.get('sha256'):
+            raise ValueError('Resolve generation before preview')
+        source = attempt_folder(config, job, attempt) / 'image.png'
+        if sha(source) != attempt['sha256']:
+            raise ValueError('Image changed since generation')
+        dest = source.with_name('publication.webp')
+        dest.write_bytes(banner_webp(source))
+        return {'path': str(dest), 'source_sha256': sha(source), 'sha256': sha(dest),
+                'format': 'webp', 'quality': 85, 'bytes': dest.stat().st_size,
+                'source_bytes': source.stat().st_size, 'review_required': True}
+
+
 def review(config, job_path, review_path):
     job, repo = load_job(config, job_path)
     report = read(review_path)
@@ -364,14 +395,32 @@ def review(config, job_path, review_path):
                 raise ValueError('Only arrow check may be inapplicable')
             if report.get('material_defects'):
                 raise ValueError('Materially defective image cannot be published')
+            # Optional compressed banner must itself have been visually reviewed.
+            data = file.read_bytes()
+            extension = '.png'
+            publication = report.get('publication')
+            if publication is not None:
+                if job['role'] != 'banner' or publication.get('format') != 'webp' or publication.get('quality') != 85:
+                    raise ValueError('Only the fixed WebP banner preview is supported')
+                nonempty(publication, ['sha256', 'observed'])
+                if publication.get('checked') is not True:
+                    raise ValueError('Publication preview must be inspected explicitly')
+                data = banner_webp(file)
+                if hashlib.sha256(data).hexdigest() != publication['sha256']:
+                    raise ValueError('Publication preview hash mismatch; inspect the current encoding')
+                extension = '.webp'
+            published_hash = hashlib.sha256(data).hexdigest()
             # Versioned destination determined by role and ID, never arbitrary job output path.
-            relative = 'wiki/assets/' + ('banner/' if job['role'] == 'banner' else '') + job['id'] + '.png'
+            relative = 'wiki/assets/' + ('banner/' if job['role'] == 'banner' else '') + job['id'] + extension
             output = within(repo, relative)
-            if output.exists() and sha(output) != report['sha256']:
+            if output.exists() and sha(output) != published_hash:
                 raise ValueError('Destination exists with different bytes')
             output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(file.read_bytes())
-            entry['accepted'] = {'path': relative, 'sha256': report['sha256'], 'attempt': attempt['number']}
+            output.write_bytes(data)
+            # sha256 remains the reviewed ORIGINAL for resumability/legacy receipts.
+            entry['accepted'] = {'path': relative, 'sha256': report['sha256'],
+                                 'published_sha256': published_hash, 'bytes': len(data),
+                                 'attempt': attempt['number']}
         else:
             nonempty(report, ['material_defects'])
         attempt['state'] = report['decision']
@@ -390,7 +439,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', help='Explicit policy; default: learning-images.json in this checkout')
     sub = parser.add_subparsers(dest='command', required=True)
-    for command in ('validate', 'prompt', 'generate', 'review', 'reconcile'):
+    for command in ('validate', 'prompt', 'generate', 'review', 'reconcile', 'preview-banner'):
         p = sub.add_parser(command)
         p.add_argument('--job', required=True)
         if command == 'generate':
@@ -426,6 +475,8 @@ def main():
         elif args.command in ('validate', 'prompt'):
             job, _ = load_job(config, args.job)
             print(compile_prompt(job) if args.command == 'prompt' else json.dumps({'valid': True, 'id': job['id']}))
+        elif args.command == 'preview-banner':
+            print(json.dumps(preview_banner(config, args.job), ensure_ascii=False))
         elif args.command == 'reconcile':
             print(json.dumps(reconcile(config, args.job), ensure_ascii=False))
         elif args.command == 'generate':
