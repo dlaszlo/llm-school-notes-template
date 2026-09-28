@@ -7,7 +7,8 @@ For each page it writes wiki/assets/banner/<page>.svg (subject color and
 icon, with the page title) and, if the page body does not start with an
 image, inserts the link right after the frontmatter. Safe to re-run: an
 existing banner is refreshed, never inserted twice. Run it from the
-project root.
+project root. Subject indexes use <subject>-index.svg and keep their text
+heading above the banner. Root indexes and logs are skipped.
 
 Subjects and reader-facing labels come from tools/subjects.json:
 
@@ -89,7 +90,7 @@ def banner_svg(title, subject, kind_label, header):
     lh = size * 1.2
     y0 = 92 - (len(lines) - 1) * lh / 2 + size * 0.35
     tspans = "".join(f'<tspan x="180" y="{y0 + i * lh:.0f}">{html.escape(l)}</tspan>' for i, l in enumerate(lines))
-    label = f"{name} · {kind_label}"
+    label = f"{name} · {kind_label}" if kind_label else name
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 170" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="{html.escape(header)}: {html.escape(title)} ({html.escape(name)})">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{light}"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
   <rect width="900" height="170" rx="18" fill="url(#g)"/>
@@ -106,13 +107,33 @@ def banner_svg(title, subject, kind_label, header):
 def process(md, config):
     subject_dir = os.path.basename(os.path.dirname(md))
     stem = os.path.splitext(os.path.basename(md))[0]
-    if stem in ("index", "log"):
+    if stem == "log" or (stem == "index" and subject_dir == "wiki"):
         return "skip"
     subject = config["subjects"].get(subject_dir)
     if not subject:
         return "no-subject (add it to tools/subjects.json)"
     labels = config["labels"]
     text = open(md, encoding="utf-8").read()
+    if stem == "index":
+        # Subject indexes have no required frontmatter. Keep the visible heading
+        # and use a subject-specific asset name to avoid cross-subject collisions.
+        heading = re.search(r"^# (.+)\n", text, re.M)
+        if not heading:
+            return "no-title (add a subject heading)"
+        body = text[heading.end():]
+        first = next((line for line in body.splitlines() if line.strip()), "")
+        asset = f"{subject_dir}-index.svg"
+        line = f'![{labels["header"]}: {heading.group(1)}](../assets/banner/{asset})'
+        if first.startswith("![") and first != line:
+            return "has-image"
+        os.makedirs("wiki/assets/banner", exist_ok=True)
+        with open(f"wiki/assets/banner/{asset}", "w", encoding="utf-8") as f:
+            f.write(banner_svg(heading.group(1), subject, "", labels["header"]))
+        if first == line:
+            return "updated"
+        with open(md, "w", encoding="utf-8") as f:
+            f.write(text[:heading.end()] + "\n" + line + "\n" + body)
+        return "inserted"
     m = re.match(r"---\n(.*?)\n---\n", text, re.S)
     fm = m.group(1)
     title = re.search(r"^title: (.*)$", fm, re.M).group(1).strip()

@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.4 - 2026-09-28
+
+* Subject tables of contents also have a wide, low subject-level banner after their text heading, before navigation. Choose a motif from the subject's actual scope; keep navigation readable and apply the existing visual checks and spending limits.
+* The deterministic banner fallback supports subject indexes without frontmatter, with distinct asset names and preservation of custom headers. Root indexes, logs and operational/reference catalogs are outside this requirement.
+* **Migration**: synchronize shared files and record version/commit. Apply on new or explicitly authorized indexes; no automatic paid batch, learner-content copying or agent configuration.
+
 ## 1.14.3 - 2026-09-28
 
 * Strengthened explanation order with context before use, precise referents and a learner reading-order review. Essential prerequisites are explained where needed rather than deferred to links or later sections.
