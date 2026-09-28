@@ -7,7 +7,7 @@
     {
       "engine": "python",
       "source": "examples/technical-visuals/function-plot.py",
-      "source_sha256": "88045433e3ef8d137f0e002ef33cc4c8e10dd6ea4ff964ae42fbc6df03047a65",
+      "source_sha256": "c97d11ff858f7a82afa4391b188c3e1f634dddf49b3bc90224d9f9141e5b2925",
       "driver_sha256": "10e765090d45cefc66c96e54963e50aae5a29116d163195726ee99e5239cacce",
       "python_packages": {
         "python": "3.13.12",
@@ -15,11 +15,11 @@
         "numpy": "2.5.3",
         "scipy": null
       },
-      "seconds": 2.5057835039915517,
+      "seconds": 2.3067817609990016,
       "outputs": {
         "figure.svg": {
-          "bytes": 19106,
-          "sha256": "18caf1dd19cb3b0c8854b87ac44c174341429025c8cd9f6812717758a80abe04",
+          "bytes": 18886,
+          "sha256": "a3dd336b33a0edd0a463e80869e68807f70f640828008bbc5040f1145a99ef48",
           "viewBox": "0 0 576 360"
         },
         "figure.png": {

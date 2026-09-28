@@ -7,7 +7,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 out = Path(os.environ['VISUAL_OUTPUT_DIR'])
-plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 12, 'svg.fonttype': 'none'})
+plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 12, 'svg.fonttype': 'none',
+                     'svg.hashsalt': 'school-notes-function-example'})
 fig, ax = plt.subplots(figsize=(8, 5), layout='constrained')
 for lo, hi in [(-4, -.18), (.18, 4)]:
     x = np.linspace(lo, hi, 600)
@@ -20,6 +21,8 @@ ax.scatter([-2, -1, 1, 2], [-.5, -1, 1, .5], color='#17628c', zorder=3)
 ax.set(xlim=(-4, 4), ylim=(-4, 4), xlabel='x', ylabel='f(x)', title='f(x) = 1/x: two separate branches')
 ax.grid(alpha=.22)
 ax.legend(loc='upper right', fontsize=10)
-fig.savefig(out / 'figure.svg')
+fig.savefig(out / 'figure.svg', metadata={'Date': None})
+svg = out / 'figure.svg'
+svg.write_text('\n'.join(line.rstrip() for line in svg.read_text().splitlines()) + '\n')
 fig.savefig(out / 'figure.png', dpi=150)
 plt.close(fig)
