@@ -2,6 +2,14 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.12.0 - 2026-09-28
+
+* Applied the accepted Astra visual plan: task-led banner/infographic decisions, standalone context, conditional visual forms, checked transfer examples, and source-grounded final-image QA. Precise SVG/code remains the choice where exact relationships or geometry matter.
+* Reuse the lesson's valid curriculum scope; retrieve new requirements only for unresolved priority/depth/applicability. Added banner and prompt-assembly stages; clarified the best-usable-candidate stopping rule.
+* Added the common runnable image executor, persistent spending/attempt ledger, source/path checks, direct-review gate, recovery and synthetic tests. Added a thin Hermes skill and reproducible execution/configuration guide; this is not a claim of live Discord role rollout.
+* Removed contradictory automatic-Mermaid/rare-header requirements. Later explicit subject-wide requests supersede the earlier two-page pilot scope; no other migration is implied.
+* **Migration**: sync every manifest file, keep the template uninitialized, configure private execution policy outside Git, and apply only the authorized subject migration. Preserve acquired sources and accepted suitable images.
+
 ## 1.11.9 - 2026-09-28
 
 * Open questions are always sequential numbered Markdown items, each grouping its own context, concrete uncertainty, relevant alternatives/explanation and recommendation or next step. Depth is proportional; no artificial alternatives or empty sections.

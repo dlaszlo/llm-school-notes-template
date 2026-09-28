@@ -70,3 +70,7 @@ Keep one authoritative home for each fact. Shared mechanisms and generic configu
 A useful article can follow an actual problem through the decision, implementation, check and lesson learned: why Markdown is the durable knowledge layer; why an image description is not a visual check; why a two-speaker podcast needs an accessible opening; why Drive authorization and a folder allowlist are separate; or how lost upload responses are reconciled without duplication. Link the common code and primary documentation, and label experiments as experiments.
 
 Before publishing, derive a separate reviewed article from these records. Remove family details, account/channel/folder IDs, private material, credential locations that reveal infrastructure, and screenshots with personal information. Do not publish the private deployment folder wholesale. No blog publication is authorized by maintaining this handbook.
+
+## Runnable banner and infographic path
+
+The [learning-image execution guide](learning-image-execution.md) is the canonical operational entry: versioned lesson/scope -> reviewed JSON plan -> compiled provider prompt -> one bounded call -> direct visual review -> hash-checked asset -> wiki embed/evidence. `tools/learning_image.py` implements local spending reservations, attempt persistence and review-gated copying. It does not deploy Discord roles or provide OS isolation. The private deployment record distinguishes a successful CLI trial from a live Hermes/Discord run.

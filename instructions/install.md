@@ -48,3 +48,7 @@ A credential backup is private and encrypted; ordinary Git is never the secret b
 ## Completion criteria for a future full rebuild
 
 Rebuild on an empty machine from the pinned inputs, restore or freshly authorize secrets, then prove: each bot sees only its intended learner/context; authorized ingest reaches the right repository; one artifact per media type passes content and delivery checks; repeated/interrupted work does not duplicate uploads or paid calls; budgets stop execution; reviewer evidence is accessible; scheduled corrections run at the intended local time; backup and rollback work. Until that exercise passes, report the installed stages and remaining stages individually, not "fully reproducible system".
+
+## Banner and infographic executor
+
+Run `uv sync --locked` in the chosen repository, then follow [learning-image execution](learning-image-execution.md) to create private policy/credential locations and persistent state. Use the checked-in Hermes skill entrypoint with the same repository CLI, without an unversioned script copy. Run the synthetic suite, validate a source-pinned job, inspect its prompt, execute one authorized real image, inspect it directly and save its hash-bound review. Record the actual code commit, paths, cost, output and checks in the private deployment record. Do not claim a live Discord invocation from a local CLI trial. Recovery uses saved responses and the same ledger; rollback restores the previous skill/tool revision while preserving attempts and costs.

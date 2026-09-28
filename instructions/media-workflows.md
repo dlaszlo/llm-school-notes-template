@@ -16,7 +16,7 @@ For historical topics, apply *Orient historical learning in time and place* in [
 
 | Format | Default deliverable | Learning structure |
 |---|---|---|
-| Infographic | PNG; JPG on request; landscape A4 composition, portrait on request | One visible hierarchy of the essential parts and relationships |
+| Infographic | PNG; JPG on request; landscape A4 composition, portrait on request | A clear visual explanation that serves the chosen learning task |
 | Presentation | Landscape A4 PDF; one slide per page | Brief context, prerequisite bridge, coherent progression and recap |
 | Podcast | MP3 with a companion script; two fictional voices | Friendly conversation with an accessible opening, connected topic blocks, key questions and a closing synthesis |
 | Printable study notes | Portrait A4 PDF with selectable/searchable body text | Connected explanation, examples, figures, recap and separate final answers |
@@ -91,3 +91,30 @@ Use at most the initial generation plus two repairs per infographic, slide or fa
 Stop on acceptance, an exhausted bound or unresolved essential evidence. A failed essential component leaves the deliverable a draft with a precise defect report; do not insert it as finished learning material. An optional image failure need not block supported notes. Store the source versions, scope plan, script/storyboard, exact prompts, hashes, checks, limits and actual costs in the authorized private record. A learner-facing version/date helps identify outdated printed or downloaded material.
 
 Large audio/PDF/image artifacts use the configured protected media store, such as a verified per-learner Drive folder. Small inline wiki images may remain in Git. Do not infer access from a pasted folder URL, make a file public or alter sharing automatically. A cloud reviewer must be able to inspect the same artifact or report it as unavailable. A relevant source change makes the derivative due for review; do not silently replace a different version behind a printed label.
+
+## Visual decision, prompt construction and acceptance
+
+The author chooses the content before invoking the image model. Start from the current lesson and its scope record: goal, required core, prerequisite bridge, optional depth and source versions. Reuse an applicable decision; do not repeat curriculum retrieval for each banner or format. Read fresh requirement passages only when priority, depth or applicability remains uncertain. Scope and requirement hashes stay in the private record, not in the provider prompt.
+
+Record a compact plan: goal; scope reference; decision (no new image/reuse/precise code/generated image); learning value; exact source locations and conditions; visible introduction; final mandatory labels and visual claims; example if useful; composition/reading order; optional motifs; production method; final size and QA. Keep exact geometry, numerical charts, forces and formulas in checkable code/SVG. A subject name alone never determines the medium.
+
+Banner role preference: useful orientation/overview or characteristic cue; representative application, example or detail; related motif or understandable visual metaphor; topic-related decoration when nothing more useful fits. These are options, not a mandatory ladder or fixed fact count. Keep the wide, low shape and phone-sized main reading clear. Beautiful detail is welcome when it supports the topic; it must not imply unsupported geography, chronology or reconstruction.
+
+For infographics, identify what the learner can recognize, explain, compare or do from the image. Context must be visible in the image itself: identify the object/system/text, the central question and indispensable terms before using them. A clause number, abbreviation or symbol is not an explanation. A correct but opaque picture fails. If the core cannot fit readably, narrow the visual focus or split into distinct useful figures before spending; preserve the full lesson in prose.
+
+Use form-specific constraints only where relevant:
+
+* Sequence: identify what the order means, actual stages, transitions and whether spacing is time-scaled. Chronology does not prove causation, improvement or a cycle.
+* Contrast: use the same comparison criteria; distinguish typical cases, theoretical endpoints and extremes. Do not turn a continuum into a false binary or imply a numerical scale without data.
+* Relationships: choose topology from semantic links, with endpoints, direction, labels and conditions. A hub exchanging with its neighbors is not a circular process. Check EVERY visible arrow, including unexpected ones.
+* Grouping: identify membership or part-whole basis; preserve overlaps. Proximity does not imply causation or rank.
+* Metaphor: name the intended correspondence and important misleading implications to avoid. Do not let decoration masquerade as a literal fact.
+* OTHER: recognize the actual content and choose a justified novel or mixed representation, reuse, or no new image. Infographics need learning value; banners can be decoration.
+
+Choose examples to teach recognition, transfer or limits. A verified case different from the concrete wording of an everyday principle can demonstrate generalization. The prompt supplies the checked situation, conditions, consequence and allowed conclusion; the image model must not invent a historical event, law, quote or number. A fictional explanatory case is explicitly identified as an example.
+
+Construct one provider prompt in this order: purpose/use; visible introduction; exact mandatory text, claims and composition; optional motifs; style/size; relevant accuracy constraints. The provider never receives the full private profile, corpus, internal reasoning or responsibility for choosing lesson facts. Use [stage prompts](media-prompts.md) and the [shared executor](learning-image-execution.md).
+
+Inspect the finished image independently of the intended prompt: can its declared learning task be completed without mentally supplying missing context? Check required depth, core and bridge; optional details must remain optional. Verify text, chronology, examples, conditions, anatomy/object identity and all actual arrows as relevant. Inspect full resolution, phone placement and A4 aspect/print size. A4 fit is not a claim of 300-dpi detail; record dimensions and zoom needs. Banners receive proportional checks but cannot use decoration to excuse a misleading period or object.
+
+At the attempt bound, publish only the best usable reviewed candidate. A cosmetic imperfection can remain; essential factual/context/relationship defects cannot. Keep the suitable old image or supported text if no candidate passes. Record a numbered, self-contained follow-up question with the candidate, concrete defect, proposed change, retained good content, current delivery state, actual cost, estimated next cost and exact requested extra calls/budget. Remaining money does not reset attempts.

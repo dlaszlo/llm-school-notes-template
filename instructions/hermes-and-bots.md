@@ -52,3 +52,7 @@ Use the installed `hermes` wrapper and its package manager rather than assuming 
 A full rollout still requires explicit credential setup for new bot identities, verified profile/tool/filesystem boundaries, route and mention tests, media-provider/budget enforcement, a real ingest/media pilot, and scheduler coexistence checks. Keep that remaining work visible alongside completed steps.
 
 Upstream references: [profiles](https://hermes-agent.nousresearch.com/docs/user-guide/profiles/), [multiplex gateways](https://hermes-agent.nousresearch.com/docs/user-guide/multi-profile-gateways), [skills](https://hermes-agent.nousresearch.com/docs/guides/work-with-skills), [installation](https://hermes-agent.nousresearch.com/docs/getting-started/installation/). Check them against the installed commit before applying version-sensitive configuration.
+
+## Common image executor
+
+The [learning-images entrypoint](../integrations/hermes/learning-images/SKILL.md) routes to the checked-in [CLI and setup guide](learning-image-execution.md). It can be used by the current ingest bot or a later Drax/Mantis profile with trusted private configuration. The caller plans and directly views the image; the executor enforces local source/target, budget, attempt and review-hash checks. This capability does not require a new bot, and its local CLI test does not establish live gateway routing or OS separation.

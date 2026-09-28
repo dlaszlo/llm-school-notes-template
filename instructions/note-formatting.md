@@ -1,6 +1,6 @@
 # Note formatting and provenance labels
 
-Use the localized strings in [PROFILE.md](../PROFILE.md) and the content rules in [AGENTS.md](../AGENTS.md). These examples implement the compact label layout without changing source categories, content authorship or the learning content. Existing pages are migrated only in the authorized scope; a rule update does not trigger a whole-wiki rewrite. During the two-page preview, leave other topic pages as they are.
+Use the localized strings in [PROFILE.md](../PROFILE.md) and the content rules in [AGENTS.md](../AGENTS.md). These examples implement the compact label layout without changing source categories, content authorship or the learning content. Existing pages are migrated only in the authorized scope; a rule update does not trigger a whole-wiki rewrite. Apply to the current user-authorized migration scope; the earlier two-page pilot does not restrict a later explicitly requested subject-wide migration.
 
 ## Meaning before styling
 

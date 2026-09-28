@@ -10,7 +10,7 @@ Olvasd végig az érintett jegyzeteket és kövesd a szükséges forráshivatkoz
 Készíts rövid munkalapot ezekkel a mezőkkel:
 CONTEXT: Mi ez a téma, milyen tágabb kérdésbe tartozik, miért érdemes megérteni? Csak a megértéshez szükséges háttérdimenziókat válaszd ki a forrásból.
 Történelmi témánál a CONTEXT kötelező része az igazolt korszak/időszak és a földrajzi hely: tágabb régió, és ha segít, a mai elhelyezkedés. Ne keverd a lecke dátumával; a különböző korszakokat válaszd szét. Ez látható/hallható tanulási tartalom, nem rejtett metaadat.
-SCOPE: Ellenőrizd a tanulási döntést az aktuális leckével: relevancia, elvárt műveleti mélység, indokolt emelt szint, opcionális kitekintés. Követelményből csak pontos helyhez és szinthez kötött elvárást használj, ne adj hozzá teljes tantervi témakört.
+SCOPE: Először használd újra a lecke érvényes döntését. Új követelményolvasás csak fennmaradó prioritás-, mélység- vagy alkalmazhatósági kérdésnél indokolt. A curriculum nem tantárgyi tényforrás. Ellenőrizd a tanulási döntést az aktuális leckével: relevancia, elvárt műveleti mélység, indokolt emelt szint, opcionális kitekintés. Követelményből csak pontos helyhez és szinthez kötött elvárást használj, ne adj hozzá teljes tantervi témakört.
 GOAL: Mit tudjon a tanuló az anyag után saját szavaival elmagyarázni vagy elvégezni?
 BRIDGE: Mely előfeltételek szükségesek? Mi igazoltan ismert a profilból, és mit kell itt röviden megtanítani?
 CORE: A tanulási célhoz nélkülözhetetlen állítások, kapcsolatok vagy műveleti lépések, rövid azonosítóval. Mindegyikhez forráshely, megőrzendő feltétel és bizonyossági státusz tartozzon.
@@ -20,6 +20,32 @@ GAPS: Hiányzó bizonyítékok, ellentmondások, bizonytalan olvasatok.
 A fontosságot a felhasználói cél, az órai hangsúly és a megértési függőség határozza meg, ne a látványosság.
 A saját példát jelöld példaként; feltételezést és kiegészítést ne emelj észrevétlenül biztos tananyagi ténnyé.
 Ha egy nélkülözhetetlen hiány nem tisztázható a rendelkezésre álló bizonyítékból, állj meg a véglegesítés előtt és nevezd meg, mi szükséges.
+```
+
+## Visual decision and provider-prompt assembly
+
+```text
+A lecke érvényes SCOPE–GOAL–BRIDGE–CORE–OPTIONAL döntéséből válassz képi célt.
+Döntés: meglévő kép / pontos SVG-kód / új tanító infografika / nincs új kép; bannernél konkrét bevezető szerep, kapcsolódó motívum vagy dekoráció.
+Indokold a hozzáadott tanulási értéket. Két képet csak két külön, hasznos tanulói feladathoz tervezz.
+Írd meg a képen látható kontextust: mi ez a rendszer, tárgy vagy szöveg; mi a kérdés; mit jelent a nélkülözhetetlen fogalom vagy számozott hivatkozás.
+A kötelező szöveget végleges formában, olvasási sorrendben add meg. A generátor ne válasszon tényeket, példát vagy prioritást.
+A sorrend jelentését, összehasonlítás szempontjait, csoportosítást, topológiát vagy metaforát csak akkor részletezd, ha a választott kép használja. MÁS/ELSE: tervezz indokolt új vagy vegyes megjelenítést.
+Példánál rögzítsd az ellenőrzött esetet, feltételeket, következményt és megengedett tanulságot. Mérlegeld, hogy az elv másik esete jobban tanítja-e az általánosítást.
+A szolgáltatónak átadott prompt: cél/felhasználás; látható bevezetés; pontos kötelező tartalom és kompozíció; opcionális motívumok; stílus/méret; releváns korlátok. A privát profil, forrásútvonalak és belső munkalap maradjanak a munkarekordban.
+```
+
+## Banner
+
+```text
+Készíts {méret/képarány} széles, alacsony fejlécillusztrációt a {téma} tanulási oldalhoz, {célközönség} számára.
+A banner feladata: {konkrét bevezető/áttekintő szerep, jellegzetes példa/részlet, kapcsolódó motívum/metafora vagy dekoráció}.
+Fő motívum vagy szerkezet: {ellenőrzött képi terv}. Fókusz és olvasási sorrend: {telefonon is felismerhető fő olvasat}.
+Kötelező látható szövegek, pontosan: {végleges rövid címek/kontextus, vagy nincs}.
+Kapcsolódó elhagyható részletek: {motívumok}. Stílus: {közös megjelenés}.
+A kép legyen szép, elnézegethető, szellős; maradjon alacsony banner. Ne apró betűvel helyezd el, ami nem fér bele. Ne adj hozzá új tényt vagy feliratot.
+Ábrázolás jellege: {szemléltető/műbeli/metaforikus/forrással igazolt}. {Csak releváns: metaforikus megfeleltetés és kerülendő mellékjelentés; pontos sorrend, időarányosság, kapcsolatok vagy összehasonlítás.}
+{A konkrét képnél szükséges pontossági korlátok.}
 ```
 
 ## Podcast script
@@ -52,6 +78,7 @@ Rögzíts közös megjelenést: címhely, szöveghierarchia, következetes fogal
 
 ```text
 A {tartalmi_szerzodes} és a releváns {profil} alapján tervezz {wiki_nyelv} nyelvű tanulási ábrát. Még ne generálj képet. Őrizd meg a célnyelvi példák eredeti nyelvét.
+Előbb írd meg a képen látható bevezetést és a szükséges fogalmi hidat. Ne keverd a sorrendet az oksággal, a változást szükségszerű javulással, a kontinuumot két kizáró kategóriával. Példát csak ellenőrzött adatokkal, feltételekkel és megengedett tanulsággal adj; a generátor ne találjon ki esetet.
 Mondd meg röviden: mit tudjon a tanuló a képből felismerni, elmagyarázni, összehasonlítani vagy elvégezni; ehhez milyen tartalmat kell láthatóvá tenni.
 Ezután válassz formát. Támpont lehet feliratozott tárgy/jelenet vagy metszet, térbeli ábra, idővonal, összehasonlítás, mennyiségi diagram, csoportosítás, lépéssor, mechanizmus, kapcsolati rendszer vagy ezek indokolt kombinációja. Ezek példák, nem zárt lista.
 MÁS/ELSE: ha egyik sem megfelelő, nevezd meg a tartalom tényleges természetét, és tervezz hozzá saját vagy vegyes ábrázolást. Ha új kép nem ad érdemi tanulási többletet, válassz újrafelhasználást vagy kép nélküli megoldást.
@@ -78,6 +105,7 @@ Ellenőrizd a forrásokkal a teljes szöveget, a kérdés-válasz párokat és a
 
 ```text
 Készíts egy {infografika_vagy_dia} képet ebből az ellenőrzött tervből: {ellenorzott_terv}.
+Először a terv látható bevezetése orientálja az olvasót. Különítsd el a kötelező szövegeket az elhagyható motívumoktól; az előbbiek nem hagyhatók el helyhiány miatt.
 Kövesd a választott kompozíciót, pontos feliratokat, vizuális állításokat és olvasási sorrendet. Ne adj hozzá új tényt vagy kapcsolatot.
 Megjelenés: {stilus}. Pontos szöveg és nyelve: {szoveglista}. Méret/tájolás: {a4_tajolas}. Biztonsági margó: legalább 10 mm az A4-es elhelyezésben. A végleges nyomtatási méretben legyen olvasható minden kötelező felirat; a megfelelő képrész közelében helyezd el. Őrizd meg az ékezeteket, számokat és célnyelvi példákat.
 Csak ha a terv kapcsolatokat tartalmaz: irányítatlan viszonyhoz ne adj nyílhegyet; egyirányú kapcsolaton csak a célnál legyen nyílhegy. Eltérő jelentésű oda- és visszaáramlást külön feliratozott nyilak mutassanak. A végpont, címke és feltétel egyértelműen összetartozzon.
@@ -91,6 +119,7 @@ A részletek támogassák a terv tanulási célját. A szemléltető jelenet ne 
 Vizsgáld meg a {tenyleges_kimenet} teljes tartalmát. Az összehasonlítás alapja a {tartalmi_szerzodes} és az eredeti {forrashelyek}, ne csak a generáló prompt legyen.
 Először ellenőrizd, hogy a szerződés hű-e a forrásokhoz; a hibás tervet a pontos képgenerálás sem javítja meg.
 Keresd a kihagyott CORE-elemeket, hozzáadott állításokat, elveszett feltételeket, hibás neveket/számokat, képi irányokat, magyarázat nélkül használt fogalmakat és ugrásokat.
+Vizsgáld meg, hogy a scope vállalt mélysége, magja és szükséges hídja megmaradt-e, és nem lett-e opcionális részletből kötelező tananyag. Példánál a tanulság következzen a látható esetből; metafora ne váljon hamis tényállítássá.
 Válaszold meg kizárólag a kész anyagból a tanulási célt és a kulcskérdéseket. Ne egészítsd ki fejben hiányzó háttértudással. A modell válasza ellenőrzési jelzés, nem tanulói megértés bizonyítéka.
 Képnél értékeld a formát a tanulói feladat alapján: a látható képből megoldható-e a vállalt feladat? Ne követelj kapcsolati hálót attól, ami más természetű tartalmat tanít. Formafüggően ellenőrizd a részek azonosítását, térbeli helyeket, időrendet, összehasonlítási szempontokat, arányokat, skálákat vagy folyamatlépéseket.
 MINDEN tényleges nyilat külön vizsgálj: mit jelent; honnan indul; hol és merre áll a nyílhegy; mi a célja; mely felirat és feltétel tartozik hozzá. A tartalmi kapcsolatot a forrás igazolja; a megnevező jelölés a helyes tárgyrészhez mutasson. Keresd a hiányzó, többlet-, fordított, tévesen kétirányú és félreérthető nyilakat. A helyes nyíllista önmagában nem bizonyít jó tanulási tervet.
