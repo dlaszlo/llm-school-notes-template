@@ -79,6 +79,48 @@ class ExecutorTest(unittest.TestCase):
         m.write(p, {'sha256':result['sha256'],'verifier':'test','checked_at':m.now(),'observed':'Synthetic near-white test image, not teaching content','decision':decision,'checks':dict.fromkeys(m.CHECKS,'pass'),'material_defects':['test rejection'] if decision=='rejected' else []})
         return p
 
+    def test_accepted_revision_preserves_cost_attempts_and_old_output(self):
+        result = self.generate()
+        accepted = m.review(self.config, self.path, self.report(result))
+        previous = self.root / 'previous.json'
+        m.write(previous, self.job)
+        self.target.write_text('Corrected lesson')
+        self.job['sources'][0]['sha256'] = m.sha(self.target)
+        self.job['plan']['visible_text'] = ['Corrected title']
+        self.save()
+        event = m.revise(self.config, previous, self.path, 'Observed typo')
+        self.assertEqual(event['attempts_used'], 1)
+        self.assertEqual(event['total_usd'], '0.1')
+        self.assertTrue((self.repo / accepted['path']).exists())
+        repair = self.root / 'repair.txt'
+        repair.write_text('Correct the title')
+        result2 = self.generate(repair)
+        self.assertEqual(result2['number'], 2)
+        accepted2 = m.review(self.config, self.path, self.report(result2))
+        self.assertIn('-r1.png', accepted2['path'])
+        self.assertTrue((self.repo / accepted['path']).exists())
+        self.assertEqual(m.read_ledger(self.config)['jobs'][self.job['id']]['revisions'][0]['previous_job']['plan']['visible_text'], ['Title'])
+
+    def test_revision_cannot_reset_attempts_or_budget_or_identity(self):
+        result = self.generate()
+        m.review(self.config, self.path, self.report(result))
+        previous = self.root / 'previous.json'
+        m.write(previous, self.job)
+        self.config['max_attempts'] = 1
+        with self.assertRaisesRegex(ValueError, 'Attempt bound'):
+            m.revise(self.config, previous, self.path, 'Typo')
+        self.config['max_attempts'] = 3
+        self.config['max_total_usd'] = '.1'
+        with self.assertRaisesRegex(ValueError, 'spending bounds'):
+            m.revise(self.config, previous, self.path, 'Typo')
+        self.config['max_total_usd'] = '1'
+        self.job['id'] = 'renamed-job'
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'identity'):
+            m.revise(self.config, previous, self.path, 'Typo')
+        self.assertEqual(len(m.read_ledger(self.config)['jobs']['topic-banner']['attempts']), 1)
+        self.assertIn('accepted', m.read_ledger(self.config)['jobs']['topic-banner'])
+
     def test_banner_preview_requires_its_own_hash_review(self):
         result = self.generate()
         preview = m.preview_banner(self.config, self.path)

@@ -362,6 +362,54 @@ def reconcile(config, job_path):
         return attempt
 
 
+def revise(config, previous_job_path, job_path, reason):
+    """Reopen an accepted logical image without resetting costs or attempts."""
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError('A concrete revision reason is required')
+    previous = read(previous_job_path)
+    job, repo = load_job(config, job_path)
+    keys = ('id', 'request_id', 'learner', 'target', 'role')
+    if any(previous.get(k) != job[k] for k in keys):
+        raise ValueError('Revision must keep the original logical image identity')
+    fingerprint = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+    with locked(config) as (state, ledger_path, ledger):
+        entry = ledger['jobs'].get(job['id'])
+        if not entry or entry['fingerprint'] != fingerprint(previous):
+            raise ValueError('Previous job does not match the existing ledger')
+        if not entry.get('accepted'):
+            raise ValueError('Revision requires an accepted image; resume pending work instead')
+        if any(a.get('cost_usd') is None or a['state'] == 'unknown'
+               for j in ledger['jobs'].values() for a in j['attempts']):
+            raise ValueError('Resolve unknown provider charges before revision')
+        if len(entry['attempts']) >= int(config.get('max_attempts', 3)):
+            raise ValueError('Attempt bound reached; a specific exception is required')
+        reserve = money(config['reservation_usd'])
+        learner_spent = sum((money(a['cost_usd']) for j in ledger['jobs'].values()
+                             if j['learner'] == job['learner'] for a in j['attempts']), Decimal(0))
+        if spent(ledger) + reserve > money(config['max_total_usd']) or learner_spent + reserve > money(config['learners'][job['learner']]['max_usd']):
+            raise ValueError('Revision cannot exceed the existing spending bounds')
+        accepted = entry['accepted']
+        output = within(repo, accepted['path'])
+        if sha(output) != accepted.get('published_sha256', accepted['sha256']):
+            raise ValueError('Previously published image changed or is missing')
+        revision = {'number': len(entry.get('revisions', [])) + 1,
+                    'opened_at': now(), 'reason': reason.strip(),
+                    'previous_job': previous, 'previous_fingerprint': entry['fingerprint'],
+                    'previous_acceptance': accepted,
+                    'previous_last_attempt_state': entry['attempts'][-1]['state'],
+                    'next_fingerprint': fingerprint(job)}
+        entry.setdefault('revisions', []).append(revision)
+        del entry['accepted']
+        entry['fingerprint'] = fingerprint(job)
+        # The old review remains as history; this explicit event reopens repair.
+        entry['attempts'][-1]['state'] = 'rejected'
+        entry['attempts'][-1]['revision_reason'] = reason.strip()
+        write(ledger_path, ledger)
+        return {'state': 'revision-opened', 'revision': revision['number'],
+                'attempts_used': len(entry['attempts']), 'total_usd': str(spent(ledger)),
+                'previous_path': accepted['path']}
+
+
 def banner_webp(file):
     """Encode a publication preview without resizing or changing source pixels in place."""
     output = io.BytesIO()
@@ -466,7 +514,8 @@ def review(config, job_path, review_path):
                 extension = '.webp'
             published_hash = hashlib.sha256(data).hexdigest()
             # Versioned destination determined by role and ID, never arbitrary job output path.
-            relative = 'wiki/assets/' + ('banner/' if job['role'] == 'banner' else '') + job['id'] + extension
+            suffix = '-r' + str(len(entry['revisions'])) if entry.get('revisions') else ''
+            relative = 'wiki/assets/' + ('banner/' if job['role'] == 'banner' else '') + job['id'] + suffix + extension
             output = within(repo, relative)
             if output.exists() and sha(output) != published_hash:
                 raise ValueError('Destination exists with different bytes')
@@ -482,6 +531,8 @@ def review(config, job_path, review_path):
         attempt['review'] = report
         evidence = within(repo, 'docs/evidence/media/' + job['id'])
         evidence.mkdir(parents=True, exist_ok=True)
+        for revision in entry.get('revisions', []):
+            write(evidence / f"revision-{revision['number']}.json", revision)
         write(evidence / 'job.json', job)
         (evidence / f"prompt-{attempt['number']}.txt").write_text((attempt_folder(config, job, attempt) / 'prompt.txt').read_text())
         write(evidence / f"review-{attempt['number']}.json", report)
@@ -501,6 +552,10 @@ def main():
             p.add_argument('--repair', help='Targeted correction after rejected review; same ID/counters')
         if command == 'review':
             p.add_argument('--report', required=True)
+    revision_parser = sub.add_parser('revise', help='Reopen an accepted image, preserving costs, attempts and prior evidence')
+    revision_parser.add_argument('--previous-job', required=True)
+    revision_parser.add_argument('--job', required=True)
+    revision_parser.add_argument('--reason', required=True)
     sub.add_parser('status')
     sub.add_parser('check').add_argument('--provider', action='store_true',
                                        help='Read-only authenticated key/limit check; no image generation')
@@ -539,6 +594,8 @@ def main():
             print(json.dumps(preview_infographic(config, args.job), ensure_ascii=False))
         elif args.command == 'reconcile':
             print(json.dumps(reconcile(config, args.job), ensure_ascii=False))
+        elif args.command == 'revise':
+            print(json.dumps(revise(config, args.previous_job, args.job, args.reason), ensure_ascii=False))
         elif args.command == 'generate':
             print(json.dumps(run_generate(config, args.job, args.repair), ensure_ascii=False))
         else:
