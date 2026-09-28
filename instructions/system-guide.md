@@ -8,6 +8,7 @@ This handbook explains the complete solution: why its parts exist, how they work
 |---|---|
 | How does the complete system work? | Architecture and lifecycle below |
 | What do the bots do, and how are they routed? | [Hermes and bots](hermes-and-bots.md) |
+| Which repository skill and capabilities does each role need? | [Task entry points and staged rollout](agent-capabilities.md) |
 | How does a notebook become a checked lesson? | AGENTS.md Sources, Visual evidence checks, Curriculum-aware learning and Workflows |
 | What is common and what belongs to one learner? | [AGENTS.md](../AGENTS.md), [PROFILE.md](../PROFILE.md), [shared-files.json](../shared-files.json) |
 | How do source labels and machine-authorship icons look? | [Note formatting and reusable Markdown examples](note-formatting.md) |

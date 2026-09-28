@@ -22,6 +22,8 @@ Configure model/effort, gateway identity/routing, enabled skills, toolsets, MCP 
 
 Repository skill discovery and capability filtering are deployment configuration, not changes to Hermes source or bundled skills. This section describes the integration contract; it does not claim that separate profiles, skill filters or isolation have been deployed. See upstream [project-local skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills#project-local-skills) and [profiles versus sandboxing](https://hermes-agent.nousresearch.com/docs/user-guide/profiles#profiles-vs-workspaces-vs-sandboxing).
 
+The [capability and rollout guide](agent-capabilities.md) maps the four repository skills to these roles, distinguishes discovery from enforcement, and specifies the first disconnected tutor pilot. It records which boundaries still need deployment tests.
+
 ### Initial allocation
 
 | Role | Responsibility | Proposed initial model/effort | Deployment status |

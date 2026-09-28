@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -89,6 +89,10 @@
     "instructions/install-visual-tools.md",
     "tools/test_visual_tools.py",
     "tools/visual_tools.py",
-    "visual-tools.example.json"
+    "visual-tools.example.json",
+    ".agents/skills/study-notes/SKILL.md",
+    ".agents/skills/ingest-notes/SKILL.md",
+    ".agents/skills/learning-media/SKILL.md",
+    "instructions/agent-capabilities.md"
   ]
 }

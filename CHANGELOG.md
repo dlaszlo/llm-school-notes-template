@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.1 - 2026-09-28
+
+* Added short repository-owned `study-notes`, `ingest-notes` and `learning-media` skill entries alongside `learning-visuals`. Existing shared policies remain their authoritative references; no global skill installation is required.
+* Added the optional role/capability matrix and staged tutor-pilot guide. Skill discovery, tool availability and enforced access are distinct; the guide explicitly identifies unverified deployment boundaries and executor limits.
+* **Migration**: synchronize the shared set and record the release/commit. Documentation only: no automatic profile creation, project trust, Docker installation, credential transfer, paid call or lesson change. The template stays uninitialized.
+
 ## 1.14.0 - 2026-09-28
 
 * Added an optional, repository-owned visual runner for trusted Python/Matplotlib, Graphviz, PlantUML, POV-Ray and FreeCAD sources. It records hashes, outputs and timing, bounds execution, preserves existing output and leaves visual/subject review explicitly pending. It installs nothing, publishes nothing and is not a sandbox.
