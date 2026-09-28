@@ -1,5 +1,10 @@
 # Template changelog
 
+## 1.14.6 - 2026-09-28
+
+* Added optional lossless WebP publication for generated infographics, with decoded pixel equality and a separate reviewed publication hash. No resizing, paid generation or SVG conversion occurs during compression.
+* **Migration**: synchronize shared files and record version/commit. Existing accepted PNG jobs and evidence remain valid; converting their publication files is a separate authorized migration, with old/new hashes and link updates.
+
 ## 1.14.5 - 2026-09-28
 
 * Added an optional, hash-reviewed WebP publication preview for generated banners; original resolution and source candidate are retained, with no additional paid generation. Exact diagrams and infographics retain their existing format.

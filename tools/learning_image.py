@@ -343,9 +343,32 @@ def banner_webp(file):
     return output.getvalue()
 
 
+def infographic_webp(file):
+    """Lossless raster publication; verify dimensions and every decoded RGBA pixel."""
+    output = io.BytesIO()
+    with Image.open(file) as im:
+        original = im.convert('RGBA')
+        original.save(output, format='WEBP', lossless=True, method=6, exact=True)
+        data = output.getvalue()
+        with Image.open(io.BytesIO(data)) as decoded:
+            if decoded.size != original.size or decoded.convert('RGBA').tobytes() != original.tobytes():
+                raise ValueError('Lossless infographic preview changed decoded pixels')
+    return data
+
+
 def preview_banner(config, job_path):
+    return preview_publication(config, job_path, infographic=False)
+
+
+def preview_infographic(config, job_path):
+    return preview_publication(config, job_path, infographic=True)
+
+
+def preview_publication(config, job_path, infographic=False):
     job, _ = load_job(config, job_path)
-    if job['role'] != 'banner':
+    if infographic and job['role'] not in ('infographic', 'infographic-2'):
+        raise ValueError('Lossless infographic preview requires an infographic job')
+    if not infographic and job['role'] != 'banner':
         raise ValueError('WebP preview is for banners only; precise figures retain their format')
     with locked(config) as (state, ledger_path, ledger):
         entry = ledger['jobs'][job['id']]
@@ -358,9 +381,10 @@ def preview_banner(config, job_path):
         if sha(source) != attempt['sha256']:
             raise ValueError('Image changed since generation')
         dest = source.with_name('publication.webp')
-        dest.write_bytes(banner_webp(source))
+        dest.write_bytes(infographic_webp(source) if infographic else banner_webp(source))
         return {'path': str(dest), 'source_sha256': sha(source), 'sha256': sha(dest),
-                'format': 'webp', 'quality': 85, 'bytes': dest.stat().st_size,
+                'format': 'webp', **({'lossless': True, 'pixel_identical': True} if infographic else {'quality': 85}),
+                'bytes': dest.stat().st_size,
                 'source_bytes': source.stat().st_size, 'review_required': True}
 
 
@@ -395,17 +419,19 @@ def review(config, job_path, review_path):
                 raise ValueError('Only arrow check may be inapplicable')
             if report.get('material_defects'):
                 raise ValueError('Materially defective image cannot be published')
-            # Optional compressed banner must itself have been visually reviewed.
+            # Optional publication encoding has its own hash-bound review.
             data = file.read_bytes()
             extension = '.png'
             publication = report.get('publication')
             if publication is not None:
-                if job['role'] != 'banner' or publication.get('format') != 'webp' or publication.get('quality') != 85:
-                    raise ValueError('Only the fixed WebP banner preview is supported')
+                banner = job['role'] == 'banner' and publication.get('quality') == 85 and 'lossless' not in publication
+                infographic = job['role'] in ('infographic', 'infographic-2') and publication.get('lossless') is True and 'quality' not in publication
+                if publication.get('format') != 'webp' or not (banner or infographic):
+                    raise ValueError('Use the fixed banner preview or lossless infographic preview')
                 nonempty(publication, ['sha256', 'observed'])
                 if publication.get('checked') is not True:
                     raise ValueError('Publication preview must be inspected explicitly')
-                data = banner_webp(file)
+                data = banner_webp(file) if banner else infographic_webp(file)
                 if hashlib.sha256(data).hexdigest() != publication['sha256']:
                     raise ValueError('Publication preview hash mismatch; inspect the current encoding')
                 extension = '.webp'
@@ -439,7 +465,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', help='Explicit policy; default: learning-images.json in this checkout')
     sub = parser.add_subparsers(dest='command', required=True)
-    for command in ('validate', 'prompt', 'generate', 'review', 'reconcile', 'preview-banner'):
+    for command in ('validate', 'prompt', 'generate', 'review', 'reconcile', 'preview-banner', 'preview-infographic'):
         p = sub.add_parser(command)
         p.add_argument('--job', required=True)
         if command == 'generate':
@@ -477,6 +503,8 @@ def main():
             print(compile_prompt(job) if args.command == 'prompt' else json.dumps({'valid': True, 'id': job['id']}))
         elif args.command == 'preview-banner':
             print(json.dumps(preview_banner(config, args.job), ensure_ascii=False))
+        elif args.command == 'preview-infographic':
+            print(json.dumps(preview_infographic(config, args.job), ensure_ascii=False))
         elif args.command == 'reconcile':
             print(json.dumps(reconcile(config, args.job), ensure_ascii=False))
         elif args.command == 'generate':

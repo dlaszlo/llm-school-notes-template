@@ -16,7 +16,7 @@ For historical topics, apply *Orient historical learning in time and place* in [
 
 | Format | Default deliverable | Learning structure |
 |---|---|---|
-| Infographic | PNG; JPG on request; landscape A4 composition, portrait on request | A clear visual explanation that serves the chosen learning task |
+| Infographic | PNG, or a verified smaller lossless WebP for wiki publication; JPG on request; landscape A4 composition, portrait on request | A clear visual explanation that serves the chosen learning task |
 | Presentation | Landscape A4 PDF; one slide per page | Brief context, prerequisite bridge, coherent progression and recap |
 | Podcast | MP3 with a companion script; two fictional voices | Friendly conversation with an accessible opening, connected topic blocks, key questions and a closing synthesis |
 | Printable study notes | Portrait A4 PDF with selectable/searchable body text | Connected explanation, examples, figures, recap and separate final answers |

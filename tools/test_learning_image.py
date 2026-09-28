@@ -77,6 +77,41 @@ class ExecutorTest(unittest.TestCase):
         self.assertTrue(accepted['path'].endswith('.png'))
         self.assertEqual(m.sha(self.repo/accepted['path']), result['sha256'])
 
+    def test_lossless_infographic_publication_requires_exact_review(self):
+        self.job['role'] = 'infographic-2'
+        self.save()
+        result = self.generate()
+        preview = m.preview_infographic(self.config, self.path)
+        self.assertTrue(preview['pixel_identical'])
+        report = self.report(result)
+        data = m.read(report)
+        data['publication'] = {'format':'webp', 'quality':85, 'sha256':preview['sha256'],
+                               'checked':True, 'observed':'Synthetic preview'}
+        m.write(report, data)
+        with self.assertRaisesRegex(ValueError, 'lossless infographic'):
+            m.review(self.config, self.path, report)
+        data['publication'].pop('quality')
+        data['publication']['lossless'] = True
+        data['publication']['sha256'] = 'wrong'
+        m.write(report, data)
+        with self.assertRaisesRegex(ValueError, 'preview hash mismatch'):
+            m.review(self.config, self.path, report)
+        data['publication']['sha256'] = preview['sha256']
+        m.write(report, data)
+        accepted = m.review(self.config, self.path, report)
+        self.assertTrue(accepted['path'].endswith('.webp'))
+        self.assertEqual(m.sha(self.repo/accepted['path']), preview['sha256'])
+        self.assertEqual(self.calls, 1)
+
+    def test_lossless_encoder_preserves_sharp_pixels_and_transparency(self):
+        original = Image.new('RGBA', (41, 29))
+        original.putdata([((x*31)%256, (y*47)%256, (x*y)%256, (x+y)%256)
+                          for y in range(29) for x in range(41)])
+        file = self.root/'sharp.png'; original.save(file)
+        with Image.open(io.BytesIO(m.infographic_webp(file))) as decoded:
+            self.assertEqual(decoded.size, original.size)
+            self.assertEqual(decoded.convert('RGBA').tobytes(), original.tobytes())
+
     def test_missing_credential_fails_before_reservation_or_network(self):
         empty=self.root/'empty.env';empty.write_text('OPENROUTER_API_KEY=\n')
         self.config['env_file']=str(empty)
