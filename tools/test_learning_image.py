@@ -55,6 +55,7 @@ class ExecutorTest(unittest.TestCase):
             build.return_value.open.side_effect = error
             with self.assertRaisesRegex(ValueError, '^Provider credential check failed: HTTP 401$'):
                 m.provider_check(self.config)
+            self.assertTrue(error.closed)
             handler = build.call_args.args[0]()
             self.assertIsNone(handler.redirect_request(None, None, 302, '', {}, 'https://other.invalid/'))
 

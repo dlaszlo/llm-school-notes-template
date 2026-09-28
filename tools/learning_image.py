@@ -247,6 +247,7 @@ def provider_check(config):
         result['image_generation_tested'] = False
         return result
     except urllib.error.HTTPError as exc:
+        exc.close()
         raise ValueError(f'Provider credential check failed: HTTP {exc.code}') from None
     except (OSError, ValueError, KeyError, TypeError, InvalidOperation):
         raise ValueError('Provider credential check failed: connection or response invalid') from None
