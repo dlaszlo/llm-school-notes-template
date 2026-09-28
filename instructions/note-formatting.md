@@ -76,6 +76,26 @@ A rövid válasz.
 
 The questions remain compact when closed. The `<dl><dd>` wrapper indents only the opened answer using ordinary HTML, without a code block, visible bullet or quote color. Preserve blank lines so the answer remains Markdown. Exact indentation is viewer-dependent. Within one answer use ordinary paragraphs, not an extra standalone `<br />` between explanation and source passage; use one standalone `<br />` before the first answer paragraph and `<br /><br />` after the last paragraph, inside the wrapper. These boundary spacers are the explicit exception to avoiding stacked breaks elsewhere. Both are inside `<details>`: when closed, neither affects the spacing between questions. A question does not acquire an agent label merely because it was generated. Do not put alert syntax inside the disclosure. Preserve the distinction between the taught answer and a separate optional explanation or correction.
 
+## Numbered open questions
+
+Always number unresolved questions consecutively in Markdown, even if there is only one. Give each a concrete title and enough context to understand the uncertainty without searching the page. Keep the problem, relevant alternatives, their explanation and the recommendation/next step within that same numbered item. Scale detail to need: omit artificial alternatives and unnecessary subheadings, but never omit the context or what would resolve the question. Do not turn an established correction into a choice between equally valid answers. Use explicit `1.`, `2.`, `3.` markers in the file and indent continuation paragraphs by three spaces. This section is separate from self-tests; it records unresolved issues, not quiz answers.
+
+```markdown
+# Nyitott kérdések
+
+1. **A konkrét tisztázandó kérdés?**
+
+   **Kontextus:** melyik témáról, állításról vagy feladatról van szó.
+
+   **Probléma:** mi bizonytalan, miért számít, és mit tudunk biztosan.
+
+   **Lehetőségek:** a valóban szóba jövő változatok, indoklással és következményeikkel, ha vannak ilyenek.
+
+   **Javaslat:** az indokolt következő lépés; milyen válasz vagy bizonyíték oldaná fel a kérdést.
+
+2. **Egy másik, önálló kérdés?** A szükséges kontextus, bizonytalanság és következő lépés röviden is elférhet egy bekezdésben.
+```
+
 ## Explanatory images and exports
 
 Distinguish **what the content is based on** from **who generated the image**. An agent arranging textbook or teacher facts visually has not thereby added a new explanation. Do not label every generated image with "Codex's explanation" or the equivalent. Keep the maker, image model and prompt in comments/evidence. A visible role/author label is for a substantive agent-added explanation, addition or correction, attached only to that contribution. This applies equally to prose and images.

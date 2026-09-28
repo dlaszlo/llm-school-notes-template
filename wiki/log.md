@@ -2,6 +2,8 @@
 
 ## 2026-09-28
 
+* **Update**: Shared release [1.11.9](../CHANGELOG.md) requires numbered, self-contained open questions and adds a [formatting example](../instructions/note-formatting.md). The template remains uninitialized.
+
 * **Update**: Shared release [1.11.8](../CHANGELOG.md) adds opening and closing breathing room only inside [expandable answers](../instructions/note-formatting.md). Closed questions remain compact; the template stays uninitialized.
 
 * **Update**: Shared release [1.11.7](../CHANGELOG.md) distinguishes sourced visual content from image-maker credit and tightens [expandable-answer spacing and indentation](../instructions/note-formatting.md). The template remains uninitialized.

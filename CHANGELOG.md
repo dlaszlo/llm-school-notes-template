@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.11.9 - 2026-09-28
+
+* Open questions are always sequential numbered Markdown items, each grouping its own context, concrete uncertainty, relevant alternatives/explanation and recommendation or next step. Depth is proportional; no artificial alternatives or empty sections.
+* Added a reusable open-question example. Continue the two-page preview; no bulk rewrite or changes to learning facts.
+
 ## 1.11.8 - 2026-09-28
 
 * Added one opening break and two closing breaks inside expandable answers, following the user's GitHub preview feedback. Closed questions remain compact; spacing within multi-part answers stays unchanged.
