@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:freecad="http://www.freecadweb.org/wiki/index.php?title=Svg_Namespace" width="1000" height="630" viewBox="0 0 1000 630">
+<title>I keresztmetszet: övek és gerinc</title><rect width="1000" height="630" fill="#fafcfd"/>
+<g font-family="DejaVu Sans,sans-serif" fill="#193f58">
+<text x="40" y="48" font-size="29" font-weight="bold">I keresztmetszet: övek és gerinc</text>
+<text x="40" y="82" font-size="19">A térbeli tartó és az elölnézeti keresztmetszet összetartozik.</text>
+<text x="270" y="125" text-anchor="middle" font-size="19">Térbeli nézet</text>
+<text x="750" y="125" text-anchor="middle" font-size="19">Elölnézet</text>
+<text x="40" y="510" font-size="20">Magasság: 200 mm; övszélesség: 120 mm; övvastagság: 12 mm.</text><text x="40" y="539" font-size="20">Gerincvastagság: 8 mm. Terület: 2 × 120 × 12 + 8 × 176 = 4288 mm².</text></g>
+<g transform="translate(270,300) rotate(90) scale(0.7774815830232241)"><g   fill="none"
+   stroke="rgb(0, 0, 0)"
+   stroke-linecap="butt"
+   stroke-linejoin="miter"
+   stroke-width="1.5"
+   transform="scale(1, -1)"
+  >
+<path vector-effect="non-scaling-stroke" id= "1" d=" M 200 -98.387 L 190.4 -101.607 " />
+<path vector-effect="non-scaling-stroke" id= "2" d=" M 190.4 -101.607 L 136.64 -69.5507 " />
+<path vector-effect="non-scaling-stroke" id= "3" d=" M 190.4 -101.607 L 190.4 -51.519 " />
+<path vector-effect="non-scaling-stroke" id= "4" d=" M 200 8.94427 L -40 152.053 " />
+<path vector-effect="non-scaling-stroke" id= "5" d=" M 200 -98.387 L 200 8.94427 " />
+<path vector-effect="non-scaling-stroke" id= "6" d=" M 200 8.94427 L 190.4 5.72433 " />
+<path vector-effect="non-scaling-stroke" id= "7" d=" M 190.4 5.72433 L -49.6 148.833 " />
+<path vector-effect="non-scaling-stroke" id= "8" d=" M -40 152.053 L -49.6 148.833 " />
+<path vector-effect="non-scaling-stroke" id= "9" d=" M -49.6 98.7448 L -49.6 148.833 " />
+<path vector-effect="non-scaling-stroke" id= "10" d=" M 190.4 -44.3636 L 190.4 5.72433 " />
+<path vector-effect="non-scaling-stroke" id= "11" d=" M 190.4 -44.3636 L -49.6 98.7448 " />
+<path vector-effect="non-scaling-stroke" id= "12" d=" M 190.4 -51.519 L 49.6 -98.7448 " />
+<path vector-effect="non-scaling-stroke" id= "13" d=" M 190.4 -44.3636 L 49.6 -91.5893 " />
+<path vector-effect="non-scaling-stroke" id= "14" d=" M -49.6 98.7448 L -136.64 69.5507 " />
+<path vector-effect="non-scaling-stroke" id= "15" d=" M 49.6 -148.833 L 49.6 -98.7448 " />
+<path vector-effect="non-scaling-stroke" id= "16" d=" M 49.6 -41.5014 L -190.4 101.607 " />
+<path vector-effect="non-scaling-stroke" id= "17" d=" M 49.6 -91.5893 L 49.6 -41.5014 " />
+<path vector-effect="non-scaling-stroke" id= "18" d=" M 49.6 -41.5014 L 40 -44.7214 " />
+<path vector-effect="non-scaling-stroke" id= "19" d=" M 40 -44.7214 L -200 98.387 " />
+<path vector-effect="non-scaling-stroke" id= "20" d=" M -190.4 101.607 L -200 98.387 " />
+<path vector-effect="non-scaling-stroke" id= "21" d=" M 40 -152.053 L -200 -8.94427 " />
+<path vector-effect="non-scaling-stroke" id= "22" d=" M -200 -8.94427 L -200 98.387 " />
+<path vector-effect="non-scaling-stroke" id= "23" d=" M 40 -152.053 L 40 -44.7214 " />
+<path vector-effect="non-scaling-stroke" id= "24" d=" M 49.6 -148.833 L 40 -152.053 " />
+</g>
+</g>
+<g transform="translate(750,300) rotate(90) scale(0.7774815830232241)"><g   fill="none"
+   stroke="rgb(0, 0, 0)"
+   stroke-linecap="butt"
+   stroke-linejoin="miter"
+   stroke-width="1.5"
+   transform="scale(1, -1)"
+  >
+<path vector-effect="non-scaling-stroke" id= "1" d=" M 100 -60 L 88 -60 " />
+<path vector-effect="non-scaling-stroke" id= "2" d=" M 88 -60 L 88 -4 " />
+<path vector-effect="non-scaling-stroke" id= "3" d=" M 100 -60 L 100 60 " />
+<path vector-effect="non-scaling-stroke" id= "4" d=" M 100 60 L 88 60 " />
+<path vector-effect="non-scaling-stroke" id= "5" d=" M 88 4 L 88 60 " />
+<path vector-effect="non-scaling-stroke" id= "6" d=" M 88 -4 L -88 -4 " />
+<path vector-effect="non-scaling-stroke" id= "7" d=" M 88 4 L -88 4 " />
+<path vector-effect="non-scaling-stroke" id= "8" d=" M -88 -60 L -88 -4 " />
+<path vector-effect="non-scaling-stroke" id= "9" d=" M -88 4 L -88 60 " />
+<path vector-effect="non-scaling-stroke" id= "10" d=" M -88 60 L -100 60 " />
+<path vector-effect="non-scaling-stroke" id= "11" d=" M -100 -60 L -100 60 " />
+<path vector-effect="non-scaling-stroke" id= "12" d=" M -88 -60 L -100 -60 " />
+</g>
+</g>
+</svg>

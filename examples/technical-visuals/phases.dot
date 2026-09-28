@@ -1,0 +1,12 @@
+digraph Phases {
+ graph [rankdir=TB, bgcolor="white", pad=0.35, nodesep=0.7, ranksep=1.05];
+ node [shape=box, style="rounded,filled", fillcolor="#e9f4f8", color="#28536b", fontname="DejaVu Sans", fontsize=20, margin="0.2,0.17"];
+ edge [fontname="DejaVu Sans", fontsize=16, color="#28536b", arrowsize=0.9];
+ solid [label="Szilárd\npl. jég"];
+ liquid [label="Folyékony\npl. víz"];
+ gas [label="Légnemű\npl. vízgőz"];
+ solid -> liquid [tailport=w, headport=w, label="olvadás", color="#a74120"];
+ liquid -> solid [tailport=e, headport=e, label="fagyás", color="#246da1"];
+ liquid -> gas [tailport=w, headport=w, label="párolgás / forrás", color="#a74120"];
+ gas -> liquid [tailport=e, headport=e, label="lecsapódás", color="#246da1"];
+}

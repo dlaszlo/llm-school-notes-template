@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:freecad="http://www.freecadweb.org/wiki/index.php?title=Svg_Namespace" width="1000" height="630" viewBox="0 0 1000 630">
+<title>A nyílás térfogatot vesz el a falból</title><rect width="1000" height="630" fill="#fafcfd"/>
+<g font-family="DejaVu Sans,sans-serif" fill="#193f58">
+<text x="40" y="48" font-size="29" font-weight="bold">A nyílás térfogatot vesz el a falból</text>
+<text x="40" y="82" font-size="19">Egyszerű geometriai modell; áthidaló és szerkezeti méretezés nélkül.</text>
+<text x="270" y="125" text-anchor="middle" font-size="19">Térbeli nézet</text>
+<text x="750" y="125" text-anchor="middle" font-size="19">Elölnézet</text>
+<text x="40" y="510" font-size="20">Fal: 3,00 × 2,80 m; vastagság: 0,30 m. Nyílás: 1,20 × 1,40 m.</text><text x="40" y="539" font-size="20">Nettó térfogat: (3,00 × 2,80 − 1,20 × 1,40) × 0,30 = 2,016 m³.</text></g>
+<g transform="translate(270,300) rotate(90) scale(0.08749314376986124)"><g   fill="none"
+   stroke="rgb(0, 0, 0)"
+   stroke-linecap="butt"
+   stroke-linejoin="miter"
+   stroke-width="1.5"
+   transform="scale(1, -1)"
+  >
+<path vector-effect="non-scaling-stroke" id= "1" d=" M 1210 -1019.65 L -1030 -1770.97 " />
+<path vector-effect="non-scaling-stroke" id= "2" d=" M -1030 -1770.97 L -1210 -1663.63 " />
+<path vector-effect="non-scaling-stroke" id= "3" d=" M 1210 -1019.65 L 1210 1663.63 " />
+<path vector-effect="non-scaling-stroke" id= "4" d=" M 1210 1663.63 L -1030 912.316 " />
+<path vector-effect="non-scaling-stroke" id= "5" d=" M -1030 -1770.97 L -1030 912.316 " />
+<path vector-effect="non-scaling-stroke" id= "6" d=" M 490 -456.158 L -630 -831.817 " />
+<path vector-effect="non-scaling-stroke" id= "7" d=" M -630 -831.817 L -630 241.495 " />
+<path vector-effect="non-scaling-stroke" id= "8" d=" M 490 617.155 L -630 241.495 " />
+<path vector-effect="non-scaling-stroke" id= "9" d=" M 490 -456.158 L 490 617.155 " />
+<path vector-effect="non-scaling-stroke" id= "10" d=" M -1210 -1663.63 L -1210 1019.65 " />
+<path vector-effect="non-scaling-stroke" id= "11" d=" M -1030 912.316 L -1210 1019.65 " />
+<path vector-effect="non-scaling-stroke" id= "12" d=" M 1030 1770.97 L -1210 1019.65 " />
+<path vector-effect="non-scaling-stroke" id= "13" d=" M 310 -348.827 L -630 -664.112 " />
+<path vector-effect="non-scaling-stroke" id= "14" d=" M 310 -348.827 L 310 556.781 " />
+<path vector-effect="non-scaling-stroke" id= "15" d=" M 1210 1663.63 L 1030 1770.97 " />
+<path vector-effect="non-scaling-stroke" id= "16" d=" M 490 -456.158 L 310 -348.827 " />
+</g>
+</g>
+<g transform="translate(750,300) rotate(90) scale(0.08749314376986124)"><g   fill="none"
+   stroke="rgb(0, 0, 0)"
+   stroke-linecap="butt"
+   stroke-linejoin="miter"
+   stroke-width="1.5"
+   transform="scale(1, -1)"
+  >
+<path vector-effect="non-scaling-stroke" id= "1" d=" M 1400 -1500 L -1400 -1500 " />
+<path vector-effect="non-scaling-stroke" id= "2" d=" M 1400 -1500 L 1400 1500 " />
+<path vector-effect="non-scaling-stroke" id= "3" d=" M 1400 1500 L -1400 1500 " />
+<path vector-effect="non-scaling-stroke" id= "4" d=" M -1400 -1500 L -1400 1500 " />
+<path vector-effect="non-scaling-stroke" id= "5" d=" M 500 -600 L -900 -600 " />
+<path vector-effect="non-scaling-stroke" id= "6" d=" M -900 -600 L -900 600 " />
+<path vector-effect="non-scaling-stroke" id= "7" d=" M 500 600 L -900 600 " />
+<path vector-effect="non-scaling-stroke" id= "8" d=" M 500 -600 L 500 600 " />
+</g>
+</g>
+</svg>

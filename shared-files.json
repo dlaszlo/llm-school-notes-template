@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -54,6 +54,26 @@
     "examples/technical-visuals/preview/lever.mp4",
     "examples/technical-visuals/preview/structure.svg",
     "examples/technical-visuals/preview/timings.json",
-    "examples/technical-visuals/structure.dot"
+    "examples/technical-visuals/structure.dot",
+    "examples/technical-visuals/more.md",
+    "examples/technical-visuals/cad-more.py",
+    "examples/technical-visuals/cube-section.pov",
+    "examples/technical-visuals/more.html",
+    "examples/technical-visuals/more.py",
+    "examples/technical-visuals/phases.dot",
+    "examples/technical-visuals/pipe-cutaway.pov",
+    "examples/technical-visuals/preview/cad-bracket.svg",
+    "examples/technical-visuals/preview/cad-section.svg",
+    "examples/technical-visuals/preview/cad-wall.svg",
+    "examples/technical-visuals/preview/cube-section.png",
+    "examples/technical-visuals/preview/more-checks.json",
+    "examples/technical-visuals/preview/phases.svg",
+    "examples/technical-visuals/preview/pipe-cutaway.png",
+    "examples/technical-visuals/preview/quadratic.svg",
+    "examples/technical-visuals/preview/ramps.png",
+    "examples/technical-visuals/preview/web-request.svg",
+    "examples/technical-visuals/quadratic.dot",
+    "examples/technical-visuals/ramps.pov",
+    "examples/technical-visuals/web-request.dot"
   ]
 }

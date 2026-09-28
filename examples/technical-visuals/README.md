@@ -2,6 +2,8 @@
 
 Optional, reproducible examples for comparing three tools. This directory is not a plugin or an installer. It changes no agent configuration, needs no credentials and is not required for ordinary wiki work. These are demonstrations, not accepted lesson replacements or manufacturing drawings.
 
+**Second series:** [nine more examples](more.md), or open [the new local gallery](more.html).
+
 ## View the examples
 
 Open [index.html](index.html) from a local Git checkout in a browser for the complete gallery and playable animation. GitHub displays the HTML source; the previews below work directly in its Markdown viewer.
@@ -76,7 +78,7 @@ For another machine, first inspect that machine's package/dependency availabilit
 
 Choosing a hatch or constructing a helix does not establish an applicable wall notation or thread specification. For each lesson, identify the meaningful detail, its source/convention, the appropriate numeric/structural checks, then inspect the final view. An attractive generated raster may supplement a precise diagram but does not replace its checked geometry.
 
-Human acceptance is separate from these checks. These initial previews await explicit feedback; silence does not mean they were viewed or accepted.
+Human acceptance is separate from these checks. The user accepted the first three previews on 2026-09-28, while noting that the first POV-Ray example is planar. The second series addresses spatial visualization; those nine samples await separate feedback. Silence does not mean a sample was viewed or accepted.
 
 ## References
 

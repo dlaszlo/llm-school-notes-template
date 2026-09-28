@@ -1,0 +1,196 @@
+{
+  "runs": {
+    "quadratic": {
+      "seconds": 0.020344469987321645,
+      "edge_check": [
+        "delta->positive",
+        "positive->two",
+        "positive->zero",
+        "start->delta",
+        "zero->none",
+        "zero->one"
+      ]
+    },
+    "phases": {
+      "seconds": 0.024112114973831922,
+      "edge_check": [
+        "gas:e->liquid:e",
+        "liquid:e->solid:e",
+        "liquid:w->gas:w",
+        "solid:w->liquid:w"
+      ]
+    },
+    "web-request": {
+      "seconds": 0.032817895989865065,
+      "edge_check": [
+        "browser:w->server:w",
+        "database:e->server:e",
+        "server:e->browser:e",
+        "server:w->database:w"
+      ]
+    },
+    "cad": {
+      "seconds": 0.23511855804827064
+    },
+    "ramps": {
+      "seconds": 2.8498718760092743,
+      "settings": {
+        "width": 1200,
+        "height": 800,
+        "quality": 9,
+        "antialias": 0.1,
+        "threads": 2
+      },
+      "scene_checks": [
+        "CHECK equal_height=1.5 run_long=3 run_short=1.5"
+      ]
+    },
+    "pipe-cutaway": {
+      "seconds": 3.7165999480057508,
+      "settings": {
+        "width": 1200,
+        "height": 800,
+        "quality": 9,
+        "antialias": 0.1,
+        "threads": 2
+      },
+      "scene_checks": [
+        "CHECK outer_radius=1.3 inner_radius=1.0 thickness=0.3 height=3"
+      ]
+    },
+    "cube-section": {
+      "seconds": 3.7686374050099403,
+      "settings": {
+        "width": 1200,
+        "height": 800,
+        "quality": 9,
+        "antialias": 0.1,
+        "threads": 2
+      },
+      "scene_checks": [
+        "CHECK plane=x+y-z=0 cube_side=2 section_side=sqrt(2)"
+      ],
+      "hexagon_check": {
+        "points": [
+          [
+            1.0,
+            -1.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            1.0
+          ],
+          [
+            -1.0,
+            1.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            -1.0
+          ],
+          [
+            0.0,
+            -1.0,
+            -1.0
+          ]
+        ],
+        "side_lengths": [
+          1.4142135623730951,
+          1.4142135623730951,
+          1.4142135623730951,
+          1.4142135623730951,
+          1.4142135623730951,
+          1.4142135623730951
+        ],
+        "interior_angles_deg": 120
+      }
+    }
+  },
+  "source_sha256": {
+    "quadratic.dot": "d377e6fa01dab0ac2583ef4bbf83ad65785811f8b75f2e16e2175fc73840b453",
+    "phases.dot": "419d89b7c1253a12f2cdc5682262490f6e8eee1bd7d95a53d7accb72f1eda3f7",
+    "web-request.dot": "8ef98742dc9a3b896834d5be9153a1d973093dc28af9f36bbefc1cdee39d9bf6",
+    "cad-more.py": "15b57f9e0746939d3f1d288bc421e8c183d882ff633ad876a52d4c4bf008700f",
+    "ramps.pov": "e1bc834c9339a4f97a1c9a1fc722a95e28da418a9437168a7b18d25d65ad2b13",
+    "pipe-cutaway.pov": "e502bfdb29363f3920a395f68ceeaafaf67b7b411b61af8054ef5f3c328236cf",
+    "cube-section.pov": "55e6f709a431e046502809becc8c7087761c4c184e25b82309b2382c9af160ef",
+    "more.py": "6420b5d913a67559c08d35c25cbcd7c013a3e29f0e6a895112ff39ff83cec525"
+  },
+  "cad_checks": {
+    "seconds": 0.10043449501972646,
+    "cases": [
+      {
+        "name": "cad-bracket",
+        "volume_mm3": 50915.04440784611,
+        "expected_volume_mm3": 50915.04440784612,
+        "checks": [
+          "80\u00d750\u00d760 mm bounds",
+          "three bore centers empty",
+          "one valid solid",
+          "analytic volume"
+        ],
+        "freecad_version": [
+          "1",
+          "1",
+          "3",
+          "20260725 (Git shallow)",
+          "Unknown",
+          "2026/07/25 04:52:02",
+          "grafted,grafted",
+          "145529fe741292ff0b3977a01195bf0247425794"
+        ]
+      },
+      {
+        "name": "cad-wall",
+        "volume_mm3": 2016000000.0,
+        "expected_volume_mm3": 2016000000,
+        "checks": [
+          "opening center empty",
+          "wall below opening remains",
+          "one valid solid",
+          "net volume 2.016 m\u00b3"
+        ],
+        "freecad_version": [
+          "1",
+          "1",
+          "3",
+          "20260725 (Git shallow)",
+          "Unknown",
+          "2026/07/25 04:52:02",
+          "grafted,grafted",
+          "145529fe741292ff0b3977a01195bf0247425794"
+        ]
+      },
+      {
+        "name": "cad-section",
+        "volume_mm3": 1715200.0,
+        "expected_volume_mm3": 1715200,
+        "checks": [
+          "200 mm high",
+          "web center solid; side cavity empty",
+          "one valid solid",
+          "section area from volume/400 = 4288 mm\u00b2"
+        ],
+        "freecad_version": [
+          "1",
+          "1",
+          "3",
+          "20260725 (Git shallow)",
+          "Unknown",
+          "2026/07/25 04:52:02",
+          "grafted,grafted",
+          "145529fe741292ff0b3977a01195bf0247425794"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+digraph Request {
+ graph [rankdir=TB, bgcolor="white", pad=0.3, ranksep=0.9, nodesep=0.4];
+ node [shape=box, style="rounded,filled", fillcolor="#eff6f0", color="#2d6844", fontname="DejaVu Sans", fontsize=19, margin="0.2,0.15"];
+ edge [fontname="DejaVu Sans", fontsize=16, color="#2d6844"];
+ browser [label="Böngésző\nMegnyitod a leckét"];
+ server [label="Alkalmazásszerver\nÖsszeállítja a választ"];
+ database [shape=cylinder, label="Adatbázis\nTárolt leckeadatok"];
+ browser -> server [tailport=w, headport=w, label="1. Kérés"];
+ server -> database [tailport=w, headport=w, label="2. Lekérdezés"];
+ database -> server [tailport=e, headport=e, label="3. Adatok", style=dashed, color="#56618e"];
+ server -> browser [tailport=e, headport=e, label="4. Válasz", style=dashed, color="#56618e"];
+}

@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.13.5 - 2026-09-28
+
+* Added a second optional gallery with three Graphviz relationship/decision diagrams, three headless FreeCAD models with TechDraw views and three genuinely spatial POV-Ray scenes. Sources, checked previews and bounded measurements are reproducible from the checkout.
+* Recorded positive feedback on the original three samples, including the request for spatial POV-Ray examples. The nine new examples await separate human feedback; no lesson replacement or runtime deployment follows from them.
+* **Migration**: synchronize the shared set and record the template revision. No rule removal, new dependency, addon, secret or installation step is required for ordinary wiki use.
+
 ## 1.13.4 - 2026-09-28
 
 * Added tool-independent checks for precision-dependent visual details, distinguishing geometry, notation, final rendering and animation behavior. Preserve the existing source/evidence workflow.

@@ -1,0 +1,17 @@
+digraph Quadratic {
+ graph [rankdir=TB, bgcolor="white", pad=0.3, nodesep=0.3, ranksep=0.5];
+ node [shape=box, style="rounded,filled", fillcolor="#eef3fb", color="#304e7e", fontname="DejaVu Sans", fontsize=18, margin="0.14,0.12"];
+ edge [fontname="DejaVu Sans", fontsize=17, color="#304e7e"];
+ start [label="ax² + bx + c = 0\na, b, c valós; a ≠ 0"];
+ delta [label="D = b² − 4ac"];
+ positive [shape=diamond, label="D > 0?", fillcolor="#fff3d8"];
+ zero [shape=diamond, label="D = 0?", fillcolor="#fff3d8"];
+ two [label="Két különböző\nvalós gyök"];
+ one [label="Egy valós gyök\n(kétszeres gyök)"];
+ none [label="Nincs valós gyök"];
+ start -> delta; delta -> positive;
+ positive -> two [label="igen"];
+ positive -> zero [label="nem"];
+ zero -> one [label="igen"];
+ zero -> none [label="nem"];
+}
