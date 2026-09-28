@@ -1,0 +1,14 @@
+@startuml
+title A complete decision with two outcomes
+skinparam backgroundColor white
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+start
+:Read an integer n;
+if (Is n divisible by 2?) then (yes)
+  :Report even;
+else (no)
+  :Report odd;
+endif
+stop
+@enduml

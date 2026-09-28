@@ -14,6 +14,7 @@ This handbook explains the complete solution: why its parts exist, how they work
 | How do we make images, podcasts, slides and printable notes? | [Media workflows](media-workflows.md), [prompt stages](media-prompts.md), [handoff contract](media-handoff.md) |
 | How does Drive authentication and upload work? | [Drive configuration and operations](install-drive.md) |
 | How do we rebuild from zero? | [Installation sequence and inventory](install.md) |
+| How do precise diagrams run locally or in an agent? | [Visual selection](technical-visuals.md), [runtime installation and execution](install-visual-tools.md), [repository skill](../.agents/skills/learning-visuals/SKILL.md) |
 | What was actually installed on our machine? | Private deployment inventory: versions, sanitized configuration, checks and dated change records |
 | What can we safely turn into a blog post? | The publishing guidance below, backed by the private experiment records |
 

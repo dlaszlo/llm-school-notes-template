@@ -1,5 +1,13 @@
 # Template changelog
 
+## 1.14.0 - 2026-09-28
+
+* Added an optional, repository-owned visual runner for trusted Python/Matplotlib, Graphviz, PlantUML, POV-Ray and FreeCAD sources. It records hashes, outputs and timing, bounds execution, preserves existing output and leaves visual/subject review explicitly pending. It installs nothing, publishes nothing and is not a sandbox.
+* Added locked optional Matplotlib/NumPy dependencies, a machine-local runtime path example, execution-contract tests and reproducible Matplotlib/PlantUML/FreeCAD samples. External programs use documented package-manager or verified official-distribution installation.
+* Added a thin cross-agent `learning-visuals` project skill pointing to existing policy owners. Hermes profile/tool configuration remains optional deployment work; no global or bundled skill modification is required.
+* Corrected the remaining stale human-feedback sentence for the previous nine samples; new runner samples have their own pending human-review status.
+* **Migration**: synchronize the full shared set, record the release/commit, and install optional runtimes only for authorized machines/tasks using `instructions/install-visual-tools.md`. Ordinary note tools retain their dependencies. Local renderer paths and output caches are ignored. No automatic lesson change, paid call, agent configuration or credential transfer.
+
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
 ## 1.13.6 - 2026-09-28

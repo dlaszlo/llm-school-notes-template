@@ -78,7 +78,9 @@ For another machine, first inspect that machine's package/dependency availabilit
 
 Choosing a hatch or constructing a helix does not establish an applicable wall notation or thread specification. For each lesson, identify the meaningful detail, its source/convention, the appropriate numeric/structural checks, then inspect the final view. An attractive generated raster may supplement a precise diagram but does not replace its checked geometry.
 
-Human acceptance is separate from these checks. The user accepted the first three previews on 2026-09-28, while noting that the first POV-Ray example is planar. The second series addresses spatial visualization; those nine samples await separate feedback. Silence does not mean a sample was viewed or accepted.
+Human acceptance is separate from these checks. The user accepted the first three previews on 2026-09-28, while noting that the first POV-Ray example is planar, and subsequently accepted the nine samples in the second series too. New execution examples remain separate from that acceptance. Silence does not mean a sample was viewed or accepted.
+
+The [repository runner examples](runner.md) add Matplotlib and PlantUML and demonstrate the persistent installation path.
 
 ## References
 

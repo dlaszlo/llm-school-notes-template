@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.13.6",
+  "version": "1.14.0",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -74,6 +74,21 @@
     "examples/technical-visuals/preview/web-request.svg",
     "examples/technical-visuals/quadratic.dot",
     "examples/technical-visuals/ramps.pov",
-    "examples/technical-visuals/web-request.dot"
+    "examples/technical-visuals/web-request.dot",
+    ".agents/skills/learning-visuals/SKILL.md",
+    "examples/technical-visuals/decision-activity.puml",
+    "examples/technical-visuals/function-plot.py",
+    "examples/technical-visuals/message-sequence.puml",
+    "examples/technical-visuals/plate-model.py",
+    "examples/technical-visuals/preview/decision-activity.svg",
+    "examples/technical-visuals/preview/function-plot.svg",
+    "examples/technical-visuals/preview/message-sequence.svg",
+    "examples/technical-visuals/preview/plate-model.svg",
+    "examples/technical-visuals/preview/runner-checks.json",
+    "examples/technical-visuals/runner.md",
+    "instructions/install-visual-tools.md",
+    "tools/test_visual_tools.py",
+    "tools/visual_tools.py",
+    "visual-tools.example.json"
   ]
 }

@@ -1,0 +1,99 @@
+"""Execution contract tests; no external renderer or network required."""
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+
+class VisualExecutionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.base = Path(self.temp.name)
+        self.repo = self.base / 'repo'
+        (self.repo / 'tools').mkdir(parents=True)
+        shutil.copyfile(Path(__file__).with_name('visual_tools.py'), self.repo / 'tools/visual_tools.py')
+        self.home = self.base / 'home'
+        self.home.mkdir()
+        self.env = dict(os.environ, HOME=str(self.home), PYTHONDONTWRITEBYTECODE='1')
+        self.source = self.repo / 'sample.py'
+        self.source.write_text("import os\nfrom pathlib import Path\nPath(os.environ['VISUAL_OUTPUT_DIR'], 'figure.svg').write_text('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"/>')\n")
+        self.out = self.base / 'output'
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, str(self.repo / 'tools/visual_tools.py'), *map(str, args)],
+                              cwd=self.base, env=self.env, capture_output=True, text=True, timeout=10)
+
+    def render(self, *extra, source=None):
+        return self.cli('render', 'python', source or self.source, '--output', self.out, *extra)
+
+    def test_discovery_has_no_side_effects_or_false_review_claim(self):
+        before = sorted(self.base.rglob('*'))
+        result = self.cli('status')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['state'], 'discovered-not-render-tested')
+        self.assertEqual(sorted(self.base.rglob('*')), before)
+
+    def test_relative_jar_resolves_from_configuration_not_cwd(self):
+        (self.repo / 'plantuml.jar').write_bytes(b'not executed in discovery')
+        (self.repo / 'visual-tools.local.json').write_text('{"plantuml_jar":"plantuml.jar"}')
+        result = self.cli('status')
+        self.assertEqual(json.loads(result.stdout)['paths']['plantuml_jar'], str(self.repo / 'plantuml.jar'))
+
+    def test_render_records_unreviewed_hashes_and_preserves_existing_output(self):
+        result = self.render()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = self.out / 'render.json'
+        record = json.loads(receipt.read_text())
+        self.assertEqual(record['state'], 'rendered-awaiting-review')
+        self.assertEqual(record['visual_review'], 'not-performed')
+        self.assertEqual(record['subject_review'], 'not-performed')
+        self.assertEqual(len(record['outputs']['figure.svg']['sha256']), 64)
+        before = receipt.read_bytes()
+        self.assertNotEqual(self.render().returncode, 0)
+        self.assertEqual(receipt.read_bytes(), before)
+        self.assertEqual(list(self.home.iterdir()), [])
+
+    def test_sources_outside_checkout_and_raw_sources_rejected(self):
+        for parent in [self.base, self.repo / 'sources', self.repo / 'references']:
+            parent.mkdir(exist_ok=True)
+            source = parent / 'untrusted.py'
+            source.write_text("raise Exception('must not execute')")
+            self.assertNotEqual(self.render(source=source).returncode, 0)
+            self.assertFalse(self.out.exists())
+
+    def test_output_escape_and_reserved_paths_rejected(self):
+        for name in ['../outside.svg', '/tmp/outside.svg', 'render.json', 'stdout.log', '.cache/test.svg']:
+            self.assertNotEqual(self.render('--expect', name).returncode, 0)
+            self.assertFalse(self.out.exists())
+
+    def test_exit_zero_without_requested_artifact_is_failure(self):
+        self.source.write_text('pass\n')
+        self.assertNotEqual(self.render().returncode, 0)
+        self.assertEqual(json.loads((self.out / 'render.json').read_text())['state'], 'failed')
+
+    def test_renderer_failure_even_with_artifact(self):
+        self.source.write_text(self.source.read_text() + 'raise SystemExit(3)\n')
+        self.assertNotEqual(self.render().returncode, 0)
+        record = json.loads((self.out / 'render.json').read_text())
+        self.assertEqual(record['exit_code'], 3)
+        self.assertEqual(record['state'], 'failed')
+
+    def test_timeout_is_bounded_and_recorded(self):
+        self.source.write_text('import time\ntime.sleep(30)\n')
+        self.assertNotEqual(self.render('--timeout', 1).returncode, 0)
+        self.assertEqual(json.loads((self.out / 'render.json').read_text())['state'], 'failed')
+        self.assertIn('timeout', (self.out / 'stderr.log').read_text())
+
+    def test_symlink_artifact_is_rejected(self):
+        self.source.write_text("import os\nfrom pathlib import Path\nPath(os.environ['VISUAL_OUTPUT_DIR'], 'figure.svg').symlink_to(__file__)\n")
+        self.assertNotEqual(self.render().returncode, 0)
+        self.assertIn('escapes', json.loads((self.out / 'render.json').read_text())['error'])
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="580" viewBox="0 0 900 580">
+<title>Plate with a through-hole, axonometric illustration</title>
+<rect width="900" height="580" fill="white"/>
+<g font-family="DejaVu Sans,sans-serif" fill="#193f58">
+<text x="35" y="45" font-size="25">One solid model, a real projected view</text>
+<text x="35" y="85" font-size="20">80 × 50 × 8 mm plate; central through-hole: diameter 20 mm</text>
+<text x="35" y="535" font-size="18">Illustrative CAD model, not a dimensioned manufacturing drawing.</text>
+</g><g transform="translate(450,300) rotate(90) scale(5)"><g   fill="none"
+   stroke="rgb(0, 0, 0)"
+   stroke-linecap="butt"
+   stroke-linejoin="miter"
+   stroke-width="1.0"
+   transform="scale(1, -1)"
+  >
+<path id= "1" d=" M 18.2 -43.648 L 11.8 -45.7947 " />
+<path id= "2" d=" M 11.8 -45.7947 L -18.2 -27.9061 " />
+<path id= "3" d=" M 18.2 -43.648 L 18.2 27.9061 " />
+<path id= "4" d=" M 18.2 27.9061 L 11.8 25.7595 " />
+<path id= "5" d=" M 11.8 -45.7947 L 11.8 25.7595 " />
+<path id= "6" d=" M -18.2 -27.9061 L -18.2 43.648 " />
+<path id= "7" d=" M 11.8 25.7595 L -18.2 43.648 " />
+<path d="M-3.2 7.87096 A10 5.36656 108.542 0 1 -6.37999 8.4076" />
+<path d="M-6.37999 8.4076 A10 5.36656 108.542 0 1 -0.0200064 -10.5542" />
+<path d="M-0.0200064 -10.5542 A10 5.36656 108.542 0 1 -3.2 7.87096" />
+<path id= "11" d=" M -11.8 45.7947 L -18.2 43.648 " />
+<path id= "12" d=" M 18.2 27.9061 L -11.8 45.7947 " />
+<path d="M-2.47232 7.37103 A10 5.36656 108.542 0 1 2.47232 -7.37103" />
+</g>
+</g></svg>

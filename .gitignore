@@ -34,3 +34,7 @@ package-lock.json
 # Private generated request state and optional Drive credentials
 .learning-images-state/
 .drive-state/
+
+# Machine-local renderer paths and disposable execution records
+visual-tools.local.json
+.visual-runs/

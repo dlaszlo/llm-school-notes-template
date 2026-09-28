@@ -12,6 +12,18 @@ This is an optional deployment example, not a prerequisite or a statement about 
 
 ## Roles and intended model allocation
 
+### Repository skills and profile capabilities
+
+Keep three layers separate: `AGENTS.md` contains daily invariants, `instructions/` owns detailed workflows, and a repository-owned skill is a short task-specific entry point. The first such entry is [learning-visuals](../.agents/skills/learning-visuals/SKILL.md); it is usable by both ingest and media roles. A skill name describes a reusable task, not a bot identity. The installed renderer is a fourth, executable layer: a skill describes when/how to use it, and does not install or authorize it.
+
+Current upstream Hermes supports project skills under `<checkout>/.agents/skills/`. From the selected profile and checkout, `hermes skills trust <checkout>` records an explicit project trust decision; verify this command and behavior against the installed version first. For gateway/cron jobs, verify the resolved repository working directory too. Do not enable trust or alter a profile as a side effect of installing a renderer. The full checkout travels through Git; do not copy this skill into a global Hermes skill directory. Directly reading the linked instructions remains a usable path in an agent without skill discovery.
+
+Configure model/effort, gateway identity/routing, enabled skills, toolsets, MCP connections, credentials and execution boundaries per profile. Groot needs learning-material read access; Drax needs scoped ingest/write access; Mantis needs authorized generation and scoped media insertion/delivery; Rocket needs no school checkout. Sharing a renderer installation does not require exposing execution to every bot. Skill filtering controls discovery, not security: an unrestricted terminal can still execute an installed program or read writable external skill files. Enforce read-only and learner-specific access in the execution/filesystem layer and test denied operations. A profile's separate memory alone is not a sandbox.
+
+Repository skill discovery and capability filtering are deployment configuration, not changes to Hermes source or bundled skills. This section describes the integration contract; it does not claim that separate profiles, skill filters or isolation have been deployed. See upstream [project-local skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills#project-local-skills) and [profiles versus sandboxing](https://hermes-agent.nousresearch.com/docs/user-guide/profiles#profiles-vs-workspaces-vs-sandboxing).
+
+### Initial allocation
+
 | Role | Responsibility | Proposed initial model/effort | Deployment status |
 |---|---|---|---|
 | Groot | Explain existing learning material, practice and answer questions; no ingest in the separated design | GPT-6 Sol / medium | Existing shared bot currently also performs ingest; role separation pending |

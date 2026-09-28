@@ -8,6 +8,7 @@ This is the maintained entry point for rebuilding the school-note system. It dis
 |---|---|---|
 | School repositories | This template commit, shared-files.json, local PROFILE.md and subject/index configuration | Implemented; compare common files after bootstrap/update |
 | Python note tools | pyproject.toml and uv.lock | Implemented; use uv run, not system pip |
+| Optional visual tools | [Installation and execution](install-visual-tools.md), optional `visuals` dependency group, external runtime versions | Repository runner and samples available; verify the selected programs on each machine |
 | Curriculum references | Learner's own professional package, general reference package, supplied hashes and catalog | Implemented; raw references remain private; never copy the other learner's package |
 | Hermes base runtime | Recorded Hermes Git commit, package-manager lock and private configuration | Existing deployment; a fresh full-machine rebuild has not yet been exercised |
 | Drive authentication and upload | [Drive installation](install-drive.md) | Repository CLI available; validate your own configured destinations |

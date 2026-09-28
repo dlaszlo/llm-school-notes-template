@@ -1,0 +1,15 @@
+@startuml
+title A request and its response
+skinparam backgroundColor white
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+participant "Client" as C
+participant "Server" as S
+C -> S: Request
+activate S
+S --> C: Response
+deactivate S
+note over C,S
+Order only: vertical distance does not measure elapsed time.
+end note
+@enduml

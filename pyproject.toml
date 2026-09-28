@@ -11,3 +11,7 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+# Optional plotting environment; ordinary note tools do not install these.
+[dependency-groups]
+visuals = ["matplotlib>=3.9,<4", "numpy>=2,<3"]

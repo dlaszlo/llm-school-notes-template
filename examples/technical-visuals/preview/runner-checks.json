@@ -1,0 +1,108 @@
+{
+  "environment": "Ubuntu 26.04 x86_64 workstation",
+  "scope": "Concrete runtime smoke tests, not general diagram certification",
+  "machine_review": "Source semantics and direct rendered views inspected by Codex; FreeCAD analytic volume and bore assertions passed; plotting branches do not bridge the excluded zero.",
+  "human_review": "pending for these four new examples",
+  "runs": [
+    {
+      "engine": "python",
+      "source": "examples/technical-visuals/function-plot.py",
+      "source_sha256": "88045433e3ef8d137f0e002ef33cc4c8e10dd6ea4ff964ae42fbc6df03047a65",
+      "driver_sha256": "10e765090d45cefc66c96e54963e50aae5a29116d163195726ee99e5239cacce",
+      "python_packages": {
+        "python": "3.13.12",
+        "matplotlib": "3.11.2",
+        "numpy": "2.5.3",
+        "scipy": null
+      },
+      "seconds": 2.5057835039915517,
+      "outputs": {
+        "figure.svg": {
+          "bytes": 19106,
+          "sha256": "18caf1dd19cb3b0c8854b87ac44c174341429025c8cd9f6812717758a80abe04",
+          "viewBox": "0 0 576 360"
+        },
+        "figure.png": {
+          "bytes": 49471,
+          "sha256": "131ac77a27a553ab419afd34038384996fdac6ade226bd233de8054b22b73fa3",
+          "dimensions": [
+            1200,
+            750
+          ]
+        }
+      }
+    },
+    {
+      "engine": "plantuml",
+      "source": "examples/technical-visuals/message-sequence.puml",
+      "source_sha256": "83e94044d0c445dc943de48e033aea5fd1807a666bfa925160e0a328dd4e245d",
+      "driver_sha256": "10e765090d45cefc66c96e54963e50aae5a29116d163195726ee99e5239cacce",
+      "python_packages": {
+        "python": "3.13.12",
+        "matplotlib": "3.11.2",
+        "numpy": "2.5.3",
+        "scipy": null
+      },
+      "seconds": 0.5572825489798561,
+      "outputs": {
+        "figure.svg": {
+          "bytes": 3423,
+          "sha256": "6e5dde6a153b7fafa6ca9d5b9937cfd9143fb2140c9a03130c13e1b8acd34111",
+          "viewBox": "0 0 451 232"
+        }
+      }
+    },
+    {
+      "engine": "plantuml",
+      "source": "examples/technical-visuals/decision-activity.puml",
+      "source_sha256": "7bc7513a7cbe8c33846e6a8cbac6c9559e73f15d6445876d592ce4541562aa59",
+      "driver_sha256": "10e765090d45cefc66c96e54963e50aae5a29116d163195726ee99e5239cacce",
+      "python_packages": {
+        "python": "3.13.12",
+        "matplotlib": "3.11.2",
+        "numpy": "2.5.3",
+        "scipy": null
+      },
+      "seconds": 0.389858870068565,
+      "outputs": {
+        "figure.svg": {
+          "bytes": 4786,
+          "sha256": "ddc68d99b27dfeec98aca7cc2121710fc8d40a8210df828c8af8f53a062d97a9",
+          "viewBox": "0 0 355 306"
+        }
+      }
+    },
+    {
+      "engine": "freecad",
+      "source": "examples/technical-visuals/plate-model.py",
+      "source_sha256": "add243593e1ae4ecea402a126941094ade8e848daa1e63fb821d03aaabcd8688",
+      "driver_sha256": "10e765090d45cefc66c96e54963e50aae5a29116d163195726ee99e5239cacce",
+      "python_packages": {
+        "python": "3.13.12",
+        "matplotlib": "3.11.2",
+        "numpy": "2.5.3",
+        "scipy": null
+      },
+      "seconds": 0.37117001705337316,
+      "outputs": {
+        "figure.svg": {
+          "bytes": 1542,
+          "sha256": "3036f3ff376e4e422722fe4c5eb27d61eda641e8ad42f427e56aceaf1b119ae2",
+          "viewBox": "0 0 900 580"
+        },
+        "plate.FCStd": {
+          "bytes": 2731,
+          "sha256": "493d778f7aa3f9c2f0ad21c76e8e5be58c0cf51a058fb7b258377740be3b3ee3"
+        },
+        "plate.step": {
+          "bytes": 8305,
+          "sha256": "a5527a9e895463179dab29fa857e70e248cd3e545a5bed191ee940835a111a20"
+        },
+        "checks.json": {
+          "bytes": 333,
+          "sha256": "93c6631366a9c3bfbcfacda14819b52bddcc95f24856aaf7272256ba1b78842f"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "dot": "dot",
+  "java": "java",
+  "plantuml_jar": null,
+  "povray": "povray",
+  "freecad": "freecadcmd",
+  "freecad_app_run": null
+}
