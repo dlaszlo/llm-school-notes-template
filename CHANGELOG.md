@@ -1,5 +1,11 @@
 # Template changelog
 
+## 1.14.8 - 2026-09-29
+
+* Require verified standard artwork for prescribed signs and symbols. Removed the simplified/not-official look-alike fallback for teaching real sign recognition; unavailable artwork is handled with text, an authoritative link and a recorded gap.
+* Added cross-subject checks for system/version, sign identity, reuse provenance, exact appearance, dark backgrounds, generated-image composition and correct meaning.
+* **Migration**: synchronize the shared files, record this release and exact template commit, and review affected teaching visuals within the authorized content scope. Existing media budgets, source records and agent configuration are unchanged. The separate 1.15.0 draft is not part of this release.
+
 ## 1.14.7 - 2026-09-28
 
 * Added explicit `learning_image.py check --provider`: a read-only authenticated key-limit check with whitelisted output, redacted errors and no redirects or image generation. Plain `check` remains offline.
