@@ -1,5 +1,12 @@
 # Template changelog
 
+## 1.14.3 - 2026-09-28
+
+* Strengthened explanation order with context before use, precise referents and a learner reading-order review. Essential prerequisites are explained where needed rather than deferred to links or later sections.
+* Distinguished source omissions, unreadable captures, exercise unknowns and modeling choices. Require the exact missing detail, its source and immediate supported resolution or consequence; preserve source fidelity and visible material uncertainty without editorial clutter on diagrams.
+* Added practical examples to note formatting and carried the same checks into media planning and precise-visual guidance.
+* **Migration**: synchronize shared files and record version/commit. Apply the clarification review to authorized notes; no automatic whole-wiki rewrite, image regeneration, installation or agent configuration. Template remains uninitialized.
+
 ## 1.14.2 - 2026-09-28
 
 * Added an opt-in Hermes Docker tutor integration probe: actual file reads/write denial, cross-checkout and host canaries, local-image resolution, effective tools and container mounts. It uses the installed Hermes runtime without changing it or calling a model.

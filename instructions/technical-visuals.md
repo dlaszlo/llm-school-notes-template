@@ -37,6 +37,8 @@ For example, plotting `1/x` requires separate branches, the excluded zero, the v
 
 ### What the form itself claims
 
+Prepare the reader to interpret the visual before relying on it: introduce unfamiliar symbols, conventions and the question it answers. Follow [context and omissions](note-formatting.md#context-before-the-learner-needs-it) when a source lacks a detail. Keep editorial statements such as "the notebook does not label the moment-arm length" in adjacent prose with the supported interpretation or limit; they are not diagram labels. Do not remove meaningful unknowns, exact source geometry or material uncertainty, and do not silently turn a derived completion into a source-given value.
+
 Before choosing a form, identify its consequential implicit claims: complete ordering, simultaneity, continuity, uniform intervals, exclusive categories, proportional length/area, causal direction, connectivity or exact position. Check whether the evidence supports them. If not, change the encoding or mark uncertainty visibly (for example a range, approximate label or explained uncertain edge); do not rely on a caveat hidden in evidence. Also ask what the form **cannot** convey that the task requires: recognition, context, purpose, location, proportion or sequence. A picture with individually correct details can still fail because it does not communicate that needed meaning. Apply this principle to unlisted forms as well as familiar ones.
 
 ## Capabilities, combinations and fallbacks
