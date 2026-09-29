@@ -6,7 +6,7 @@ never writes matched secret text. Run: python3 check-public.py BUILD
 import gzip,json,re,subprocess,sys
 from pathlib import Path
 root=Path(sys.argv[1]);payload=json.loads((root/'payload.json').read_text());assert payload['mode']=='public'
-patterns=[r'/home/',r'file://',r'\b(?:sources|references|docs/evidence)/',r'OPENROUTER_API_KEY',r'client_secret_',r'image-description',r'Claude-Session:']
+patterns=[r'/home/',r'file://',r'\b(?:sources|references|docs/evidence)/',r'OPENROUTER_API_KEY',r'client_secret_',r'image-description',r'Claude-Session:',r'\d{4}-\d\d-\d\d-[\w-]+/[^\s<>]+\.(?:jpg|jpeg|png)']
 errors=[];counts={'files':0,'pdfs':0,'search_chunks':0}
 for p in sorted((root/'site').rglob('*')):
  if not p.is_file():continue
