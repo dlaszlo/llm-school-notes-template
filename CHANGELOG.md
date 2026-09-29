@@ -1,5 +1,12 @@
 # Template changelog
 
+## 1.15.0 — 2026-09-29
+
+- Split shared policy into task-routed modules behind a short, harness-neutral AGENTS.md. Preserve the released 1.14.8 learning, evidence, curriculum, privacy and standardized-symbol requirements; record section hashes and deliberate wording changes in `instructions/policy-migration-1.15.0.json`.
+- Add a compact operation workflow: bounded rule retrieval, dependency-aware work, honest progress, source/visual checks and verified authorized delivery. No mandatory task JSON registry, completion gate, scheduler, runtime patch or automatic restart is installed.
+- Add an optional pinned repository-local Markdown preview and structural checker with reusable render receipts. It supports phone/desktop, MathJax, Mermaid, disclosures and offline local images; it is not a factual approval or proof of production-site/PDF rendering.
+- Migration: copy the complete shared manifest through Git, preserve learner profiles and authorization scope, update named-rule references and record this exact template commit. The template remains uninitialized. No VM, agent runtime, site deployment or source migration is part of this release.
+
 ## 1.14.8 - 2026-09-29
 
 * Require verified standard artwork for prescribed signs and symbols. Removed the simplified/not-official look-alike fallback for teaching real sign recognition; unavailable artwork is handled with text, an authoritative link and a recorded gap.

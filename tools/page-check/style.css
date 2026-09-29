@@ -1,0 +1,18 @@
+body { margin:0; padding:24px; background:#fff; color:#1f2328; }
+.markdown-body { box-sizing:border-box; max-width:1012px; margin:auto; font-family:Arial,sans-serif; }
+.markdown-body img { max-width:100%; height:auto; }
+.markdown-body .mermaid { background:transparent; padding:0; }
+.markdown-body .mermaid svg { max-width:100%; height:auto; }
+.markdown-body mjx-container[display="true"], .math-display { max-width:100%; overflow-x:auto; padding:3px 0; }
+.markdown-body details dl dd { margin-left:16px; }
+.markdown-body .footnotes { font-size:12px; }
+.markdown-body .markdown-alert { border-left:4px solid #0969da; padding:0 16px; margin-bottom:16px; }
+.markdown-body .markdown-alert-title { font-weight:bold; color:#0969da; margin-bottom:12px; }
+.markdown-body .markdown-alert-tip { border-color:#1a7f37; }
+.markdown-body .markdown-alert-tip .markdown-alert-title { color:#1a7f37; }
+.markdown-body .markdown-alert-warning { border-color:#9a6700; }
+.markdown-body .markdown-alert-warning .markdown-alert-title { color:#9a6700; }
+.markdown-body .markdown-alert-important { border-color:#8250df; }
+.markdown-body .markdown-alert-caution { border-color:#cf222e; }
+@media(max-width:500px) { body {padding:16px;} .markdown-body h1{font-size:26px;} }
+@media print { body{padding:0;} .markdown-body{max-width:190mm;} }

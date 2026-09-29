@@ -2,6 +2,8 @@
 
 This is the maintained entry point for rebuilding the school-note system. It distinguishes implemented components from planned roles. Append each completed installation step with exact commands, version pins, configuration locations, checks and rollback instructions. Never depend on chat history for a required step. Keep actual account IDs and deployment receipts in private records; credentials belong in a secret store or protected files outside Git.
 
+The mandatory starting point is a Git checkout, an initialized learner profile when requested, and the dependencies of the tools actually selected. Hermes/Discord rows below are optional legacy deployment paths; skip them for another harness. Pi scheduling, Drive inbox polling, public-site export and automated PDF delivery are not installed by this release.
+
 ## Order and current coverage
 
 | Component | Rebuild input | Status |
@@ -53,3 +55,7 @@ Rebuild on an empty machine from the pinned inputs, restore or freshly authorize
 ## Banner and infographic executor
 
 Follow [repository-local setup](install-learning-images.md). All executable code and instructions remain in a Git checkout. No global skill or agent-program modification is required. Test the ordinary unconfigured wiki first; then configure only the requested optional services. Actual private credentials and historical state are separate restore inputs and never supplied by a clone.
+
+## Optional page-check runtime
+
+For agents maintaining Markdown pages, install the locked repository-local Node dependencies and select an available Chromium browser using [page-check setup](page-check.md). Record Node/browser versions and paths in the private inventory. No global skills or Hermes code changes are needed. Ordinary note work runs the prepared checker and does not repeat installation.

@@ -1,0 +1,178 @@
+# Wiki structure
+
+Shared operating rules, loaded through [AGENTS.md](../AGENTS.md). Named rules in other modules are located through its rule map.
+
+## Wiki structure
+
+**Structure**: one directory per subject under `wiki/` (created with its first content); one page per topic inside it; school year is metadata, not a directory - the `grade` frontmatter key (e.g. `9`, a list such as `[9, 10]` when a topic spans years) - so a topic that recurs in later years keeps a single page. When a subject directory is created, it also gets an entry in `tools/subjects.json` (display name, emoji, colors, icon - see *Illustrations*).
+
+**Subject index** (`wiki/<subject>/index.md`): keep the subject name as a text heading, followed by its own subject-level banner (see *Header on every page*). Then, in this order (headings from the *Wording* table in `PROFILE.md`):
+
+1. A back link to the root index (*back link*).
+2. The *catch-up* list, if any (see *Catch-up material*), and the *homework* table, if any (see *Homework*).
+3. The topics, grouped under *chapter* headings - chapters follow the units of the textbook or notebook (e.g. `9th grade: Ancient Egypt`); each chapter with a summary page lists it first (`* ⚡ [<summary title>](...)`). Topics come first because they are what a reader looks for on a phone.
+4. The *lessons* table - one row per lesson, newest first: the lesson date as the notebook shows it (when not written, the range the lesson must fall in - after the preceding dated lesson, at the latest the acquisition date of its source, per the *undated lesson* wording - with the row placed by its position in the notebook), the lesson's subject matter, the lesson-notes link, and the topic pages it touched - so a reader sees at once what is recent.
+5. The *review* and *notes* lists.
+
+**Lesson-notes pages**: titles are short (at most about 45 characters: what the lessons covered, e.g. `Sets, practice lesson`) - no subject name (the directory and banner show it) and no dates (they are in `lesson_dates` and the lessons table); each lesson-notes page records the lesson dates the notebook shows in a `lesson_dates` frontmatter list (ISO dates; undated lessons are omitted, not guessed) - the student is asked to date every lesson in the notebook. Source summaries sit date-prefixed in their subject directory.
+
+**Homework**: an assignment the user reports (typically copied from the school's e-diary: task, deadline) is not a source and gets no Source summary; it goes into the subject index's *homework* table (deadline | task | status - *open*, or *done* once the student says it is done or its solution arrives in the notebook), newest deadline first, written as the assignment says (e.g. `Textbook p. 33, exercise 5`), without naming the e-diary; the table disappears when every row is done and a week past its deadline. When the textbook is in `references/`, the row links the topic page that helps; when it is not, the task stays as given, nothing is guessed.
+
+**Illustrations**: our own learning visuals live in `wiki/assets/`. Select reuse, precise SVG/code, generated raster, or no new image by the learning task under *Choosing and replacing authored visuals*. The optional [learning-visuals skill](../.agents/skills/learning-visuals/SKILL.md) routes to the relevant planning, execution and checking instructions. An infographic must add understanding, recognition, comparison or application; decoration alone is not a reason to create one. Two images on one page are appropriate when they teach distinct useful tasks without needless repetition. Render SVG and directly inspect every final visual before committing; keep meaningful alt text and the learning facts in prose.
+
+**Header on every page**: every subject content page opens after the frontmatter with one header image; subject tables of contents (`wiki/<subject>/index.md`) also have their own banner, placed after the subject's text heading and before navigation. An index banner introduces the subject as a whole using a representative overview, application or motif from its actual scope, not a miniature contents list or an unrelated lesson header. Keep navigation easy to reach. A generated banner should first orient the learner with a high-level overview or recognizable cue; a representative application/detail, relevant motif or understandable metaphor may also work. If none naturally helps, topic-related decoration is valid. Keep it wide and low, beautiful and inviting, without cramming in a miniature lesson. The title and essential orientation remain visible in page text too. The generated-raster path is [learning image execution](../instructions/learning-image-execution.md), using the same bounded tool for any agent. Existing accepted headers remain valid. Without paid-generation authorization or when generation is unavailable, `uv run tools/banner.py <page.md>` supplies the deterministic SVG fallback with local `tools/subjects.json` labels; do not overwrite an accepted custom header. Apply this when creating a subject index or updating an authorized index; never infer mass regeneration from this rule alone. Logs, reference catalogs and operational indexes do not require a banner.
+
+**Math and formulas**: write calculations, formulas, and chemical equations in LaTeX math - `$...$` inline, `$$...$$` as a display block on its own line - which GitHub and Obsidian both render (MathJax); write the wiki language's decimal separator (for a decimal comma, `{,}`: `0{,}34`), `\text{...}` for units (`3.7\ \text{cm}`), and `\mathrm{...}` with subscripts for chemistry (`\mathrm{2\,H_2O_2 \xrightarrow{MnO_2} 2\,H_2O + O_2}`); keep the key results also in plain text nearby (a short *in words* line), since some consumers show raw source; before committing changed formula content, compile every formula on the affected pages with a prepared MathJax renderer and fix any error. The optional local [page checker](page-check.md) provides this check. Install dependencies once during authorized setup, not during each note task.
+
+**Official symbols and standardized signs**: teach the actual applicable symbol, not an artistic approximation. Use verified, lawfully reusable standard artwork for hazard pictograms, fire/safety signs, transport labels, traffic signs and other prescribed symbols; preserve the prescribed shape, colors, proportions, orientation and identifying details. Do not redraw from memory, substitute an emoji, or ask an image model to recreate the sign. A "simplified/not official" label does not make a look-alike suitable for learning the real sign. Identify the relevant system, jurisdiction/version and exact sign; distinguish historical and current forms. If an authentic usable asset cannot be obtained, explain the meaning in text, link an authoritative source and record the missing asset rather than inventing a substitute. Apply the [standardized-symbol checks](technical-visuals.md#standardized-symbols-and-prescribed-signs), including to symbols inside banners, infographics and precise diagrams. Other official emblems, flags and coats of arms also require verified artwork and appropriate reuse rights.
+
+**Diagrams**: use Mermaid or another appropriate representation only when it helps understand a classification, hierarchy, model or process and a suitable existing image, prose or table is not sufficient. Do not automatically add duplicate diagrams. The learning task chooses the representation; key facts still remain in prose.
+
+The rest of the structure and vocabulary emerges from the content that gets ingested.
+
+## Principles
+
+Software-engineering principles translate well to wiki maintenance. When no specific rule below covers a decision, these are the tiebreakers:
+
+- **KISS** - the simplest structure that holds the knowledge: flat over deep, prose over machinery, no clever conventions that need explaining.
+- **YAGNI** - build nothing ahead of need: no empty directories, no speculative types or archetypes, no infrastructure before the index stops being enough. Most growth rules in this file are YAGNI applied.
+- **DRY, for facts** - every fact has exactly one authoritative page; other pages link to it instead of restating it, so a correction is ever needed in one place only. Summaries may repeat for readability - claims may not.
+- **Single responsibility** - one focused concept per page; a page doing two jobs gets split.
+- **Separation of concerns** - `sources/` holds evidence, `references/` holds reference works used for checking, `wiki/` holds distilled knowledge, `AGENTS.md` holds the rules and `PROFILE.md` this wiki's settings; content never migrates between layers.
+- **Least astonishment** - a reader who has seen one page of a type knows what to expect from every other page of that type.
+
+## Directory layout
+
+```
+<project>/
+├── README.md        # Human-facing intro to the project.
+├── AGENTS.md        # Shared operating manual for Codex and Claude Code.
+├── PROFILE.md       # This wiki's own settings: setup, authorizations, wording.
+├── CHANGELOG.md     # Template versions and migration steps (see Template updates).
+├── CLAUDE.md        # Claude Code adapter importing AGENTS.md and PROFILE.md.
+├── SPEC.md          # OKF v0.2 specification (the storage format).
+├── tools/banner.py  # Generates the page-header banners (see Illustrations).
+├── tools/book_index.py # Generates the navigation map (index.md) of a converted reference book.
+├── tools/prepare_photo.py # Stores an incoming photo in sources/ (same resolution, JPEG q90, no metadata).
+├── pyproject.toml, uv.lock # Python dependencies of the tools (uv) - see Tools.
+├── tools/subjects.json  # Subject names, emoji, colors, icons; banner labels.
+├── llm-wiki.md      # Background only: the original idea document, not instructions.
+├── sources/         # Raw sources: articles, documents, notes, data files.
+├── references/      # Reference works (textbooks), not sources - see References.
+└── wiki/            # The OKF bundle - written and maintained by the LLM.
+    ├── index.md     # Root index, with okf_version frontmatter.
+    └── log.md       # Chronological log, newest first.
+```
+
+- `sources/` is the source of truth - content-immutable, organized by the LLM. See *Sources* below.
+- The bundle starts empty. **The structure is not fixed in advance** - subdirectories emerge as content is ingested; create one only when the first concept needs a home. When you create a subdirectory, give it an `index.md` and list it in the root `index.md`.
+- Every non-reserved `.md` file under `wiki/` is an OKF-conformant concept (frontmatter with a required `type` field). `index.md` and `log.md` are reserved (OKF §3.1).
+- Private planning and evidence records go in `docs/` (or the planning subdirectory recorded in `PROFILE.md`). Shared operational instructions live in `instructions/`. A directory name does not make files private: exclude private records from public repositories and exports; keep relevant evidence accessible to authorized reviewers in private deployments.
+
+## `type` vocabulary
+
+The vocabulary is not fixed in advance. Pick descriptive, self-explanatory values (per OKF §4.1), reuse existing ones before inventing new ones, and **maintain the emerging vocabulary here** as a table. Every type follows one of the page archetypes below:
+
+| type | Archetype | For |
+|---|---|---|
+| `topic` | Topic | A topic or concept of a subject |
+| `lesson-notes` | Source summary | One ingested set of notes (a topic's or a week's notes from one subject) |
+| `review` | Synthesis | A dated revision summary, e.g. for a test |
+| `source-summary` | Source summary | Any other ingested source (not class notes), e.g. a web page |
+| `chapter-summary` | Chapter summary | The short version of one textbook/notebook chapter (see *Two content layers*) |
+
+## Page template
+
+OKF does not prescribe a full page template, so we fix one here. Every concept page is structured like this:
+
+```markdown
+---
+type: <from the vocabulary above>
+title: <human-readable title>
+description: <one sentence - used by index.md and search>
+tags: [<short, accent-free tags>]
+generated: { by: <producer/version>, at: <ISO 8601 datetime with UTC offset> }
+sources:
+  - { id: <stable-source-id>, resource: <URL or relative path>, title: <source title> }
+resource: <optional - URI when the concept describes a concrete resource>
+status: <draft | stable | deprecated; absent means stable>
+---
+
+One or two intro paragraphs: what this is and why it exists. Links to related pages.
+
+# <Content sections as needed>
+
+...
+
+# <open questions heading>        <- only if any; TODOs, unverified claims.
+
+[^stable-source-id]: Source title (matches sources[].id).
+```
+
+Use `sources` frontmatter and keyed markdown footnotes for claim attribution (SPEC §5.1). Prefer the conventional headings when applicable (SPEC §4.2 lists `# Schema`, `# Examples`, `# Computation`); in this wiki they are written in the wiki language, like the open questions heading (see *conventional headings* in *Wording*): every heading a reader sees is in the wiki language.
+
+**Lifecycle**: when a page stops being current, set `status: deprecated` and link a successor when one exists, and open the body with a one-line notice linking to whatever replaces it. Do not delete the page - links to it must keep working. OKF consumers tolerate the extra key (SPEC §4.1); Dataview can list stale pages by querying it.
+
+## OKF 0.2 metadata
+
+Use `generated: { by, at }` for the last meaningful edit; do not emit the legacy `timestamp` field. Use `sources` and keyed footnotes instead of a body `# Citations` list. Keep `verified` separate: add it only after an actual check, with the real verifier and datetime. Never infer human review from a request to create a page. `status` is `draft`, `stable`, or `deprecated`; a successor is linked in prose. `source_file` and `content_sha256` remain producer extensions for source integrity. All timestamps include a UTC offset. No optional metadata family is mandatory for basic OKF conformance.
+
+## Page archetypes
+
+OKF prescribes no body sections, so these are our conventions. Four archetypes cover the page kinds every LLM wiki accumulates; a fifth, *Chapter summary*, is specific to school notes. They differ in required frontmatter, typical sections, and - most importantly - **update semantics**: what the LLM is allowed to rewrite later.
+
+**Entity** - a concrete thing: a person, system, component, place, organization.
+- Sections: intro; a facts table (enumerable properties); relationships as links with a phrase of context; optionally a history section.
+- Update semantics: *living page* - every relevant ingest updates it in place.
+
+**Topic** - an abstract concept, theme, or thread.
+- Sections: header, *textbook line*, *in short* box; intro; prose explanation; examples where helpful; related topics as links; *test yourself* (see *Two content layers* and *Test yourself*).
+- Update semantics: *living page* - the synthesis matures as sources accumulate.
+
+**Chapter summary** - the short layer of one chapter (see *Two content layers*).
+- Sections: intro line; per topic its *in short* bullets and a link to the full page; *terms* glossary; optional overview diagram.
+- Update semantics: *view* - regenerated from its topic pages whenever they change; it never holds its own facts.
+
+**Source summary** - the distillation of one ingested source.
+- Frontmatter: `source_file` is required (the `sources/`-relative path of the local copy, the one `content_sha256` covers); `resource` is the original URL, omitted when there is none. The written citation (author, title, date) plus `content_sha256` identify every source regardless - so a shared wiki keeps identifying its sources even when `sources/` is excluded; only the `source_file` link goes dead, which OKF §6.1 tolerates.
+- Sections: key takeaways; notable claims worth citing later; links to the entity/topic pages this source touched; keyed source footnotes.
+- Update semantics: *write-once for the source's content* - the source itself does not change, so a page is not rewritten because opinions or later sources differ (those go to topic pages or a newer Source summary). A wrong or incomplete *reading* of the source (a misread number, a skipped line, a unit that was inferred rather than seen) is different: fix it in place, so the page always shows the best current reading. The fact of the fix goes into `log.md` (and git), never into the page.
+
+**Synthesis** - a filed-back answer: an analysis, comparison, or plan produced during a query.
+- Frontmatter: record the originating question (e.g. a `question` key); `generated.at` marks when the answer was produced.
+- File name: date-prefixed like sources (`YYYY-MM-DD-short-topic.md`, the date the answer was produced, matching `generated.at`). The point-in-time nature then shows in any file listing, and re-answering the same question later gets its own file - the old page goes `deprecated` per *Lifecycle*, never overwritten.
+- Sections: the answer; evidence as links/citations; open questions.
+- Update semantics: *dated* - it may go stale; when newer sources supersede it, apply the *Lifecycle* rule rather than silently rewriting.
+
+Two more archetypes are common but domain-dependent, so they are not defined up front: **Playbook** (trigger + numbered steps) and **Decision** (context, options, decision, rationale). The general rule: **when a new kind of page recurs two or three times, promote it to an archetype and record it here.**
+
+## Formatting rules
+
+These rules govern everything the LLM writes under `wiki/` (and any new project text). Verbatim source material is exempt - it stays exactly as written.
+
+- **No hard line wrapping in paragraphs.** One paragraph = one line in the file; never wrap at 70-80 characters. The renderer wraps.
+- **Minimal diffs.** Only change what the update actually touches. Do not reformat, reword, or reorder sections that are not affected. Update `generated.at` only on meaningful content changes.
+- **UTF-8**, no BOM, LF line endings (also enforced by `.gitattributes`). Files end with a newline.
+- **ASCII punctuation in prose**: straight quotes (`'`, `"`), hyphen (`-`), three dots (`...`). No em/en dashes, no smart quotes - they hurt grep/search (a typed `-` will not match `—`) and diff readability. **Emoji are welcome** as visual signposts in headings, index entries, and callouts - never in the structural surface (file names, tags, `type` values, frontmatter keys, log keywords). Fixed set so they stay consistent: subjects - each subject's emoji in `tools/subjects.json` (pick a fitting one for a new subject); index sections, page parts, and labels - as in the *Wording* table (📚 subjects, 🗓️ lessons, 📘 chapters, 🔁 review, 📝 notes, 🤒 catch-up with ✅ for caught-up lessons, 📌 homework, 🔎 legend; ⚡ in short and chapter summaries, 🧠 test yourself, 📖 terms, 🔖 textbook; 💡 explanation, ➕ addition, ⚠️ correction; 🤖 machine authorship beside the role icon). UTF-8 is for content fidelity, not typography: proper names, verbatim quotes (kept exactly as the source wrote them), and technical symbols with real meaning (`°C`, `µs`) are all fine.
+- **Whitespace**: no trailing whitespace (line breaks come from paragraphs, never from two trailing spaces), no tabs outside code blocks. Use `*` as the list marker, matching the SPEC's index/log examples.
+- **Mermaid diagrams**: use them when a diagram genuinely clarifies structure (topologies, hierarchies, flows, dependencies, timelines) - not decoratively. Orient for the page: if a diagram would grow wide, lay it out vertically (`graph TD` rather than `graph LR`) so it fits the viewport and scrolls naturally. Compatibility (renderers bundle different mermaid versions): stick to the long-stable diagram types (`flowchart`/`graph`, `sequenceDiagram`, `stateDiagram-v2`, `classDiagram`, `erDiagram`, `gantt`, `pie`); avoid beta types and `%%{init}%%`/`style` theming directives (the default theme adapts to light/dark everywhere); quote node labels containing special characters (`A["label (detail)"]`). A diagram supplements prose - some consumers only show the raw block, so key facts must also exist as text.
+- **Language**: only *content* follows the wiki language - body prose, `title`, `description`, log entry text, and every section heading, including the conventional ones. The wiki language is set at bootstrap (see *Setup* in `PROFILE.md`). Everything *structural* stays English regardless: tags, `type` values, frontmatter keys, and the log's keywords (`**Update/Creation/Deprecation**`) - these are the machine surface (linking, grep, Dataview), and they must work identically in every wiki. File names are accent-free ASCII kebab-case (a topic's file name may follow its title in the wiki language). Sources may be in any language; ingest distills them into the wiki language, quoting verbatim where fidelity matters. Technical terms stay in their original form, and *functional text* - code, commands, configuration, prompts, error messages - is always quoted verbatim in its original language: like code, a prompt's exact wording is its function, and translating it would change what it does.
+- **Absolute dates in wiki prose**: a source's "last week" becomes an absolute date ("around 2026-07-04") when distilled - wiki text is read years later, when relative references mean nothing. Verbatim quotes keep their original wording, per the exemption above.
+- **File names**: kebab-case, accent-free ASCII.
+- **Links**: relative markdown links with the `.md` extension (`../topics/concept.md`), per OKF §6.1 - this is what Obsidian and most renderers resolve reliably. Do not use the bundle-absolute `/path` form, and never link a bare directory (`subdir/`) - most renderers cannot open it: link its `index.md`, or for a multi-file source each file. A broken link is not an error - it marks knowledge not yet written, and is a good way to flag missing pages. Renaming or moving a page therefore must not create broken links by accident: updating every inbound link (grep for the old path) is part of the same operation, otherwise the missing-knowledge convention silently absorbs the breakage.
+- **Table vs. prose**: tables for enumerable facts; prose for relationships and reasoning.
+- **Phone-friendly** (students read on a phone): tables have at most 3 columns when a cell holds a formula (split or restructure wider ones); ticks, crosses, and remarks (`✓`, "checked") go outside `$$...$$` blocks, never inside them; a Mermaid diagram that would render tiny or unreadably wide on a phone (a wide tree, many parallel branches) becomes a suitable authored visual in `wiki/assets/` under *Choosing and replacing authored visuals* (render and inspect it, per *Illustrations*), keeping the facts in prose.
+- **Page size**: one focused concept per page. When a page grows past a few screens or accumulates independent sub-topics, split those out into their own pages and link them.
+- **Index entries** reuse the linked concept's frontmatter `description` verbatim (per SPEC §8), so the description is maintained in exactly one place.
+
+## Obsidian and platform compatibility
+
+The wiki is plain OKF and needs no tooling, but it should open cleanly in Obsidian. **The vault root is the project root** (not `wiki/`) - that keeps `sources/assets/` inside the vault so attachments resolve; `.obsidian/` is gitignored. Rules that keep everything compatible:
+
+- **Standard markdown links only, never `[[wikilinks]]`** - OKF requires markdown links, and they work in Obsidian too. Recommended Obsidian settings: *Use [[Wikilinks]]* off, *New link format* = relative path to file.
+- **Tags**: lowercase kebab-case, `[a-z0-9-]` only, no spaces, never purely numeric (Obsidian requires at least one non-digit character). Nested tags with `/` are allowed where a hierarchy helps (e.g. `history/ancient`). The same values go in the frontmatter `tags` list, which Obsidian reads natively. Tags are a shared vocabulary and synonyms fragment it (`maths` next to `math`): before tagging, enumerate what already exists (`grep -rh '^tags:' wiki/`, or Obsidian's tag pane) and reuse the established form; invent a new tag only when no existing one covers the concept. No separate tag index is maintained - the wiki itself is the authoritative list, and lint watches for fragmentation.
+- **`aliases`** (optional frontmatter key): alternate names for a concept - Obsidian resolves them in link autocomplete; OKF consumers treat it as a producer extension (SPEC §4.1).
+- **File and heading names**: avoid `# ^ [ ] | :` - these break Obsidian linking. The kebab-case ASCII filename rule already covers files.
+- **Images and attachments**: store under `sources/assets/` and reference them with relative links, so they render in Obsidian and survive offline.
+- Structured frontmatter (`type`, `tags`, `generated.at`) doubles as a Dataview surface - no extra rule needed, just keep the keys consistent.
+- **Beyond Obsidian, the compatibility target is the GFM family**: GitHub, GitLab, Gitea/Forgejo, and GFM-based site generators render everything used here natively. Platforms outside it (Azure DevOps, Bitbucket) degrade gracefully - frontmatter shows as text, mermaid as a code block, and no information is lost because key facts always exist as prose. Never adopt platform-specific syntax (e.g. Azure DevOps `:::mermaid`) - it is broken everywhere else.

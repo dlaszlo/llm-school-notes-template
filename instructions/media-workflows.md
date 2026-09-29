@@ -83,7 +83,7 @@ Without a requested duration, start around 3-5 minutes for a short topic or 5-8 
 
 ## Printable notes and A4 checks
 
-Apply *Printable study notes* in `AGENTS.md`: a short topic orientation, needed concepts, connected explanations, useful worked examples and recap, then self-check questions with numbered answers in a separate final section. The paper must be sufficient for the core learning task without links, hidden comments or an external presenter. Preserve editable text input and source/asset versions; do not generate body-text pages as images.
+Apply [Printable study notes](printable-study-notes.md): a short topic orientation, needed concepts, connected explanations, useful worked examples and recap, then self-check questions with numbered answers in a separate final section. The paper must be sufficient for the core learning task without links, hidden comments or an external presenter. Preserve editable text input and source/asset versions; do not generate body-text pages as images.
 
 Landscape A4 is 297 x 210 mm; portrait is 210 x 297 mm. Infographics/slides keep at least 10 mm safe margins; prose handouts start with at least 15 mm margins and about 11-12 pt body text. Inspect readability at actual print size and grayscale where relevant. Fit images without distortion or clipping essential content. Document intended physical size and actual pixel dimensions. A nominal 300 dpi landscape A4 raster is about 3508 x 2480 pixels; upscaling or changing density metadata does not create detail. An infographic remains a standalone image; no compulsory PDF conversion is implied.
 

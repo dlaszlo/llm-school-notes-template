@@ -1,5 +1,8 @@
 # Hermes, bots and scheduled work
 
+**Optional legacy integration.** This guide is retained for existing deployments and rollback knowledge. Using the template or its tools does not require Hermes, Discord, these bot roles or global skill installation. The concrete deployment inventory determines what is actually active.
+
+
 This is an optional deployment example, not a prerequisite or a statement about a new user's installation. Read it as part of the [system handbook](system-guide.md). It explains the proposed role model and the known deployment baseline separately. Actual settings, routes and access tests belong in the private deployment inventory; this public template contains no configured child identities or channel IDs.
 
 ## What each component does

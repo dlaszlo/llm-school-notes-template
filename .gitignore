@@ -38,3 +38,6 @@ package-lock.json
 # Machine-local renderer paths and disposable execution records
 visual-tools.local.json
 .visual-runs/
+
+# Reproducible page-check dependency lock (other ad-hoc npm locks stay ignored).
+!tools/page-check/package-lock.json

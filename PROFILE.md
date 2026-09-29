@@ -1,8 +1,8 @@
 # School notes wiki - profile
 
-> **Not initialized yet.** This wiki has not been set up. Ask the LLM agent to initialize it: it follows the *Bootstrap* workflow in [AGENTS.md](AGENTS.md), asks the setup questions, fills in this file, retitles it, and deletes this notice.
+> **Not initialized yet.** This wiki has not been set up. Ask the LLM agent to initialize it: it follows the *Bootstrap* workflow in [Wiki workflows](instructions/wiki-workflows.md), asks the setup questions, fills in this file, retitles it, and deletes this notice.
 
-This file holds everything that belongs to **this** wiki; the rules shared by every wiki made from the template are in [AGENTS.md](AGENTS.md), which refers to the sections below by name. The subjects and the banner labels live in [tools/subjects.json](tools/subjects.json); reference-index wording lives in `tools/book-index.json`.
+This file holds everything that belongs to **this** wiki; the rules shared by every wiki made from the template are routed through [AGENTS.md](AGENTS.md), which refers to the sections below by name. The subjects and the banner labels live in [tools/subjects.json](tools/subjects.json); reference-index wording lives in `tools/book-index.json`.
 
 # Template
 
@@ -10,7 +10,7 @@ This file holds everything that belongs to **this** wiki; the rules shared by ev
 * **Template version**: `<recorded at bootstrap and at every template update from shared-files.json>`.
 * **Template commit**: `<exact template commit recorded at bootstrap and every template update>`.
 
-Updates are optional and happen only when the user asks (see *Template updates* in AGENTS.md).
+Updates are optional and happen only when the user asks (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)).
 
 # Setup
 
@@ -18,7 +18,7 @@ Updates are optional and happen only when the user asks (see *Template updates* 
 
 * **Student**: `<first name>` - the wiki is titled after the student's first name (e.g. "Anna's notes"), which is the only personal name the wiki may contain.
 * **Grade and school year**: `<grade>` in `<school year>`.
-* **Wiki language**: `<language>` (see the *Language* rule in AGENTS.md and the *Wording* table below).
+* **Wiki language**: `<language>` (see the *Language* rule in [Wiki structure](instructions/wiki-structure.md) and the *Wording* table below).
 * **Audience**: `<who reads the wiki>` - by default the student, the family, and classmates the student shares it with. The personal-data audience test is applied against this readership, and every explanation is written at the level of its youngest main reader (see *Plain language*).
 * **Notebook recognition**: `<which notebook belongs to which subject, as the user confirms it, e.g. "the plain spiral notebook is Science">`.
 * **Standing authorizations**: the defaults in *Standing authorizations* below, as confirmed (or narrowed) by the user at bootstrap.
@@ -31,7 +31,7 @@ The template's defaults, meant to make everyday use as automatic as possible. Bo
 * **Automatic ingest**: ingest dropped notes (photos, files, voice notes) right away without a discussion step - pick the subject from the content or the user's word, apply the curation rule, add diagrams where they fit, then commit, push, and bring the result into `main` (fast-forward) without asking again, then delete any working branch that is fully merged into `main`, locally and on the remote; report afterwards what was done, which readings are uncertain, and what stays open. Ask first only when a real decision is the user's: an unclear subject, a secret, or data that fails the audience test.
 * **Duplicate check**: before filing, compare each new file's sha256 with every `content_sha256` already recorded in `wiki/` (and search the wiki for the topic) - the user often is not sure whether a page was sent before; an identical file is not ingested again, just reported.
 * **Illustrations**: a few colorful drawings per the *Illustrations* rule are part of the ingest routine.
-* **Synthesis pages**: see *Synthesis pages - standing authorization* under *Workflows* in AGENTS.md.
+* **Synthesis pages**: see *Synthesis pages - standing authorization* in [Wiki workflows](instructions/wiki-workflows.md).
 
 # Wording
 
@@ -89,4 +89,4 @@ Fill this section only with user-confirmed settings when relevant; do not infer 
 * **Depth**: accessible explanation and application first; advanced material only with a concrete learning reason and prerequisite bridge. Related cultural enrichment remains brief and optional.
 * **Media settings**: `<available tools, chosen models, private delivery destination and explicitly configured spending caps; empty means not configured>`.
 
-Keep actual credentials outside tracked files. The shared learning, image-checking, media and printable-note rules are in `AGENTS.md`; a role name does not establish live tool access.
+Keep actual credentials outside tracked files. The shared learning, image-checking, media and printable-note rules are linked from `AGENTS.md`; a role name does not establish live tool access.

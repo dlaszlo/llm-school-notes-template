@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.14.8",
+  "version": "1.15.0",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -94,6 +94,23 @@
     ".agents/skills/ingest-notes/SKILL.md",
     ".agents/skills/learning-media/SKILL.md",
     "instructions/agent-capabilities.md",
-    "tools/check_hermes_tutor.py"
+    "tools/check_hermes_tutor.py",
+    "instructions/content-and-curriculum.md",
+    "instructions/page-check.md",
+    "instructions/policy-migration-1.15.0.json",
+    "instructions/printable-study-notes.md",
+    "instructions/sources-and-evidence.md",
+    "instructions/task-execution.md",
+    "instructions/visual-policy.md",
+    "instructions/wiki-structure.md",
+    "instructions/wiki-workflows.md",
+    "tools/page-check/core.mjs",
+    "tools/page-check/package-lock.json",
+    "tools/page-check/package.json",
+    "tools/page-check/runner.mjs",
+    "tools/page-check/style.css",
+    "tools/page-check/test.mjs",
+    "tools/page_check.mjs",
+    "tools/test_policy_migration.py"
   ]
 }
