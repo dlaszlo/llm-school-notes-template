@@ -8,13 +8,18 @@ import { serveSite } from './server.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function printFingerprint(browserPath) {
   if (!browserPath) throw Error('PDF generation requires an explicit Chromium executable');
-  const files = ['lib/pdf.mjs','lib/markdown.mjs','src/pages/nyomtatas/[id].astro','src/styles.css','package-lock.json'];
+  const browserVersion = execFileSync(browserPath,['--version'],{encoding:'utf8'}).trim();
+  const major = Number(browserVersion.match(/(?:Chromium|Chrome|HeadlessChrome)[^\d]*(\d+)/)?.[1]);
+  if (!major || major < 131) throw Error('PDF page-margin headers require Chromium 131 or newer');
+  const files = ['lib/pdf.mjs','lib/markdown.mjs','src/pages/nyomtatas/[id].astro','src/styles.css','src/print-fonts.css','package-lock.json'];
+  const bundled = (await fs.readdir(path.join(root,'src/fonts/source-sans-3'))).filter(f=>f.endsWith('.woff2')).sort();
+  files.push(...bundled.map(f=>'src/fonts/source-sans-3/'+f));
   const code = await Promise.all(files.map(async f => [f,sha256(await fs.readFile(path.join(root,f)))]));
-  const fonts = await Promise.all(['DejaVu Sans','DejaVu Sans:style=Bold','DejaVu Sans:style=Oblique','DejaVu Sans:style=Bold Oblique','Noto Color Emoji'].map(async name => {
+  const fonts = await Promise.all(['Noto Color Emoji'].map(async name => {
     const file = execFileSync('fc-match',['-f','%{file}',name],{encoding:'utf8'});
     return [name,sha256(await fs.readFile(file))];
   }));
-  return sha256(JSON.stringify({code,fonts,node:process.version,browser:execFileSync(browserPath,['--version'],{encoding:'utf8'}).trim()}));
+  return sha256(JSON.stringify({code,fonts,node:process.version,browser:browserVersion}));
 }
 export async function generatePdfs({output,payload,browserPath,cacheDirectory}) {
   const documents = payload.collections.filter(c => c.pdf);
@@ -46,8 +51,26 @@ export async function generatePdfs({output,payload,browserPath,cacheDirectory}) 
         if(failures.length)throw Error('Oversized print elements: '+doc.id+' '+failures.join(','));
         await page.evaluate(() => document.querySelectorAll('a[href^="/"]').forEach(a => a.removeAttribute('href')));
         const date=new Date().toLocaleDateString('hu-HU',{timeZone:'Europe/Budapest'});
-        await page.locator('.print-version').evaluate((e,date)=>e.textContent+=' · '+date,date);
-        bytes=await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="width:100%;text-align:center;font-family:Arial;font-size:9px;color:#555"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',tagged:true,outline:true});
+        // The exact version stays in PDF metadata and the private receipt, not the lesson.
+        await page.evaluate(({title,key})=>{
+          document.title=title+' — változat '+key;
+          document.body.classList.add('pdf-export');
+        },{title:doc.title,key});
+        // Chromium 131+ page margin boxes use the same local webfont as the body.
+        // No external header resources or platform-dependent header font substitutions.
+        const cssString = value => '"'+value.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/[\n\r\f]/g,' ')+'"';
+        await page.addStyleTag({content:`@page {
+          @top-left { content: ${cssString(doc.title)}; font-family: 'Source Sans 3'; font-size: 9pt; line-height: 1.2; font-weight: 400; color: #404040; vertical-align: middle; }
+          @bottom-left { content: ${cssString(date)}; font-family: 'Source Sans 3'; font-size: 9pt; color: #404040; }
+          @bottom-right { content: counter(page) ' / ' counter(pages); font-family: 'Source Sans 3'; font-size: 9pt; color: #404040; }
+        }`});
+        await page.evaluate(async()=>{
+          await document.fonts.ready;
+          for (const face of ['400 11.5pt "Source Sans 3"','600 16pt "Source Sans 3"','700 11.5pt "Source Sans 3"','italic 400 11.5pt "Source Sans 3"']) {
+            if (!(await document.fonts.load(face,'Árvíztűrő tükörfúrógép ŐŰ')).length) throw Error('Missing print font: '+face);
+          }
+        });
+        bytes=await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false,tagged:true,outline:true});
         record={key,sha256:sha256(bytes),bytes:bytes.length,createdAt:new Date().toISOString(),id:doc.id,title:doc.title,inputs:doc.inputs};
         await fs.writeFile(pdfFile+'.tmp',bytes,{mode:0o600});await fs.rename(pdfFile+'.tmp',pdfFile);
         await fs.writeFile(recordFile,JSON.stringify(record,null,2)+'\n',{mode:0o600});

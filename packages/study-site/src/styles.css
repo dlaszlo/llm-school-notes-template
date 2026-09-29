@@ -38,7 +38,7 @@
 .study-pagination a { max-width: 48%; }
 .study-pagination small { display: block; }
 :focus-visible { outline: 3px solid #cc922e; outline-offset: 4px; }
-.print-document { background: #fff; color: #18252b; margin: 0; font-family: system-ui, sans-serif; }
+.print-document { background: #fff; color: #18252b; margin: 0; font-family: 'Source Sans 3', sans-serif; }
 .print-document main { max-width: 70ch; padding: 2rem; margin: auto; }
 .print-document a { color: #175c65; }
 .print-controls { display: flex; justify-content: center; gap: 2rem; padding: 1rem; background: #edf3f2; }
@@ -49,7 +49,7 @@
   @page { size: A4 portrait; margin: 16mm; }
   .print-controls, header, nav, .sidebar, .right-sidebar-container, .study-tools, .study-pagination { display: none !important; }
   .print-document main { max-width: none; margin: 0; padding: 0; }
-  .study-content { font-size: 11pt; line-height: 1.5; color: #111; }
+  .study-content { font-size: 11.5pt; line-height: 1.45; color: #111; }
   .study-content .study-label { color: #404040; font-size: 9pt; }
   .study-content :is(h2,h3,h4), .print-chapter > h2 { break-after: avoid; }
   .study-content p { orphans: 3; widows: 3; }
@@ -100,9 +100,10 @@ starlight-theme-select select { width: auto; min-width: max-content; text-overfl
 .study-downloads { margin: 1rem 0 2rem; padding: 1rem; border: 1px solid var(--sl-color-hairline-light); border-radius: .5rem; }
 .study-downloads summary { cursor: pointer; font-weight: 600; }
 .study-downloads ul { padding-inline-start: 1.5rem; }
-.print-version { color: #555; font-size: 9pt; }
 @media print {
-  .print-document, .print-document .study-content { font-family: 'DejaVu Sans', sans-serif; }
+  .print-document, .print-document .study-content { font-family: 'Source Sans 3', sans-serif; }
+  .print-document.pdf-export > main > h1 { display: none; }
+  .print-document :is(h1,h2,h3,h4) { font-weight: 600; }
   .print-document h1 { font-size: 22pt; line-height: 1.2; margin-bottom: 4mm; }
   .print-chapter { margin: 0; }
   .print-chapter + .print-chapter { break-before: page; }

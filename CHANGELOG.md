@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.3 — 2026-09-29
+
+- Printable notes use a consistent typographic hierarchy: explanations retain full text size, while source/author labels are secondary but readable. Running titles, dates and page numbers support printed use; exact revision hashes move to PDF metadata, filenames and private receipts.
+- The optional renderer bundles Adobe Source Sans 3 under OFL 1.1, uses local fonts without network loading or system installation, and includes font bytes in PDF cache keys. Technical diagrams and mathematical rendering remain unchanged.
+- Migration: synchronize the shared policy set and record this release/commit. Update the separately pinned renderer; all PDFs need regeneration and visual review after this typography change. No Markdown lesson rewrite or public publication is authorized.
+
 ## 1.15.2 — 2026-09-29
 
 - Keep routine image resizing/conversion/compression details in private provenance or comments, not learner captions. Visible creator/source/license credits and required notices for material changes remain.

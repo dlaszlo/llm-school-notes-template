@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/adobe-fonts/source-sans",
+  "commit": "87b37a2daaed80fcb8e8ccb0085c4d72ddade12e",
+  "license": "SIL Open Font License 1.1",
+  "files": [
+    {
+      "file": "SourceSans3-Regular.ttf.woff2",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-sans/87b37a2daaed80fcb8e8ccb0085c4d72ddade12e/WOFF2/TTF/SourceSans3-Regular.ttf.woff2",
+      "sha256": "53492fb3a0def77354f166a55d09b63a10855e91c206c7620a81cf56e97f8ec3"
+    },
+    {
+      "file": "SourceSans3-It.ttf.woff2",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-sans/87b37a2daaed80fcb8e8ccb0085c4d72ddade12e/WOFF2/TTF/SourceSans3-It.ttf.woff2",
+      "sha256": "4d80b3b801f4c457f1b4adbd3911d8501338e6d282141663770c38d3a2e97859"
+    },
+    {
+      "file": "SourceSans3-Semibold.ttf.woff2",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-sans/87b37a2daaed80fcb8e8ccb0085c4d72ddade12e/WOFF2/TTF/SourceSans3-Semibold.ttf.woff2",
+      "sha256": "47b9b661b9f395fe7f0d0e119637fba5c8dad97bde3df60066fd24229c0792f4"
+    },
+    {
+      "file": "SourceSans3-Bold.ttf.woff2",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-sans/87b37a2daaed80fcb8e8ccb0085c4d72ddade12e/WOFF2/TTF/SourceSans3-Bold.ttf.woff2",
+      "sha256": "8d35c6d40e750a4ee23bbbba2bd604ad098d172907369b43281507e16b8e2e7a"
+    },
+    {
+      "file": "SourceSans3-BoldIt.ttf.woff2",
+      "url": "https://raw.githubusercontent.com/adobe-fonts/source-sans/87b37a2daaed80fcb8e8ccb0085c4d72ddade12e/WOFF2/TTF/SourceSans3-BoldIt.ttf.woff2",
+      "sha256": "8c4b66aea0e7887dfd1e296b03ae53b76ce25256fae1437777514933acaef0f3"
+    }
+  ]
+}

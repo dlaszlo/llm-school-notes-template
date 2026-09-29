@@ -1,0 +1,6 @@
+/* Bundled Adobe Source Sans 3; license and pinned source in fonts/source-sans-3/. */
+@font-face { font-family: 'Source Sans 3'; src: url('./fonts/source-sans-3/SourceSans3-Regular.ttf.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Source Sans 3'; src: url('./fonts/source-sans-3/SourceSans3-It.ttf.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Source Sans 3'; src: url('./fonts/source-sans-3/SourceSans3-Semibold.ttf.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Source Sans 3'; src: url('./fonts/source-sans-3/SourceSans3-Bold.ttf.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Source Sans 3'; src: url('./fonts/source-sans-3/SourceSans3-BoldIt.ttf.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }
