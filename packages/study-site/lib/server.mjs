@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 export async function serveSite(directory, base, port = 0) {
   directory = await fs.realpath(directory);
-  const types = { '.html':'text/html; charset=utf-8', '.css':'text/css', '.js':'application/javascript', '.mjs':'application/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.webp':'image/webp', '.png':'image/png', '.jpg':'image/jpeg', '.wasm':'application/wasm', '.pdf':'application/pdf' };
+  const types = { '.html':'text/html; charset=utf-8', '.css':'text/css', '.js':'application/javascript', '.mjs':'application/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.webp':'image/webp', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.gif':'image/gif', '.wasm':'application/wasm', '.pdf':'application/pdf' };
   const server = createServer(async(req,res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url,'http://localhost').pathname);

@@ -20,7 +20,7 @@ All direct dependencies and the transitive lock are committed. `npm ci` writes o
 
 ## Input configuration
 
-Keep `publication/pilot.json` in the private learner repository. This is a deliberately explicit, hash-bound manifest, not automatic publication permission. Ordered `pages` define previous/next order. The sidebar contains only the home page (`wiki/index.md`) and subject indexes (`wiki/<subject>/index.md`); topics remain accessible through those indexes and search. Topic pages include a link back to their subject. Only referenced, allowlisted assets are copied.
+Keep `publication/pilot.json` in the private learner repository. This is a deliberately explicit, hash-bound manifest, not automatic publication permission. Ordered `pages` define previous/next order. The sidebar contains only the home page (`wiki/index.md`) and subject indexes (`wiki/<subject>/index.md`); topics remain accessible through those indexes and search. Topic pages include a link back to their subject. Only referenced, allowlisted assets are copied. Approved GIF images (such as unchanged official hazard pictograms) are supported alongside SVG, PNG, JPEG and WebP.
 
 ```json
 {

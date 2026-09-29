@@ -133,3 +133,34 @@ test('feedback uses only an explicit public repository name', async () => {
     await assert.rejects(exportSite({ repo: fixture, config, output: path.join(tmp, 'bad') }), /Invalid public feedback/);
   } finally { await fs.rm(tmp, { recursive: true, force: true }); }
 });
+
+// Preserve acquired standard symbols byte-for-byte, including GIF originals.
+test('approved GIF symbols export unchanged and are served as images', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-gif-'));
+  let server;
+  try {
+    const repo = path.join(tmp, 'repo'); await fs.cp(fixture, repo, {recursive:true});
+    const gif = Buffer.from([71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59]);
+    const file='wiki/assets/symbol.gif'; await fs.writeFile(path.join(repo,file),gif);
+    await fs.appendFile(path.join(repo,'wiki/tema.md'),'\n![Jel](assets/symbol.gif)\n');
+    const config=await settings();config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,'wiki/tema.md')));
+    config.assets.push({path:file,sha256:sha256(gif)});
+    const output=path.join(tmp,'build');const {receipt}=await exportSite({repo,config,output});
+    const entry=receipt.assets.find(a=>a.input===file);assert.ok(entry);
+    assert.deepEqual(await fs.readFile(path.join(output,'public',entry.output)),gif);
+    const {serveSite}=await import('../lib/server.mjs');
+    const served=await serveSite(path.join(output,'public'),'/pelda/',0);server=served.server;
+    const response=await fetch(served.origin+'/pelda/'+entry.output);
+    assert.match(response.headers.get('content-type'),/^image\/gif/);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()),gif);
+  } finally { if(server) await new Promise(r=>server.close(r));await fs.rm(tmp,{recursive:true,force:true}); }
+});
+
+test('standard Graphviz/Matplotlib DTD is stripped; entities and other DTDs stay blocked', () => {
+  const body='<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L10 10"/></svg>';
+  const declaration='<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+  const clean=safeSvg(Buffer.from(declaration+body)).toString();
+  assert.doesNotMatch(clean,/DOCTYPE/);assert.match(clean,/M0 0 L10 10/);
+  assert.throws(()=>safeSvg(Buffer.from('<!DOCTYPE svg SYSTEM "file:///etc/passwd">'+body)),/declarations/);
+  assert.throws(()=>safeSvg(Buffer.from(declaration+'<!ENTITY x "y">'+body)),/declarations/);
+});

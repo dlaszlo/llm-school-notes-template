@@ -2,6 +2,12 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.2 — 2026-09-29
+
+- Keep routine image resizing/conversion/compression details in private provenance or comments, not learner captions. Visible creator/source/license credits and required notices for material changes remain.
+- The optional web renderer supports unchanged official GIF symbols and strips only the known standard SVG 1.1 declaration before safe parsing of Graphviz/Matplotlib drawings. Other DTDs, entities and active content remain rejected.
+- Migration: synchronize the shared set and record this release/commit in active profiles. Update the separately pinned renderer when using the web preview. No rights, content-publication authorization or raw-source retention policy changes.
+
 ## 1.15.1 — 2026-09-29
 
 - Remove the class-material image embedding exception. Teacher/textbook images remain private evidence; learner pages and derivatives use independent authored visuals or independently acquired, verified reusable originals.

@@ -4,7 +4,9 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 export function safeSvg(bytes) {
-  const text = bytes.toString();
+  // Matplotlib/Graphviz emit this standard declaration. Remove it before parsing,
+  // without loading a DTD; all other declarations and every entity remain rejected.
+  const text = bytes.toString().replace(/<!DOCTYPE svg PUBLIC "-\/\/W3C\/\/DTD SVG 1\.1\/\/EN"\s+"http:\/\/www\.w3\.org\/Graphics\/SVG\/1\.1\/DTD\/svg11\.dtd">/g, '');
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error('SVG declarations/entities are not supported');
   const doc = new DOMParser({ onError: (level, message) => { throw new Error(`Invalid SVG: ${message}`); } }).parseFromString(text, 'image/svg+xml');
   if (doc.documentElement.localName !== 'svg') throw new Error('Not SVG');
