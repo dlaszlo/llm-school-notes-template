@@ -24,7 +24,7 @@ export default defineConfig({
     expressiveCode: false,
     disable404Route: true,
     components: { Head: './src/components/Head.astro', SiteTitle: './src/components/SiteTitle.astro', TwoColumnContent: './src/components/TwoColumnContent.astro' },
-    sidebar: payload.pages.filter(p => p.navigation).map(p => ({ label: p.navigation === 'home' ? 'Kezdőlap' : p.title, link: '/' + (p.route ? p.route + '/' : '') })),
+    sidebar: payload.pages.filter(p => p.navigation).map(p => ({ label: p.navigationLabel || (p.navigation === 'home' ? 'Kezdőlap' : p.title), link: '/' + (p.route ? p.route + '/' : '') })),
     tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
     social: [],
   })],

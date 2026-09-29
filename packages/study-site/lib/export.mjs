@@ -27,6 +27,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     if (routes.has(route)) throw new Error(`Duplicate route: ${route}`);
     if (!/^[a-f0-9]{64}$/.test(p.sha256)) throw new Error(`Page hash required: ${p.path}`);
     if (isPublic && p.publicationReviewed !== true) throw new Error(`Page not reviewed for publication: ${p.path}`);
+    if (p.navigationLabel !== undefined && (typeof p.navigationLabel !== 'string' || !p.navigationLabel.trim() || p.navigationLabel.length > 160)) throw new Error('Invalid navigation label');
     pageMap.set(p.path, { ...p, route }); routes.add(route);
   }
   const assets = new Map();
@@ -110,7 +111,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       });
       if (isPublic && ['source', 'source-summary'].includes(rendered.metadata.type)) throw new Error(`Source summary is private: ${p.path}`);
       const { title, html, headings, audit } = rendered;
-      payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : p.navigation === 'info' ? 'info' : null, url: urlFor(base, p.route) });
+      payload.pages.push({ route: p.route, title, navigationLabel: p.navigationLabel, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : p.navigation === 'info' ? 'info' : null, url: urlFor(base, p.route) });
       receipt.pages.push({ input: p.path, sourceSha256: p.sha256, route: p.route, audit });
     }
     const collectionMap = new Map((config.collections || []).map(c => [c.id, c]));

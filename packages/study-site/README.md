@@ -148,3 +148,5 @@ Teacher-image copies in the legacy `wiki/assets/orai/` directory are rejected in
 The template does not choose a license for learner content. After owner approval, set `license` in the local publication configuration, for example `{ "id": "CC BY-NC-SA 4.0", "attribution": "Project name" }`. Supported identifiers: CC BY 4.0, CC BY-SA 4.0, CC BY-NC-SA 4.0. Attribution and license changes affect PDF cache keys. Print pages include a closing notice with third-party exceptions; generated PDFs also carry the short identifier in each footer. Preserve asset-level attribution independently.
 
 An explicitly allowlisted Markdown page with `navigation: "info"` appears in the site menu. Use it for the project introduction, approved terms and feedback links; no family-specific content belongs in the template.
+
+For consistent sidebar icons, supply `navigationLabel` for every menu entry in local publication configuration. Use the learner repository’s `tools/subjects.json` names and emoji for subjects; include home and project information entries consistently. This overrides only the sidebar label, without changing lesson titles or PDF inputs.
