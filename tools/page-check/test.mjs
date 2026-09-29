@@ -20,7 +20,7 @@ test('math, alerts, details and footnotes survive; executable HTML does not',()=
 });
 test('links, malformed escapes, invalid math and evidence hashes are checked',()=>{
  assert.equal(resolveLocal(root,file,'#%xx').error,'invalid-url');
- assert.ok(renderMarkdown('$$\nx^2+1\n').errors.some(e=>e.kind==='unclosed-display-math')); 
+ assert.ok(renderMarkdown('$$\nx^2+1\n').errors.some(e=>e.kind==='unclosed-display-math'));
  assert.equal(resolveLocal(root,file,'../../outside').error,'path-outside-repository');
  const r=renderMarkdown('$\\thisCommandDoesNotExist$');assert.ok(r.errors.some(e=>e.kind==='math'));
  fs.writeFileSync(file,content+'\n[missing](no.md)\n[bad anchor](page.md#missing)\n');
