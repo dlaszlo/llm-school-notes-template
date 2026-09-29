@@ -142,3 +142,9 @@ The learner publication configuration can supply `branding.light` and `branding.
 Optional `feedbackRepository: "owner/public-site-repo"` adds a footer report link with the stable GitHub Pages page URL prefilled. Install the generic form from `templates/site-feedback` into that repository and enable Issues. The link never includes localhost, a private input path or a source filename. This is a reporting destination, not automatic issue ingestion. Omit the setting when no public destination is configured. Local previews must not be described as already published Pages sites.
 
 Teacher-image copies in the legacy `wiki/assets/orai/` directory are rejected in every export mode. This path guard is a backstop, not license recognition: reviewers must also verify independently acquired images and visible, exportable credits under the shared sources/evidence policy.
+
+### Content license and project menu
+
+The template does not choose a license for learner content. After owner approval, set `license` in the local publication configuration, for example `{ "id": "CC BY-NC-SA 4.0", "attribution": "Project name" }`. Supported identifiers: CC BY 4.0, CC BY-SA 4.0, CC BY-NC-SA 4.0. Attribution and license changes affect PDF cache keys. Print pages include a closing notice with third-party exceptions; generated PDFs also carry the short identifier in each footer. Preserve asset-level attribution independently.
+
+An explicitly allowlisted Markdown page with `navigation: "info"` appears in the site menu. Use it for the project introduction, approved terms and feedback links; no family-specific content belongs in the template.

@@ -127,3 +127,7 @@ starlight-theme-select select { width: auto; min-width: max-content; text-overfl
   .print-document .study-content :is(p,li) { orphans: 3; widows: 3; }
   .print-answers { margin-top: 0; padding-top: 0; }
 }
+
+.print-license { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #aaa; color: #404040; font-size: 9pt; break-inside: avoid; }
+.print-license h2 { font-size: 12pt; }
+.print-license p { margin-block: .5em; }

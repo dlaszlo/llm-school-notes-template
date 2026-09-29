@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.4 — 2026-09-29
+
+- Printable notes carry the explicitly approved content license in page footers and a compact closing notice, preserving third-party exceptions. Project introductions and site menus expose the same terms.
+- Migration: copy the shared set; select the content license only in initialized local publication configuration. Regenerate affected PDFs and verify notices, pagination and asset credits. The template chooses no license for learner content.
+
 ## 1.15.3 — 2026-09-29
 
 - Printable notes use a consistent typographic hierarchy: explanations retain full text size, while source/author labels are secondary but readable. Running titles, dates and page numbers support printed use; exact revision hashes move to PDF metadata, filenames and private receipts.

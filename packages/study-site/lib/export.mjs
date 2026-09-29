@@ -43,6 +43,12 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     if (typeof config.feedbackRepository !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(config.feedbackRepository)) throw new Error('Invalid public feedback repository');
     payload.feedbackRepository = config.feedbackRepository;
   }
+  if (config.license !== undefined) {
+    const { id, attribution } = config.license;
+    const codes = { 'CC BY 4.0': 'by', 'CC BY-SA 4.0': 'by-sa', 'CC BY-NC-SA 4.0': 'by-nc-sa' };
+    if (!Object.hasOwn(codes, id) || typeof attribution !== 'string' || !attribution.trim() || attribution.length > 120) throw new Error('Explicit supported license and attribution required');
+    payload.license = { id, attribution, url: 'https://creativecommons.org/licenses/' + codes[id] + '/4.0/' };
+  }
   const receipt = { mode: config.mode, configSha256: sha256(JSON.stringify(config)), pages: [], assets: [], privateLinks: [] };
   const cache = new Map();
   const renderer = await mermaidRenderer(browserPath);
@@ -104,7 +110,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       });
       if (isPublic && ['source', 'source-summary'].includes(rendered.metadata.type)) throw new Error(`Source summary is private: ${p.path}`);
       const { title, html, headings, audit } = rendered;
-      payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : null, url: urlFor(base, p.route) });
+      payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : p.navigation === 'info' ? 'info' : null, url: urlFor(base, p.route) });
       receipt.pages.push({ input: p.path, sourceSha256: p.sha256, route: p.route, audit });
     }
     const collectionMap = new Map((config.collections || []).map(c => [c.id, c]));
@@ -126,7 +132,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       const value = { id: collection.id, title: collection.title, group: collection.group || '', chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
       if (collection.pdf === true) {
         if (!printEngine) throw new Error('PDF collection needs a verified print renderer');
-        const key = sha256(JSON.stringify({printEngine,base,title:value.title,chapters,inputs}));
+        const key = sha256(JSON.stringify({printEngine,base,title:value.title,chapters,inputs,license:payload.license}));
         value.pdf = { key, filename:collection.id+'-'+key.slice(0,12)+'.pdf' };
       }
       payload.collections.push(value);

@@ -62,6 +62,7 @@ export async function generatePdfs({output,payload,browserPath,cacheDirectory}) 
         await page.addStyleTag({content:`@page {
           @top-left { content: ${cssString(doc.title)}; font-family: 'Source Sans 3'; font-size: 9pt; line-height: 1.2; font-weight: 400; color: #404040; vertical-align: middle; }
           @bottom-left { content: ${cssString(date)}; font-family: 'Source Sans 3'; font-size: 9pt; color: #404040; }
+          ${payload.license ? `@bottom-center { content: ${cssString(payload.license.id+' · kivételek: lásd a jelöléseket')}; font-family: 'Source Sans 3'; font-size: 8pt; color: #404040; }` : ''}
           @bottom-right { content: counter(page) ' / ' counter(pages); font-family: 'Source Sans 3'; font-size: 9pt; color: #404040; }
         }`});
         await page.evaluate(async()=>{

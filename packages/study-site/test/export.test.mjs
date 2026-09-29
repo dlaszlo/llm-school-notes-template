@@ -164,3 +164,20 @@ test('standard Graphviz/Matplotlib DTD is stripped; entities and other DTDs stay
   assert.throws(()=>safeSvg(Buffer.from('<!DOCTYPE svg SYSTEM "file:///etc/passwd">'+body)),/declarations/);
   assert.throws(()=>safeSvg(Buffer.from(declaration+'<!ENTITY x "y">'+body)),/declarations/);
 });
+
+test('content license is opt-in and changes invalidate PDF keys', async () => {
+  const config = await settings();
+  config.collections[0].pdf = true;
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-license-'));
+  const run = (name, value) => exportSite({repo:fixture, config:value, output:path.join(tmp,name), printEngine:'test-engine'});
+  try {
+    const plain = await run('plain',config);
+    assert.equal(plain.payload.license, undefined);
+    const licensed = await run('licensed',{...config, license:{id:'CC BY-NC-SA 4.0',attribution:'Minta'}});
+    assert.equal(licensed.payload.license.url,'https://creativecommons.org/licenses/by-nc-sa/4.0/');
+    assert.notEqual(plain.payload.collections[0].pdf.key,licensed.payload.collections[0].pdf.key);
+    const changed = await run('changed',{...config, license:{id:'CC BY-SA 4.0',attribution:'Minta'}});
+    assert.notEqual(changed.payload.collections[0].pdf.key,licensed.payload.collections[0].pdf.key);
+    await assert.rejects(run('bad',{...config,license:{id:'toString',attribution:'Minta'}}),/license/);
+  } finally { await fs.rm(tmp,{recursive:true,force:true}); }
+});

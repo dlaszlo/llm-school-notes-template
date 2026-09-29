@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.15.3",
+  "version": "1.15.4",
   "files": [
     ".gitattributes",
     ".gitignore",
