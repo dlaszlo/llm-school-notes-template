@@ -112,3 +112,24 @@ test('formulas in HTML disclosure questions render in both question and answer h
  assert.match(r.html,/<summary>.*<mjx-container/);assert.equal(r.audit.formulas.length,1);
  const printed=await printSection(r.html,'p-');assert.match(printed.answers,/<h3>.*<mjx-container/);assert.doesNotMatch(printed.answers,/\$g=/);
 });
+
+// Legacy folder is prohibited even in private previews; renaming is addressed by rights review.
+test('teacher slide copies cannot enter an asset allowlist', async () => {
+  const config = await settings();
+  config.assets.push({ path: 'wiki/assets/orai/slide.png', sha256: '0'.repeat(64) });
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-rights-'));
+  try {
+    await assert.rejects(exportSite({ repo: fixture, config, output: path.join(tmp, 'build') }), /Teacher-material copies/);
+  } finally { await fs.rm(tmp, { recursive: true, force: true }); }
+});
+
+test('feedback uses only an explicit public repository name', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-feedback-'));
+  try {
+    const config = await settings(); config.feedbackRepository = 'example/public-notes';
+    const { payload } = await exportSite({ repo: fixture, config, output: path.join(tmp, 'good') });
+    assert.equal(payload.feedbackRepository, 'example/public-notes');
+    config.feedbackRepository = 'https://github.com/example/private?token=secret';
+    await assert.rejects(exportSite({ repo: fixture, config, output: path.join(tmp, 'bad') }), /Invalid public feedback/);
+  } finally { await fs.rm(tmp, { recursive: true, force: true }); }
+});

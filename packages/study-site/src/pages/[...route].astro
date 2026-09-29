@@ -11,6 +11,8 @@ export function getStaticPaths() {
 const { page, payload, previous, next } = Astro.props;
 const downloads = payload.collections.filter(c => c.pdf && (c.routes.includes(page.route) || page.navigation === 'subject' && c.routes.some(r => r.startsWith(page.route + '/'))));
 const downloadGroups = downloads.filter(c => !downloads.some(parent => parent.id === c.group)).map(c => ({ ...c, children: downloads.filter(child => child.group === c.id) }));
+const reportPage = payload.feedbackRepository ? `https://${payload.feedbackRepository.split('/')[0]}.github.io${page.url}` : undefined;
+const reportUrl = payload.feedbackRepository ? `https://github.com/${payload.feedbackRepository}/issues/new?${new URLSearchParams({ template: 'bejelentes.yml', page: reportPage! })}` : undefined;
 const subject = payload.pages.find(p => p.navigation === 'subject' && page.route.startsWith(p.route + '/'));
 ---
 <StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: false, prev: false, next: false }} headings={page.headings}>
@@ -22,6 +24,10 @@ const subject = payload.pages.find(p => p.navigation === 'subject' && page.route
   </nav>
   {downloads.length > 1 && <details class="study-downloads" data-pagefind-ignore><summary>Nyomtatható témakörök (PDF)</summary><ul>{downloadGroups.map(c => <li><a href={`${payload.base}pdf/${c.pdf.filename}`} download>{c.children.length ? <strong>{c.title}</strong> : c.title}</a>{c.children.length > 0 && <ul>{c.children.map(child => <li><a href={`${payload.base}pdf/${child.pdf.filename}`} download>{child.title}</a></li>)}</ul>}</li>)}</ul></details>}
   <div class="sl-markdown-content study-content" data-pagefind-body set:html={page.html} />
+  {reportUrl && <aside class="study-feedback" data-pagefind-ignore>
+    <a href={reportUrl}>Hibát találtál? Jelezd!</a>
+    <p>Tartalmi, megjelenítési vagy szerzői jogi kérdést is jelezhetsz. A GitHub-bejelentés nyilvános, és bejelentkezést igényel; személyes adatot vagy nem nyilvános tananyagot ne csatolj.</p>
+  </aside>}
   <nav class="study-pagination" aria-label="Tanulási sorrend" data-pagefind-ignore>
     {previous && <a href={previous.url}><small>Előző</small>{previous.title}</a>}
     {next && <a href={next.url}><small>Következő</small>{next.title}</a>}
@@ -46,3 +52,9 @@ const subject = payload.pages.find(p => p.navigation === 'subject' && page.route
     img.replaceWith(a); a.append(img);
   });
 </script>
+
+<style>
+.study-feedback { margin-block: 2rem; padding-block: 1rem; border-top: 1px solid var(--sl-color-hairline); font-size: .875rem; }
+.study-feedback p { margin-top: .4rem; color: var(--sl-color-gray-2); max-width: 78ch; }
+@media print { .study-feedback { display: none; } }
+</style>

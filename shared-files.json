@@ -1,6 +1,6 @@
 {
   "template_repository": "https://github.com/dlaszlo/llm-school-notes-template",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "files": [
     ".gitattributes",
     ".gitignore",
@@ -111,6 +111,9 @@
     "tools/page-check/style.css",
     "tools/page-check/test.mjs",
     "tools/page_check.mjs",
-    "tools/test_policy_migration.py"
+    "tools/test_policy_migration.py",
+    "templates/site-feedback/README.md",
+    "templates/site-feedback/ISSUE_TEMPLATE/bejelentes.yml",
+    "templates/site-feedback/ISSUE_TEMPLATE/config.yml"
   ]
 }

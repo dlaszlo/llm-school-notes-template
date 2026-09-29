@@ -1,0 +1,43 @@
+name: Hibát találtam / kérdésem van
+description: Tartalmi, megjelenítési, hozzáférhetőségi vagy szerzői jogi probléma jelzése.
+title: "[Jelzés] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Köszönjük, hogy segítesz javítani a jegyzeteket!
+        **Ez nyilvános bejelentés.** Ne tölts fel füzetfotót, nem nyilvános tanári anyagot, személyes adatot vagy hozzáférési kulcsot.
+        Szerzői jogi kérdéshez elég az érintett oldal és az eredeti mű nyilvános hivatkozása; személyazonosító iratot ne csatolj.
+  - type: input
+    id: page
+    attributes:
+      label: Érintett oldal vagy PDF
+      description: Másold ide az oldal hivatkozását. PDF esetén az oldalszámot is írd mellé.
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: A probléma jellege
+      options:
+        - Tartalmi tévedés vagy pontatlan ábra
+        - Nehezen érthető vagy hiányos magyarázat
+        - Megjelenítés, nyomtatás vagy hozzáférhetőség
+        - Hibás hivatkozás vagy hiányzó kép
+        - Szerzői jog vagy forrásmegjelölés
+        - Adatvédelmi jelzés (személyes adatok megismétlése nélkül)
+        - Egyéb
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Mi a probléma, és hol található?
+      description: Add meg a fejezetet, kérdés számát vagy egy rövid idézetet; írd le, miért problémás.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Javaslat vagy ellenőrizhető forrás (nem kötelező)
+      description: Ha tudsz pontosítást vagy van megfelelő forrásod, itt megadhatod. Javítási javaslat nélkül is elküldheted a jelzést.

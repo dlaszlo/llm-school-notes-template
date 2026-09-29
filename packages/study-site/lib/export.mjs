@@ -32,12 +32,17 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
   const assets = new Map();
   for (const a of config.assets || []) {
     relativeFile(a.path);
+    if (a.path.startsWith('wiki/assets/orai/')) throw new Error('Teacher-material copies cannot be exported; replace with an independently authored or licensed asset');
     if (!a.path.startsWith('wiki/assets/') || !/\.(svg|webp|png|jpg|jpeg)$/i.test(a.path)) throw new Error(`Unsupported asset: ${a.path}`);
     if (!/^[a-f0-9]{64}$/.test(a.sha256)) throw new Error(`Asset hash required: ${a.path}`);
     if (isPublic && a.publicationReviewed !== true) throw new Error(`Asset not reviewed: ${a.path}`);
     assets.set(a.path, a);
   }
   const payload = { version: 1, mode: config.mode, title: config.title, base, pages: [], collections: [] };
+  if (config.feedbackRepository !== undefined) {
+    if (typeof config.feedbackRepository !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(config.feedbackRepository)) throw new Error('Invalid public feedback repository');
+    payload.feedbackRepository = config.feedbackRepository;
+  }
   const receipt = { mode: config.mode, configSha256: sha256(JSON.stringify(config)), pages: [], assets: [], privateLinks: [] };
   const cache = new Map();
   const renderer = await mermaidRenderer(browserPath);

@@ -63,7 +63,6 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | textbook label | `📗 From the textbook` | `📗 Tankönyvből` |
 | background label | `📗 From background material` | `📗 Háttéranyagból` |
 | teacher-material words | *to learn* / *background* | `tanulni` / `olvasnivaló` |
-| class-image caption | `Image from class material (slide <N>)` | `Kép az órai anyagból (<N>. dia)` |
 | lesson line | `🗓️ Lesson: <date>` | `🗓️ Óra: <dátum>` |
 | correction label | `⚠️ <author>🤖 correction` | `⚠️ <szerző>🤖 javítása` |
 | unknown-author label | `<role icon> 🤖 <role>` | `<szerepikon> 🤖 <szerep>` |

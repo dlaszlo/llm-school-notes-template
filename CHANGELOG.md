@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.1 — 2026-09-29
+
+- Remove the class-material image embedding exception. Teacher/textbook images remain private evidence; learner pages and derivatives use independent authored visuals or independently acquired, verified reusable originals.
+- Require file-specific license checks, visible portable credits and factual review of replacement images. Do not replace authentic object recognition or prescribed signs with generated lookalikes; do not infer rights from AI generation.
+- Add a generic public GitHub issue form and reader-report handling rule; no automatic issue triage is installed.
+- Migration: synchronize the full shared set and update profiles/version/commit. Remove the obsolete `class-image caption` wording row. Audit legacy `wiki/assets/orai/` uses and all renamed/copied equivalents; replace dependent captions, exercises and links along with images. Keep acquired sources and historical evidence immutable. Frozen archive repositories keep their historical release; apply the update in active successors. No site-wide content license or public publication is authorized by this release.
+
 ## 1.15.0 — 2026-09-29
 
 - Split shared policy into task-routed modules behind a short, harness-neutral AGENTS.md. Preserve the released 1.14.8 learning, evidence, curriculum, privacy and standardized-symbol requirements; record section hashes and deliberate wording changes in `instructions/policy-migration-1.15.0.json`.

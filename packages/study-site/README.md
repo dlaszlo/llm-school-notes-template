@@ -134,3 +134,9 @@ Before public release: approve page/asset rights, handle private sections and so
 ## Optional site identity
 
 The learner publication configuration can supply `branding.light` and `branding.dark`, each with a `path` (a PNG directly inside `publication/assets/`) and SHA-256 `sha256`. Both are required if branding is configured. The exporter verifies and copies them as content-addressed assets; it does not fetch remote logos. Use small square PNGs (128px is sufficient; each must be below 1 MiB). The header icon and favicon follow the selected site theme. Without branding, the neutral book mark remains. Organization-specific artwork belongs in the site configuration, not in this reusable template.
+
+## Public feedback
+
+Optional `feedbackRepository: "owner/public-site-repo"` adds a footer report link with the stable GitHub Pages page URL prefilled. Install the generic form from `templates/site-feedback` into that repository and enable Issues. The link never includes localhost, a private input path or a source filename. This is a reporting destination, not automatic issue ingestion. Omit the setting when no public destination is configured. Local previews must not be described as already published Pages sites.
+
+Teacher-image copies in the legacy `wiki/assets/orai/` directory are rejected in every export mode. This path guard is a backstop, not license recognition: reviewers must also verify independently acquired images and visible, exportable credits under the shared sources/evidence policy.

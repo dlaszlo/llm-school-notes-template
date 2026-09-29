@@ -15,7 +15,7 @@ If PROFILE says "Not initialized yet", run *Bootstrap* when the user wants to cr
 | Task / rule names | Required policy |
 |---|---|
 | Structure, indexes, page archetypes, type vocabulary, metadata, formatting, Math, Illustrations, Header on every page, platform compatibility | [Wiki structure](instructions/wiki-structure.md) |
-| Sources, References, Index-only books, notebook/teacher images, manifest/provenance, Visual evidence checks | [Sources and evidence](instructions/sources-and-evidence.md) |
+| Sources, References, Index-only books, notebook/teacher images, no-copy rule, reusable-image licenses/credits, manifest/provenance, Visual evidence checks | [Sources and evidence](instructions/sources-and-evidence.md) |
 | Curation, source labels, precision, prerequisites, missing information, contradictions, citations, Curriculum-aware learning | [Content and curriculum](instructions/content-and-curriculum.md) |
 | Write policy, Bootstrap, Session start, Ingest, handwriting, Self-check, Query, Lint, Commit, Sync, review closure, Template updates | [Wiki workflows](instructions/wiki-workflows.md) |
 | Choosing and replacing authored visuals; preserving exact/source diagrams | [Visual policy](instructions/visual-policy.md) |
