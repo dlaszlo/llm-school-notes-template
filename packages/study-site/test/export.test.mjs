@@ -92,6 +92,7 @@ test('PDF keys reuse unchanged topics and invalidate only affected dependencies'
     let sequence=0;
     const keys=async (engine='engine-1')=>(await exportSite({repo,config,output:path.join(tmp,'build-'+sequence++),printEngine:engine})).payload.collections.map(c=>c.pdf.key);
     const original=await keys();assert.deepEqual(await keys(),original);
+    config.collections[1].group="topic-0";assert.deepEqual(await keys(),original);
     const changed=config.pages[1];await fs.appendFile(path.join(repo,changed.path),'\nÚj mondat.\n');changed.sha256=sha256(await fs.readFile(path.join(repo,changed.path)));
     const text=await keys();assert.equal(text[0],original[0]);assert.notEqual(text[1],original[1]);
     const asset=config.assets[0];const file=path.join(repo,asset.path);await fs.writeFile(file,(await fs.readFile(file,'utf8')).replace('Balról jobbra','Másik felirat'));asset.sha256=sha256(await fs.readFile(file));

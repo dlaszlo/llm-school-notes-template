@@ -102,7 +102,13 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : null, url: urlFor(base, p.route) });
       receipt.pages.push({ input: p.path, sourceSha256: p.sha256, route: p.route, audit });
     }
+    const collectionMap = new Map((config.collections || []).map(c => [c.id, c]));
+    if (collectionMap.size !== (config.collections || []).length) throw new Error('Duplicate collection ID');
     for (const collection of config.collections || []) {
+      if (collection.group) {
+        const parent = collectionMap.get(collection.group);
+        if (!collection.pdf || !parent?.pdf || parent.group || parent === collection) throw new Error('A PDF group must reference a top-level PDF collection');
+      }
       if (!/^[a-z0-9-]+$/.test(collection.id)) throw new Error('Invalid collection ID');
       const chapters = [];
       for (const [index, file] of collection.pages.entries()) {
@@ -112,7 +118,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
         chapters.push({ title: page.title, ...await printSection(page.html, `c${index}-`) });
       }
       const inputs = collection.pages.map(file => ({ path:file, sha256:pageMap.get(file).sha256 }));
-      const value = { id: collection.id, title: collection.title, chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
+      const value = { id: collection.id, title: collection.title, group: collection.group || '', chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
       if (collection.pdf === true) {
         if (!printEngine) throw new Error('PDF collection needs a verified print renderer');
         const key = sha256(JSON.stringify({printEngine,base,title:value.title,chapters,inputs}));

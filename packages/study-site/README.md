@@ -65,7 +65,7 @@ Open `http://127.0.0.1:4321/sample/`. Stop the foreground server with Ctrl+C. Ch
 - `receipt.private.json`: input hashes, source paths, formulas, labels and asset transformations for review. Never publish this file.
 - `site/`: generated static HTML, CSS/JS, images and Pagefind index. Not committed to the learner repository.
 
-The responsive layout uses equal 16rem navigation rails, a central content area up to 60rem and paragraphs up to 78ch. Screen banners fill the content width and keep their original aspect ratio without cropping or distortion. Their height follows the source image ratio (no independent screen height cap); the central column remains bounded at 60rem. Print banners retain a 25mm height cap. GitHub-only spacer paragraphs are hidden; web heading margins provide section separation. The shared book mark and subtle header colours require no external image or font.
+The responsive layout uses equal 16rem navigation rails, a central content area up to 60rem and paragraphs up to 78ch. Screen banners fill the content width and keep their original aspect ratio without cropping or distortion. Their height follows the source image ratio (no independent screen height cap); the central column remains bounded at 60rem. Print banners use the available width with a 65mm height cap, preserving their ratio without cropping. GitHub-only spacer paragraphs are hidden; web heading margins provide section separation. The shared book mark and subtle header colours require no external image or font.
 
 The UI includes search, light/dark/system theme, a single H1, a semantic heading outline, source footers, keyboard-native answers and full-size image links. Large formulas/tables scroll within their region. Technical SVGs retain geometry and colours on a light panel; no colour inversion or diagram replacement takes place. A real chemical/math `<sub>` is preserved; only recognized source labels become small footers. The original Mermaid text and formulas are recorded in the private receipt.
 
@@ -87,7 +87,7 @@ The tests cover comments/frontmatter, paths and symlinks, source hashes, asset a
 
 ## Topic PDFs and incremental reuse
 
-Add `"pdf": true` to each collection that should have a downloadable PDF. A collection may contain one topic or a deliberately ordered group of pages. It uses the same Markdown and assets as the website; no LLM rewrites the material. The subject index automatically lists its PDF collections, and a topic offers its own download. Self-test questions stay in the lesson; complete answers and explanations follow at the end.
+Add `"pdf": true` to each collection that should have a downloadable PDF. A collection may contain one topic or a deliberately ordered group of pages. It uses the same Markdown and assets as the website; no LLM rewrites the material. The subject index automatically lists its PDF collections, and a topic offers its own download. Set a topic collection’s optional `group` to its summary collection’s `id` to nest the topic under that summary in the download list. Groups are one level deep, explicitly configured, and must reference an existing top-level PDF collection; they are not guessed from titles. Grouping changes navigation only and does not invalidate the PDFs. Self-test questions stay in the lesson; complete answers and explanations follow at the end.
 
 ```sh
 node cli.mjs build \

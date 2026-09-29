@@ -10,6 +10,7 @@ export function getStaticPaths() {
 }
 const { page, payload, previous, next } = Astro.props;
 const downloads = payload.collections.filter(c => c.pdf && (c.routes.includes(page.route) || page.navigation === 'subject' && c.routes.some(r => r.startsWith(page.route + '/'))));
+const downloadGroups = downloads.filter(c => !downloads.some(parent => parent.id === c.group)).map(c => ({ ...c, children: downloads.filter(child => child.group === c.id) }));
 const subject = payload.pages.find(p => p.navigation === 'subject' && page.route.startsWith(p.route + '/'));
 ---
 <StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: false, prev: false, next: false }} headings={page.headings}>
@@ -19,7 +20,7 @@ const subject = payload.pages.find(p => p.navigation === 'subject' && page.route
     {downloads.length === 1 && <a href={`${payload.base}pdf/${downloads[0].pdf.filename}`} download>PDF letöltése</a>}
     <button type="button" id="study-answers">Válaszok megnyitása</button>
   </nav>
-  {downloads.length > 1 && <details class="study-downloads" data-pagefind-ignore><summary>Nyomtatható témakörök (PDF)</summary><ul>{downloads.map(c => <li><a href={`${payload.base}pdf/${c.pdf.filename}`} download>{c.title}</a></li>)}</ul></details>}
+  {downloads.length > 1 && <details class="study-downloads" data-pagefind-ignore><summary>Nyomtatható témakörök (PDF)</summary><ul>{downloadGroups.map(c => <li><a href={`${payload.base}pdf/${c.pdf.filename}`} download>{c.children.length ? <strong>{c.title}</strong> : c.title}</a>{c.children.length > 0 && <ul>{c.children.map(child => <li><a href={`${payload.base}pdf/${child.pdf.filename}`} download>{child.title}</a></li>)}</ul>}</li>)}</ul></details>}
   <div class="sl-markdown-content study-content" data-pagefind-body set:html={page.html} />
   <nav class="study-pagination" aria-label="Tanulási sorrend" data-pagefind-ignore>
     {previous && <a href={previous.url}><small>Előző</small>{previous.title}</a>}
