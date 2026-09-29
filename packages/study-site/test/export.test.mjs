@@ -43,11 +43,11 @@ test('Markdown source remains untouched; metadata/comments do not reach the payl
     for (const p of config.pages) assert.equal(sha256(await fs.readFile(path.join(fixture, p.path))), p.sha256);
   } finally { await fs.rm(tmp, { recursive: true, force: true }); }
 });
-test('source hashes, asset allowlists and unsupported publication fail closed', async () => {
+test('source hashes, asset allowlists and unreviewed publication fail closed', async () => {
   const config = await settings();
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-boundary-'));
   try {
-    await assert.rejects(exportSite({ repo: fixture, config: { ...config, mode: 'public', publicationApproved: true }, output: path.join(tmp, 'public') }), /not enabled/);
+    await assert.rejects(exportSite({ repo: fixture, config: { ...config, mode: 'public', publicationApproved: true }, output: path.join(tmp, 'public') }), /origin and private review|not reviewed/);
     await assert.rejects(exportSite({ repo: fixture, config: { ...config, assets: [] }, output: path.join(tmp, 'missing') }), /Unapproved image/);
     await assert.rejects(exportSite({ repo: fixture, config: { ...config, pages: [{ ...config.pages[0], sha256: '0'.repeat(64) }] }, output: path.join(tmp, 'changed') }), /Changed input/);
     await assert.rejects(exportSite({ repo: fixture, config, output: fixture }), /outside/);
@@ -180,4 +180,29 @@ test('content license is opt-in and changes invalidate PDF keys', async () => {
     assert.notEqual(changed.payload.collections[0].pdf.key,licensed.payload.collections[0].pdf.key);
     await assert.rejects(run('bad',{...config,license:{id:'toString',attribution:'Minta'}}),/license/);
   } finally { await fs.rm(tmp,{recursive:true,force:true}); }
+});
+
+test('public export needs reviewed hashes and rights and filters before HTML and PDF', async () => {
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'study-public-'));
+  try {
+    const repo=path.join(tmp,'repo');await fs.cp(fixture,repo,{recursive:true});
+    const page='wiki/tema.md';
+    await fs.writeFile(path.join(repo,page),'---\ntype: topic\ntitle: Tananyag\nprivate: PRIVATE_METADATA\n---\n# Tananyag\n\nMegmarad.[^b]\n\n<sub>🗓️ Óra: PRIVATE_DATE · 🔖 Tankönyv: 12. oldal</sub>\n\n[Forrás](../sources/private.jpg)\n\n# Belső\n\nPRIVATE_SECTION\n\n[^b]: Megmaradó bibliográfia.\n\n<!-- PRIVATE_COMMENT -->\n');
+    const config=await settings();Object.assign(config,{mode:'public',publicationApproved:true,site:'https://example.org',reviewRecord:'review.md',citationOnlyLinks:['sources/private.jpg']});
+    config.pages=config.pages.map(p=>({...p,publicationReviewed:true}));
+    config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));config.pages[1].omitSections=['Belső'];
+    config.assets=config.assets.map(a=>({...a,publicationReviewed:true,rights:'authored',rightsEvidence:'review.md'}));
+    config.collections[0].pdf=true;
+    const run=(name,c=config)=>exportSite({repo,config:c,output:path.join(tmp,name),printEngine:'test'});
+    const {payload}=await run('good');
+    const visible=JSON.stringify([...payload.pages,...payload.collections.map(c=>c.chapters)]);
+    assert.doesNotMatch(visible,/PRIVATE_|sources\/private/);
+    assert.match(visible,/Megmaradó bibliográfia/);assert.match(visible,/Tankönyv: 12/);assert.match(visible,/nem nyilvános forrás/);
+    await assert.rejects(run('rights',{...config,assets:[{...config.assets[0],rights:undefined}]}),/rights evidence/);
+    await assert.rejects(run('approval',{...config,publicationApproved:false}),/explicit reviewed/);
+    await assert.rejects(run('page',{...config,pages:[{...config.pages[0],publicationReviewed:false}]}),/not reviewed/);
+    await fs.writeFile(path.join(repo,page),'---\ntype: lesson-notes\n---\nSecret notebook.');
+    config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));
+    await assert.rejects(run('source'),/Private or unrecognized/);
+  } finally {await fs.rm(tmp,{recursive:true,force:true});}
 });

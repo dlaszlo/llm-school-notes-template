@@ -1,8 +1,8 @@
-# Study site — local Markdown preview
+# Study site — reviewed Markdown publication
 
 An optional, shared Astro + Starlight renderer for existing school-note Markdown. It does not rewrite the source or ingest lessons. Source files, personal settings and publication configuration stay in the learner's private repository; this package stays in the template checkout. Do not copy it into a harness or install a global agent skill.
 
-**Version 0.1.0 is a local preview milestone, not a public publishing pipeline.** The exporter rejects `mode: public`. Private preview pages may include source summaries, dates and explicitly configured links to private archive files. Bind the preview to localhost. `noindex` is an additional hint, not access control. There is no VM installation, scheduler, Drive move or paid generation in this package.
+The renderer supports separate `private-preview` and explicitly reviewed `public` builds. Private preview pages may include source summaries, dates and explicitly configured links to private archive files. Bind the preview to localhost. `noindex` is an additional hint, not access control. There is no VM installation, scheduler, Drive move or paid generation in this package.
 
 ## Install from Git
 
@@ -150,3 +150,14 @@ The template does not choose a license for learner content. After owner approval
 An explicitly allowlisted Markdown page with `navigation: "info"` appears in the site menu. Use it for the project introduction, approved terms and feedback links; no family-specific content belongs in the template.
 
 For consistent sidebar icons, supply `navigationLabel` for every menu entry in local publication configuration. Use the learner repository’s `tools/subjects.json` names and emoji for subjects; include home and project information entries consistently. This overrides only the sidebar label, without changing lesson titles or PDF inputs.
+
+
+## Reviewed public release
+
+Public mode is opt-in: `publicationApproved: true`, HTTPS `site` origin, private `reviewRecord`, and every page/asset marked `publicationReviewed: true`. Page and asset hashes bind approval to exact bytes. A changed input requires a fresh review; never refresh hashes automatically just to make the build pass. Only topic/chapter-summary pages and explicitly selected indexes/info pages are eligible. Source/lesson transcriptions are rejected. Every asset also declares `rights` (authored/generated/licensed/public-domain/standard) and private `rightsEvidence`; these attest to an actual origin review, not automatic legal clearance.
+
+Keep a separate private `publication/public.json`. Reviewed `omitSections` names remove operational sections before rendering; optional `publicEdits` exact before/after/reason transformations provide small publication-specific redactions without a duplicate lesson. The matching source hash and exact-match checks fail closed. Use edits sparingly: do not erase uncertainty needed to understand a teaching claim. `citationOnlyLinks` lists private source targets that become plain, explicitly nonpublic bibliography references: no private URL/path is emitted. Unknown links or images fail. Class dates are stripped from the small lesson label, retaining its textbook reference. Frontmatter, comments and executable source HTML never reach output. Inspect page text and image rights manually as well; technical filtering cannot decide whether every sentence is appropriate.
+
+PDFs use the filtered public HTML and a mode-separated content hash/cache. Never upload a family PDF as a public PDF. After `check-browser.mjs` succeeds (all pages, both themes, three widths, links and real search), render PDFs with `uv run packages/study-site/check-pdfs.py BUILD/site/pdf QA` from the template root. This uses installed Poppler and the existing Pillow environment. Inspect the resulting images; the JSON report alone is not visual approval.
+
+`python3 release-bundle.py pack BUILD NEW_RELEASE_DIRECTORY TAG` packs **only** `BUILD/site`, after successful browser checks. Payload, evidence, receipts and source configurations stay outside the archive. The bundle includes only rendered files plus a public `release.json` inventory with hashes. PDFs are release artifacts, never added to Git. A deployment job calls `verify` to check checksum, file inventory, hashes, path safety, size, release tag and site base before extracting. Install that verifier by Git checkout of the pinned renderer revision. Workflow accepts a release tag as data, never as executable shell text. GitHub Pages serves the verified artifact. Verify the live `release.json` after deployment; a successful push is not a deployed site.

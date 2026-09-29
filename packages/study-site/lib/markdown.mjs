@@ -34,7 +34,7 @@ schema.attributes.details = ['open'];
 const el = (tagName, properties = {}, children = []) => ({ type: 'element', tagName, properties, children });
 const isElement = (n, tag) => n.type === 'element' && (!tag || n.tagName === tag);
 
-export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források' } = {}) {
+export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források', publicMode = false } = {}) {
   const { metadata, body, title } = splitMarkdown(source);
   const headings = [];
   const sanitizedIds = new Map();
@@ -67,6 +67,15 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
       });
     })
     .use(rehypeSanitize, schema)
+    .use(() => tree => {
+      if (!publicMode) return;
+      visit(tree, 'element', (node,index,parent) => {
+        if (node.tagName === 'sub' && toText(node).trim().startsWith('🗓️')) {
+          const textbook = toText(node).split('🔖')[1];
+          node.children = textbook ? [{type:'text',value:'🔖'+textbook}] : [];
+        }
+      });
+    })
     .use(() => async tree => {
       const slugger = new GithubSlugger();
       let seenBody = false;
@@ -113,6 +122,7 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
             let href = String(node.properties.href);
             if (href.startsWith('#') && sanitizedIds.has(href.slice(1))) href = '#' + sanitizedIds.get(href.slice(1));
             const resolved = await resolveUrl(href, false);
+            if (resolved.citationOnly) { node.tagName='span'; node.properties={}; node.children.push({type:'text',value:' (nem nyilvános forrás)'}); return; }
             node.properties.href = typeof resolved === 'string' ? resolved : resolved.url;
             if (resolved.private) { node.children.push({ type: 'text', value: ' (privát forrás)' }); }
             audit.links.push(node.properties.href);

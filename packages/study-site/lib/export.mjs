@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { sha256, readInside, relativeFile, routeFor, normalizeBase, urlFor } from './paths.mjs';
+import { publicSource } from './publication.mjs';
 import { renderMarkdown, printSection } from './markdown.mjs';
 import { safeSvg, mermaidRenderer } from './assets.mjs';
 
@@ -12,10 +13,8 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
   try { await fs.lstat(out); throw new Error('Output already exists; choose a new build directory'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   if (!['private-preview', 'public'].includes(config.mode)) throw new Error('Explicit export mode required');
   const isPublic = config.mode === 'public';
-  // This pilot deliberately cannot publish source-summary/lesson/private material.
-  // Public release gates and rights review are a separate implementation milestone.
-  if (isPublic) throw new Error('Public export is not enabled in this preview release');
   if (isPublic && config.publicationApproved !== true) throw new Error('Public export requires explicit reviewed publication configuration');
+  if (isPublic && (!/^https:\/\/[^/]+$/.test(config.site || '') || !config.reviewRecord)) throw new Error('Public site origin and private review record required');
   const base = normalizeBase(config.base);
   if (!Array.isArray(config.pages) || !config.pages.length) throw new Error('Explicit ordered page allowlist required');
   if (typeof config.title !== 'string' || !config.title.trim()) throw new Error('Site title required');
@@ -37,9 +36,10 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     if (!a.path.startsWith('wiki/assets/') || !/\.(svg|webp|png|jpg|jpeg|gif)$/i.test(a.path)) throw new Error(`Unsupported asset: ${a.path}`);
     if (!/^[a-f0-9]{64}$/.test(a.sha256)) throw new Error(`Asset hash required: ${a.path}`);
     if (isPublic && a.publicationReviewed !== true) throw new Error(`Asset not reviewed: ${a.path}`);
+    if (isPublic && (!['authored', 'generated', 'licensed', 'public-domain', 'standard'].includes(a.rights) || !a.rightsEvidence)) throw new Error(`Asset rights evidence required: ${a.path}`);
     assets.set(a.path, a);
   }
-  const payload = { version: 1, mode: config.mode, title: config.title, base, pages: [], collections: [] };
+  const payload = { version: 1, mode: config.mode, title: config.title, base, ...(isPublic ? {site:config.site} : {}), pages: [], collections: [] };
   if (config.feedbackRepository !== undefined) {
     if (typeof config.feedbackRepository !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(config.feedbackRepository)) throw new Error('Invalid public feedback repository');
     payload.feedbackRepository = config.feedbackRepository;
@@ -95,13 +95,15 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
           }
           return await cache.get(file) + (fragment ? '#' + fragment : '');
         }
+        if (!image && isPublic && config.citationOnlyLinks?.includes(file)) { receipt.privateLinks.push(file); return { citationOnly: true }; }
         const privateLink = config.privateLinks?.[file];
         if (!image && privateLink && !isPublic && /^https:\/\/github.com\//.test(privateLink)) {
           receipt.privateLinks.push(file); return { url: privateLink + (fragment ? '#' + fragment : ''), private: true };
         }
         throw new Error(`Unapproved ${image ? 'image' : 'link'} in ${p.path}: ${url}`);
       };
-      const rendered = await renderMarkdown(raw.toString(), {
+      const rendered = await renderMarkdown(isPublic ? publicSource(raw.toString(),p) : raw.toString(), {
+        publicMode: isPublic,
         resolveUrl,
         mermaid: async code => {
           const key = 'mermaid:' + sha256(code);
@@ -133,7 +135,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       const value = { id: collection.id, title: collection.title, group: collection.group || '', chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
       if (collection.pdf === true) {
         if (!printEngine) throw new Error('PDF collection needs a verified print renderer');
-        const key = sha256(JSON.stringify({printEngine,base,title:value.title,chapters,inputs,license:payload.license}));
+        const key = sha256(JSON.stringify({mode:config.mode,printEngine,base,title:value.title,chapters,inputs,license:payload.license}));
         value.pdf = { key, filename:collection.id+'-'+key.slice(0,12)+'.pdf' };
       }
       payload.collections.push(value);

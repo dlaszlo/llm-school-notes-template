@@ -11,6 +11,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 export default defineConfig({
   root,
   base: payload.base,
+  site: payload.site,
   trailingSlash: 'always',
   publicDir: path.join(path.dirname(payloadFile), 'public'),
   outDir: process.env.STUDY_OUTPUT,
