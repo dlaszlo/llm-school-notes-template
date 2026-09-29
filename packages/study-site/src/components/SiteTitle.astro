@@ -1,11 +1,29 @@
 ---
+import { readFileSync } from 'node:fs';
+const { branding } = JSON.parse(readFileSync(process.env.STUDY_PAYLOAD!, 'utf8'));
 const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
 ---
 <a href={siteTitleHref} class="study-brand">
-  <span class="study-brand-mark" aria-hidden="true">
+  <span class:list={["study-brand-mark", { "study-brand-image": branding }]} aria-hidden="true">
+    {branding ? <>
+      <img class="brand-light" src={branding.light} width="42" height="42" alt="" />
+      <img class="brand-dark" src={branding.dark} width="42" height="42" alt="" />
+    </> : (
     <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M16 8c-4-3-8-3-12-2v20c4-1 8-1 12 2 4-3 8-3 12-2V6c-4-1-8-1-12 2Z M16 8v20 M8 11l4 1 M8 16l4 1 M20 12l4-1 M20 17l4-1" />
-    </svg>
+    </svg>)}
   </span>
   <span class="study-brand-name" translate="no">{siteTitle}</span>
 </a>
+
+<script>
+  // The browser tab follows the selected site theme, including system changes.
+  function updateBrandIcon() {
+    const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+    const image = document.querySelector<HTMLImageElement>(`.study-brand .brand-${theme}`);
+    const icon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+    if (image && icon) { icon.href = image.src; icon.type = 'image/png'; }
+  }
+  updateBrandIcon();
+  new MutationObserver(updateBrandIcon).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

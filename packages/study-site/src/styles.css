@@ -72,6 +72,8 @@
 .study-brand-mark { display: grid; place-items: center; flex: 0 0 2.6rem; height: 2.6rem; border-radius: .8rem; color: var(--sl-color-text-accent); background: var(--sl-color-accent-low); border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent); }
 .study-brand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .header .social-icons:empty { display: none; }
+.header .right-group, starlight-theme-select { flex-shrink: 0; }
+starlight-theme-select select { width: auto; min-width: max-content; text-overflow: clip; }
 .sidebar-content { padding-top: 1.5rem; }
 .sidebar-content a { border-radius: .45rem; padding-block: .65rem; }
 .study-tools { padding-bottom: .8rem; border-bottom: 1px solid var(--sl-color-hairline-light); }
@@ -88,3 +90,9 @@
   .study-brand-mark svg { width: 23px; height: 23px; }
   .page > header.header > .header { gap: .5rem; }
 }
+
+.study-brand-image { background: none; border: none; }
+.study-brand-image img { width: 100%; height: 100%; object-fit: contain; border-radius: .55rem; }
+.study-brand .brand-light { display: none; }
+:root[data-theme='light'] .study-brand .brand-light { display: block; }
+:root[data-theme='light'] .study-brand .brand-dark { display: none; }

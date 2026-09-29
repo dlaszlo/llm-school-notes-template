@@ -17,6 +17,7 @@ export default defineConfig({
   cacheDir: path.join(path.dirname(payloadFile), '.astro'),
   integrations: [starlight({
     title: payload.title,
+    ...(payload.branding ? { favicon: "/" + payload.branding.dark.slice(payload.base.length) } : {}),
     defaultLocale: 'root',
     locales: { root: { label: 'Magyar', lang: 'hu' } },
     customCss: ['./src/styles.css'],

@@ -102,3 +102,7 @@ The helper restores only `sources/` and `references/` data, checks every SHA-256
 The layout uses the documented [Starlight custom-page component](https://starlight.astro.build/guides/pages/#using-starlights-design-in-custom-pages), its [configuration](https://starlight.astro.build/reference/configuration/) and [search](https://starlight.astro.build/guides/site-search/). The adapter processes syntax trees; generated HTML is an expendable derivative, not a second authored lesson.
 
 Before public release: approve page/asset rights, handle private sections and source links, scan the complete output including metadata/search/assets, complete accessibility and print acceptance, and implement the separately authenticated Release → Pages deployment and rollback. Do not enable public export by simply removing the pilot guard.
+
+## Optional site identity
+
+The learner publication configuration can supply `branding.light` and `branding.dark`, each with a `path` (a PNG directly inside `publication/assets/`) and SHA-256 `sha256`. Both are required if branding is configured. The exporter verifies and copies them as content-addressed assets; it does not fetch remote logos. Use small square PNGs (128px is sufficient; each must be below 1 MiB). The header icon and favicon follow the selected site theme. Without branding, the neutral book mark remains. Organization-specific artwork belongs in the site configuration, not in this reusable template.

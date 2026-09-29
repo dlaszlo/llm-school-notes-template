@@ -49,6 +49,16 @@ export async function exportSite({ repo, config, output, browserPath }) {
     return base + 'media/' + name;
   };
   try {
+    if (config.branding) {
+      payload.branding = {};
+      for (const theme of ['light', 'dark']) {
+        const icon = config.branding[theme];
+        if (!icon || !/^publication\/assets\/[^/]+\.png$/.test(icon.path) || !/^[a-f0-9]{64}$/.test(icon.sha256)) throw new Error('Branding needs hash-bound light and dark PNGs in publication/assets');
+        const bytes = await readInside(root, icon.path, icon.sha256);
+        if (bytes.length > 1024 * 1024 || !bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) throw new Error('Brand icon must be a PNG smaller than 1 MiB');
+        payload.branding[theme] = await saveAsset(icon.path, bytes, '.png');
+      }
+    }
     for (const p of pageMap.values()) {
       const raw = await readInside(root, p.path, p.sha256);
       const resolveUrl = async (url, image) => {
