@@ -9,7 +9,7 @@ def digest(b): return hashlib.sha256(b).hexdigest()
 def allowed(name):
     p=PurePosixPath(name)
     return (not p.is_absolute() and '..' not in p.parts and not any(s.startswith('.') for s in p.parts)
-            and p.suffix.lower() in {'.html','.css','.js','.mjs','.json','.xml','.txt','.svg','.png','.webp','.jpg','.jpeg','.gif','.woff2','.woff','.pdf','.pf_fragment','.pf_index','.pf_meta','.wasm'})
+            and p.suffix.lower() in {'.html','.css','.js','.mjs','.json','.xml','.txt','.svg','.png','.webp','.jpg','.jpeg','.gif','.woff2','.woff','.pdf','.pf_fragment','.pf_index','.pf_meta','.pagefind','.wasm'})
 
 def pack(build, output, tag):
     build=Path(build);output=Path(output);output.mkdir(parents=True,exist_ok=False)
