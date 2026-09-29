@@ -76,6 +76,9 @@
 .sidebar-content a { border-radius: .45rem; padding-block: .65rem; }
 .study-tools { padding-bottom: .8rem; border-bottom: 1px solid var(--sl-color-hairline-light); }
 @media (min-width: 50rem) {
+  .page > header.header > .header > .title-wrapper { flex: 0 0 auto; }
+  .study-brand { flex-shrink: 0; }
+  .study-brand-name { overflow: visible; text-overflow: clip; }
   .page > header.header > .header > :nth-child(2) { flex: 1; max-width: 30rem; margin-inline: auto; }
   .content-panel .sl-container { margin-inline: auto; }
 }
