@@ -1,0 +1,43 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { readFileSync } from 'node:fs';
+export function getStaticPaths() {
+  const payload = JSON.parse(readFileSync(process.env.STUDY_PAYLOAD!, 'utf8'));
+  return payload.pages.map((page, index) => ({
+    params: { route: page.route || undefined },
+    props: { page, payload, previous: payload.pages[index - 1], next: payload.pages[index + 1] },
+  }));
+}
+const { page, payload, previous, next } = Astro.props;
+---
+<StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: false, prev: false, next: false }} headings={page.headings}>
+  <nav class="study-tools" aria-label="Tanulási eszközök" data-pagefind-ignore>
+    <a href={payload.base}>Áttekintés</a>
+    {payload.collections.map(c => <a href={`${payload.base}nyomtatas/${c.id}/`}>Nyomtatható: {c.title}</a>)}
+    <button type="button" id="study-answers">Válaszok megnyitása</button>
+  </nav>
+  <div class="sl-markdown-content study-content" data-pagefind-body set:html={page.html} />
+  <nav class="study-pagination" aria-label="Tanulási sorrend" data-pagefind-ignore>
+    {previous && <a href={previous.url}><small>Előző</small>{previous.title}</a>}
+    {next && <a href={next.url}><small>Következő</small>{next.title}</a>}
+  </nav>
+</StarlightPage>
+<script>
+  const button = document.querySelector<HTMLButtonElement>('#study-answers');
+  const answers = [...document.querySelectorAll<HTMLDetailsElement>('.study-content details')];
+  if (button) {
+    button.hidden = answers.length === 0;
+    button.addEventListener('click', () => {
+      const open = answers.some(d => !d.open);
+      answers.forEach(d => d.open = open);
+      button.textContent = open ? 'Válaszok becsukása' : 'Válaszok megnyitása';
+    });
+  }
+  document.querySelectorAll<HTMLImageElement>('.study-content img').forEach(img => {
+    if (img.closest('a')) return;
+    const a = document.createElement('a');
+    a.href = img.src; a.target = '_blank'; a.rel = 'noopener';
+    a.setAttribute('aria-label', `${img.alt || 'Ábra'} — megnyitás nagy méretben`);
+    img.replaceWith(a); a.append(img);
+  });
+</script>

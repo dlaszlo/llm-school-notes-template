@@ -1,0 +1,7 @@
+---
+import DefaultHead from '@astrojs/starlight/components/Head.astro';
+import { readFileSync } from 'node:fs';
+const payload = JSON.parse(readFileSync(process.env.STUDY_PAYLOAD!, 'utf8'));
+---
+<DefaultHead />
+{payload.mode === 'private-preview' && <meta name="robots" content="noindex,nofollow" />}

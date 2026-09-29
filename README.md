@@ -4,7 +4,7 @@ Photograph your notebook, and an AI agent turns it into clear, curated study pag
 
 This is a template for a knowledge base (an "LLM wiki") built from one student's school notes. You drop in photos of exercise-book pages, downloaded notes, or voice notes; an LLM agent - [Claude Code](https://code.claude.com/), [Codex](https://developers.openai.com/codex/), or any agent that can read `AGENTS.md` (e.g. Hermes Agent) - files them, reads them, and maintains a wiki: one directory per subject, one page per topic, plus a page per set of lesson notes. The storage format is the [Open Knowledge Format 0.2](SPEC.md): plain markdown with YAML frontmatter, readable on GitHub, in Obsidian, or with `cat`.
 
-The template contains no student identities, school, subjects, textbooks, or notes - everything specific is set up by the LLM on the first run. The canonical repository is [llm-school-notes-template](https://github.com/dlaszlo/llm-school-notes-template).
+The template contains no student identities, school, subjects, textbooks, or notes - everything specific is set up by the LLM on the first run. The canonical repository is [llm-school-notes-template](https://github.com/school-notes-hub/llm-school-notes-template).
 
 ## What the pages look like
 
@@ -24,6 +24,8 @@ Optional [curriculum references](references/curriculum/README.md) guide relevant
 For optional generated banners and infographics, follow the [repository-local setup](instructions/install-learning-images.md). All programs and instructions run from this checkout. No global skill, Hermes installation, Discord account or machine-specific configuration is required. Ordinary notes and SVG diagrams work without paid image generation.
 
 ## Getting started
+
+An optional [web and print preview](packages/study-site/README.md) renders the existing Markdown with Astro + Starlight, without changing the notes. It runs from this Git checkout; the initial preview release does not publish private material or install a background service.
 
 1. Click **Use this template** on GitHub and create a **private** repository (notebook photos and textbooks are private working copies - see below). A repository created from a template starts with a clean history.
 2. Clone it, install the helper dependencies with `uv sync --locked` (Python 3.10+ and [uv](https://docs.astral.sh/uv/) are needed), and open it in your agent (Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md`).
