@@ -96,3 +96,33 @@ starlight-theme-select select { width: auto; min-width: max-content; text-overfl
 .study-brand .brand-light { display: none; }
 :root[data-theme='light'] .study-brand .brand-light { display: block; }
 :root[data-theme='light'] .study-brand .brand-dark { display: none; }
+
+.study-downloads { margin: 1rem 0 2rem; padding: 1rem; border: 1px solid var(--sl-color-hairline-light); border-radius: .5rem; }
+.study-downloads summary { cursor: pointer; font-weight: 600; }
+.study-downloads ul { padding-inline-start: 1.5rem; }
+.print-version { color: #555; font-size: 9pt; }
+@media print {
+  .print-document, .print-document .study-content { font-family: 'DejaVu Sans', sans-serif; }
+  .print-document h1 { font-size: 22pt; line-height: 1.2; margin-bottom: 4mm; }
+  .print-chapter { margin: 0; }
+  .print-chapter + .print-chapter { break-before: page; }
+  .print-document .study-content :is(h2,h3,h4) { margin: 7mm 0 3mm; break-after: avoid-page; }
+  .print-document .study-content h2 { font-size: 16pt; }
+  .print-document .study-content h3 { font-size: 13pt; }
+  .print-document .study-content p { margin: 3mm 0; }
+  .print-document .study-content .print-figure { display: block; margin: 3mm 0; break-inside: avoid-page; page-break-inside: avoid; padding: 1mm 0; }
+  .print-document .study-content img { display: block; width: auto; height: auto; max-height: 180mm; max-width: 100%; margin: 2mm auto; }
+  .print-document .study-content img.study-banner { max-height: 25mm; }
+  .print-document .study-content table { overflow: visible; }
+  .print-document .study-content tr { break-inside: avoid-page; }
+  .print-document .study-content thead { display: table-header-group; }
+  .print-document .study-content mjx-container[display='true'] { break-inside: avoid-page; }
+  .print-document .study-content .study-label { break-before: avoid-page; }
+  .print-document .study-content .study-callout { break-inside: avoid-page; }
+  .print-document .study-content :is(h2,h3,h4) + p:has(.study-label) { break-after: avoid-page; }
+  .print-document .print-answers .study-content dl { break-inside: avoid-page; }
+  .print-document .study-content p:has(> .study-label:only-child) { break-before: avoid-page; }
+  .print-document .study-content :is(th,td) { overflow-wrap: anywhere; }
+  .print-document .study-content :is(p,li) { orphans: 3; widows: 3; }
+  .print-answers { margin-top: 0; padding-top: 0; }
+}

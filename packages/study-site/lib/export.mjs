@@ -4,7 +4,7 @@ import { sha256, readInside, relativeFile, routeFor, normalizeBase, urlFor } fro
 import { renderMarkdown, printSection } from './markdown.mjs';
 import { safeSvg, mermaidRenderer } from './assets.mjs';
 
-export async function exportSite({ repo, config, output, browserPath }) {
+export async function exportSite({ repo, config, output, browserPath, printEngine }) {
   const root = await fs.realpath(repo);
   const out = path.resolve(output);
   // Never overwrite source or an existing successful build.
@@ -111,7 +111,14 @@ export async function exportSite({ repo, config, output, browserPath }) {
         const page = payload.pages.find(page => page.route === p.route);
         chapters.push({ title: page.title, ...await printSection(page.html, `c${index}-`) });
       }
-      payload.collections.push({ id: collection.id, title: collection.title, chapters });
+      const inputs = collection.pages.map(file => ({ path:file, sha256:pageMap.get(file).sha256 }));
+      const value = { id: collection.id, title: collection.title, chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
+      if (collection.pdf === true) {
+        if (!printEngine) throw new Error('PDF collection needs a verified print renderer');
+        const key = sha256(JSON.stringify({printEngine,base,title:value.title,chapters,inputs}));
+        value.pdf = { key, filename:collection.id+'-'+key.slice(0,12)+'.pdf' };
+      }
+      payload.collections.push(value);
     }
     await fs.writeFile(path.join(out, 'payload.json'), JSON.stringify(payload));
     await fs.writeFile(path.join(out, 'receipt.private.json'), JSON.stringify(receipt, null, 2) + '\n');

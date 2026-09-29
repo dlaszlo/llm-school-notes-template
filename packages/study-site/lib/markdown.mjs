@@ -40,11 +40,27 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
   const sanitizedIds = new Map();
   const audit = { title, formulas: [], mermaid: [], labels: [], links: [], images: [] };
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
-    .use(() => tree => {
-      visit(tree, n => { if (n.type === 'math' || n.type === 'inlineMath') audit.formulas.push(n.value); });
-    })
     .use(remarkRehype, { allowDangerousHtml: true, footnoteLabel })
     .use(rehypeRaw)
+    .use(() => tree => {
+      // Markdown inside an HTML summary is raw text; recover its inline formulas.
+      visit(tree, 'element', node => {
+        if (node.tagName !== 'summary') return;
+        visit(node, 'text', (text,index,parent) => {
+          const matches=[...text.value.matchAll(/(?<!\\)\$([^$\n]+)\$/g)];
+          if(!matches.length) return;
+          const children=[];let offset=0;
+          for(const match of matches){
+            children.push({type:'text',value:text.value.slice(offset,match.index)});
+            children.push(el('code',{className:['language-math','math-inline']},[{type:'text',value:match[1]}]));
+            offset=match.index+match[0].length;
+          }
+          children.push({type:'text',value:text.value.slice(offset)});
+          parent.children.splice(index,1,...children);
+          return index+children.length;
+        });
+      });
+    })
     .use(() => tree => {
       visit(tree, 'element', node => {
         if (node.properties.id) sanitizedIds.set(node.properties.id, 'user-content-' + node.properties.id);
@@ -122,6 +138,12 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
       });
       await Promise.all(jobs);
     })
+    .use(() => tree => {
+      audit.formulas=[];
+      visit(tree, 'element', node => {
+        if(node.tagName==='code' && node.properties.className?.some(c=>c==='language-math'||c==='math-inline'||c==='math-display')) audit.formulas.push(toText(node));
+      });
+    })
     .use(rehypeMathjax, { svg: { fontCache: 'none' }, tex: { packages: ['base', 'ams', 'newcommand', 'configmacros', 'boldsymbol', 'textmacros'] } })
     .use(() => tree => {
       let formulaIndex = 0;
@@ -150,15 +172,39 @@ export async function printSection(html, prefix) {
       for (const prop of ['ariaDescribedBy', 'ariaLabelledBy']) if (node.properties[prop]) node.properties[prop] = node.properties[prop].map(id => prefix + id);
     });
     visit(tree, 'element', (node, index, parent) => {
+      if (node.tagName === 'img') node.properties.loading = 'eager';
+      if (node.tagName === 'p') {
+        let hasImage = false; visit(node, 'element', child => { if (child.tagName === 'img') hasImage = true; });
+        if (hasImage) node.properties.className = ['print-figure'];
+      }
       if (node.tagName === 'details') {
         const summary = node.children.find(n => isElement(n, 'summary'));
-        answers.push({ question: summary ? toText(summary) : 'Válasz', children: node.children.filter(n => n !== summary) });
+        const question = structuredClone(summary?.children || [{type:'text',value:'Válasz'}]);
+        visit({type:'root',children:question}, 'element', n => { delete n.properties.id; });
+        answers.push({ question, children: node.children.filter(n => n !== summary) });
         // Preserve the question at its original place; solutions move to the end.
         node.tagName = 'p'; node.properties = { className: ['print-question'] }; node.children = summary?.children || [];
       }
     });
+    // Keep a diagram and its immediate small/italic caption on the same sheet.
+    const caption = n => isElement(n, 'p') && toText(n).length < 350 && n.children.some(c => isElement(c, 'em') || isElement(c, 'small')) && n.children.every(c => c.type === 'text' ? !c.value.trim() : ['em','small','sup','br'].includes(c.tagName));
+    visit(tree, node => {
+      if (!node.children || isElement(node,'figure')) return;
+      for (let i=0;i<node.children.length;i++) {
+        const child=node.children[i];
+        if (!isElement(child,'p') || !child.properties.className?.includes('print-figure')) continue;
+        let start=i,end=i+1;
+        let j=i-1; while(j>=0 && node.children[j].type==='text' && !node.children[j].value.trim()) j--;
+        if(j>=0 && caption(node.children[j])) start=j;
+        j=i+1; while(j<node.children.length && node.children[j].type==='text' && !node.children[j].value.trim()) j++;
+        if(j<node.children.length && caption(node.children[j])) end=j+1;
+        child.properties.className=[];
+        node.children.splice(start,end-start,el('figure',{className:['print-figure']},node.children.slice(start,end)));
+        i=start;
+      }
+    });
   }).use(rehypeStringify);
   const result = await processor.run({ type: 'root', children: [{ type: 'raw', value: html }] });
-  const answerTree = { type: 'root', children: answers.flatMap(a => [el('h3', {}, [{ type: 'text', value: a.question }]), ...a.children]) };
+  const answerTree = { type: 'root', children: answers.flatMap(a => [el('h3', {}, a.question), ...a.children]) };
   return { html: processor.stringify(result), answers: processor.stringify(answerTree) };
 }

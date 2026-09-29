@@ -14,10 +14,11 @@ const { collection, payload } = Astro.props;
     <nav class="print-controls"><a href={payload.base}>Vissza a tanulóoldalra</a><button type="button" id="print">Nyomtatás / mentés PDF-ként</button></nav>
     <main>
       <h1>{collection.title}</h1>
-      {collection.chapters.map(chapter => <section class="print-chapter"><h2>{chapter.title}</h2><div class="study-content" set:html={chapter.html} /></section>)}
-      <section class="print-answers"><h2>Önellenőrzés — válaszok és magyarázatok</h2>
-        {collection.chapters.filter(c => c.answers).map(chapter => <section><h2>{chapter.title}</h2><div class="study-content" set:html={chapter.answers} /></section>)}
-      </section>
+      {collection.pdf && <p class="print-version">Változat: {collection.pdf.key.slice(0,12)}</p>}
+      {collection.chapters.map(chapter => <section class="print-chapter">{collection.chapters.length > 1 && <h2>{chapter.title}</h2>}<div class="study-content" set:html={chapter.html} /></section>)}
+      {collection.chapters.some(c => c.answers) && <section class="print-answers"><h2>Önellenőrzés — válaszok és magyarázatok</h2>
+        {collection.chapters.filter(c => c.answers).map(chapter => <section>{collection.chapters.length > 1 && <h2>{chapter.title}</h2>}<div class="study-content" set:html={chapter.answers} /></section>)}
+      </section>}
     </main>
     <script>document.querySelector('#print')?.addEventListener('click', () => window.print());</script>
   </body>

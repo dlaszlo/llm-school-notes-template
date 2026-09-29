@@ -83,3 +83,31 @@ test('print moves complete answers and prefixes footnote IDs without losing refe
   const ids = [...combined.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
   for (const [, href] of combined.matchAll(/href="#([^" ]+)"/g)) assert.ok(ids.includes(href), `Missing print anchor ${href}`);
 });
+
+test('PDF keys reuse unchanged topics and invalidate only affected dependencies', async () => {
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'study-pdf-keys-'));
+  try {
+    const repo=path.join(tmp,'repo');await fs.cp(fixture,repo,{recursive:true});
+    const config=await settings();config.collections=config.pages.map((p,i)=>({id:'topic-'+i,title:'Topic '+i,pages:[p.path],pdf:true}));
+    let sequence=0;
+    const keys=async (engine='engine-1')=>(await exportSite({repo,config,output:path.join(tmp,'build-'+sequence++),printEngine:engine})).payload.collections.map(c=>c.pdf.key);
+    const original=await keys();assert.deepEqual(await keys(),original);
+    const changed=config.pages[1];await fs.appendFile(path.join(repo,changed.path),'\nÚj mondat.\n');changed.sha256=sha256(await fs.readFile(path.join(repo,changed.path)));
+    const text=await keys();assert.equal(text[0],original[0]);assert.notEqual(text[1],original[1]);
+    const asset=config.assets[0];const file=path.join(repo,asset.path);await fs.writeFile(file,(await fs.readFile(file,'utf8')).replace('Balról jobbra','Másik felirat'));asset.sha256=sha256(await fs.readFile(file));
+    const image=await keys();assert.notEqual(image[0],text[0]);assert.equal(image[1],text[1]);
+    const engine=await keys('engine-2');assert.ok(engine.every((k,i)=>k!==image[i]));
+  } finally {await fs.rm(tmp,{recursive:true,force:true});}
+});
+
+test('print keeps image captions together and ignores lazy-loading fluctuations', async()=>{
+  const a=await printSection('<p><em>Saját térkép.</em></p><p><img src="/figure.svg" loading="lazy"></p><p><small>Forrás</small></p>','c-');
+  const b=await printSection('<p><em>Saját térkép.</em></p><p><img src="/figure.svg" loading="eager"></p><p><small>Forrás</small></p>','c-');
+  assert.equal(a.html,b.html);assert.match(a.html,/<figure class="print-figure"><p><em>Saját térkép/);assert.match(a.html,/<small>Forrás<\/small><\/p><\/figure>/);
+});
+
+test('formulas in HTML disclosure questions render in both question and answer headings', async()=>{
+ const r=await renderMarkdown('<details><summary>Mi az erő, ha $g=10\\ \\text{m}/\\text{s}^2$?</summary>\n\nVálasz.\n\n</details>',{resolveUrl});
+ assert.match(r.html,/<summary>.*<mjx-container/);assert.equal(r.audit.formulas.length,1);
+ const printed=await printSection(r.html,'p-');assert.match(printed.answers,/<h3>.*<mjx-container/);assert.doesNotMatch(printed.answers,/\$g=/);
+});

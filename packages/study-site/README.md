@@ -65,11 +65,11 @@ Open `http://127.0.0.1:4321/sample/`. Stop the foreground server with Ctrl+C. Ch
 - `receipt.private.json`: input hashes, source paths, formulas, labels and asset transformations for review. Never publish this file.
 - `site/`: generated static HTML, CSS/JS, images and Pagefind index. Not committed to the learner repository.
 
-The responsive layout uses equal 16rem navigation rails, a central content area up to 60rem and paragraphs up to 78ch. Screen banners fill the content width and keep their original aspect ratio without cropping or distortion. Their height follows the source image ratio (no independent screen height cap); the central column remains bounded at 60rem. Print banners retain a 35mm height cap. GitHub-only spacer paragraphs are hidden; web heading margins provide section separation. The shared book mark and subtle header colours require no external image or font.
+The responsive layout uses equal 16rem navigation rails, a central content area up to 60rem and paragraphs up to 78ch. Screen banners fill the content width and keep their original aspect ratio without cropping or distortion. Their height follows the source image ratio (no independent screen height cap); the central column remains bounded at 60rem. Print banners retain a 25mm height cap. GitHub-only spacer paragraphs are hidden; web heading margins provide section separation. The shared book mark and subtle header colours require no external image or font.
 
 The UI includes search, light/dark/system theme, a single H1, a semantic heading outline, source footers, keyboard-native answers and full-size image links. Large formulas/tables scroll within their region. Technical SVGs retain geometry and colours on a light panel; no colour inversion or diagram replacement takes place. A real chemical/math `<sub>` is preserved; only recognized source labels become small footers. The original Mermaid text and formulas are recorded in the private receipt.
 
-The print collection uses the same rendered material, with complete self-test answers moved to its final section and page-local footnote IDs namespaced. It excludes duplicate search results. A4 CSS and a print button are included; **a final, page-by-page reviewed PDF is a separate deliverable**, not something certified by a successful HTML build. Screen-reader testing of the formulas also remains a separate acceptance check: the current SVG has the original TeX as an accessible label, not a claim of full spoken-math support.
+The print collection uses the same rendered material, with complete self-test answers moved to its final section and page-local footnote IDs namespaced. It excludes duplicate search results. A4 CSS and a print button are included; **PDF generation and page-by-page inspection are separate from HTML build success**; use the cached PDF workflow below. Screen-reader testing of the formulas also remains a separate acceptance check: the current SVG has the original TeX as an accessible label, not a claim of full spoken-math support.
 
 ## Verification
 
@@ -83,7 +83,35 @@ node check-browser.mjs \
   "a known search term"
 ```
 
-The tests cover comments/frontmatter, paths and symlinks, source hashes, asset allowlists, HTML/SVG active content, formulas, true subscripts, duplicate headings, Mermaid line breaks and print footnote references. The browser check visits every page in both themes at desktop, mobile and 320px widths, opens all answers, checks images/anchors/overflow, and exercises Pagefind. Visually inspect representative pages, exact diagrams, expanded answers, and print output too; these tests do not prove pedagogical correctness or WCAG conformance. Receipts and real-corpus screenshots belong in private storage.
+The tests cover comments/frontmatter, paths and symlinks, source hashes, asset allowlists, HTML/SVG active content, formulas, true subscripts, duplicate headings, Mermaid line breaks print footnote references, formulas inside HTML question summaries, figure-caption grouping and dependency-specific PDF cache invalidation. The browser check visits every page in both themes at desktop, mobile and 320px widths, opens all answers, checks images/anchors/overflow, and exercises Pagefind. Visually inspect representative pages, exact diagrams, expanded answers, and print output too; these tests do not prove pedagogical correctness or WCAG conformance. Receipts and real-corpus screenshots belong in private storage.
+
+## Topic PDFs and incremental reuse
+
+Add `"pdf": true` to each collection that should have a downloadable PDF. A collection may contain one topic or a deliberately ordered group of pages. It uses the same Markdown and assets as the website; no LLM rewrites the material. The subject index automatically lists its PDF collections, and a topic offers its own download. Self-test questions stay in the lesson; complete answers and explanations follow at the end.
+
+```sh
+node cli.mjs build \
+  --repo /path/to/private-notes \
+  --config /path/to/private-notes/publication/pilot.json \
+  --output /path/to/private-builds/new-build \
+  --browser /path/to/chromium \
+  --pdf-cache /path/to/private-builds/pdf-cache
+```
+
+For reproducible PDF typography, install Fontconfig, DejaVu Sans (regular, bold and oblique variants) and Noto Color Emoji through the operating system's package manager. No installation happens inside the build. The browser version and actual resolved font files are part of the fingerprint. Review output after changing any of these dependencies.
+
+The **SHA-256 cache key** includes the collection's source hashes, rendered text/answers, content-addressed image URLs, title, base URL, print renderer code/CSS, dependency lock, Node/Chromium versions and fonts. Thus:
+
+- Changing a topic or one of its images regenerates only PDFs depending on that content.
+- A shared print style, renderer or font change correctly invalidates all affected PDFs.
+- An unchanged build copies the existing PDF without invoking PDF rendering or an LLM.
+- A missing or corrupt cached PDF is regenerated; the cached PDF's own SHA-256 is checked before reuse.
+
+The static HTML site still rebuilds; this incremental cache applies specifically to PDFs. The cache directory must be private and outside the input repository and renderer package. Generated PDFs belong to build/media storage, **not Git history**. The reusable cache is safe to remove when unused; losing it only costs another rendering pass. No automatic Drive upload, remote deletion or retention cleanup is implemented here.
+
+Outputs are `site/pdf/<collection>-<hash-prefix>.pdf` plus `pdf-receipt.private.json` outside the site, recording full keys, file hashes, inputs, timestamps and reuse decisions. A PDF shows its short version and creation date; a reused file keeps its original date. Source footnotes and internal references remain; relative website links are plain text in PDFs to avoid embedding a temporary localhost address. Explicit HTTPS references remain clickable.
+
+PDFs use A4 portrait, 16mm margins, selectable body text, vector formulas and diagrams where the source allows, page numbers and separate answer sections. Images and their immediate small/italic captions stay together; headings, callouts and answer blocks receive page-break constraints. The generation check rejects oversized figures/tables/formulas, but cannot prove every page is well composed. **After a changed PDF, render and inspect every page**, e.g. with Poppler's `pdftoppm`; check clipping, formulas, captions, tables, legibility and answer placement. An unchanged PDF with the same verified file hash can reuse its earlier visual review. Do not certify a new PDF solely because the browser returned success.
 
 ## Restoring archived source data
 
