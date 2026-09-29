@@ -89,7 +89,7 @@ export async function exportSite({ repo, config, output, browserPath }) {
       });
       if (isPublic && ['source', 'source-summary'].includes(rendered.metadata.type)) throw new Error(`Source summary is private: ${p.path}`);
       const { title, html, headings, audit } = rendered;
-      payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', url: urlFor(base, p.route) });
+      payload.pages.push({ route: p.route, title, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : null, url: urlFor(base, p.route) });
       receipt.pages.push({ input: p.path, sourceSha256: p.sha256, route: p.route, audit });
     }
     for (const collection of config.collections || []) {

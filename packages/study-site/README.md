@@ -20,7 +20,7 @@ All direct dependencies and the transitive lock are committed. `npm ci` writes o
 
 ## Input configuration
 
-Keep `publication/pilot.json` in the private learner repository. This is a deliberately explicit, hash-bound manifest, not automatic publication permission. Ordered `pages` define navigation and previous/next order. Only referenced, allowlisted assets are copied.
+Keep `publication/pilot.json` in the private learner repository. This is a deliberately explicit, hash-bound manifest, not automatic publication permission. Ordered `pages` define previous/next order. The sidebar contains only the home page (`wiki/index.md`) and subject indexes (`wiki/<subject>/index.md`); topics remain accessible through those indexes and search. Topic pages include a link back to their subject. Only referenced, allowlisted assets are copied.
 
 ```json
 {
@@ -64,6 +64,8 @@ Open `http://127.0.0.1:4321/sample/`. Stop the foreground server with Ctrl+C. Ch
 - `public/media/`: copied approved images with content-addressed names, plus locally rendered Mermaid SVGs. Original input files remain unchanged.
 - `receipt.private.json`: input hashes, source paths, formulas, labels and asset transformations for review. Never publish this file.
 - `site/`: generated static HTML, CSS/JS, images and Pagefind index. Not committed to the learner repository.
+
+The responsive layout uses equal 16rem navigation rails, a central content area up to 60rem and paragraphs up to 78ch. Banners keep their original aspect ratio without cropping and are limited to 18rem or 32vh in height (whichever is smaller). GitHub-only spacer paragraphs are hidden; web heading margins provide section separation. The shared book mark and subtle header colours require no external image or font.
 
 The UI includes search, light/dark/system theme, a single H1, a semantic heading outline, source footers, keyboard-native answers and full-size image links. Large formulas/tables scroll within their region. Technical SVGs retain geometry and colours on a light panel; no colour inversion or diagram replacement takes place. A real chemical/math `<sub>` is preserved; only recognized source labels become small footers. The original Mermaid text and formulas are recorded in the private receipt.
 

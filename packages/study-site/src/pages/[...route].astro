@@ -9,10 +9,12 @@ export function getStaticPaths() {
   }));
 }
 const { page, payload, previous, next } = Astro.props;
+const subject = payload.pages.find(p => p.navigation === 'subject' && page.route.startsWith(p.route + '/'));
 ---
 <StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: false, prev: false, next: false }} headings={page.headings}>
   <nav class="study-tools" aria-label="Tanulási eszközök" data-pagefind-ignore>
-    <a href={payload.base}>Áttekintés</a>
+    <a href={payload.base}>Kezdőlap</a>
+    {subject && <a href={subject.url}>{subject.title}</a>}
     {payload.collections.map(c => <a href={`${payload.base}nyomtatas/${c.id}/`}>Nyomtatható: {c.title}</a>)}
     <button type="button" id="study-answers">Válaszok megnyitása</button>
   </nav>

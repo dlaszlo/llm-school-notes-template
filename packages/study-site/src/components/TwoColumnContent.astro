@@ -1,0 +1,12 @@
+<div class:list={["study-columns", { "study-has-toc": Astro.locals.starlightRoute.toc }]}>
+  <div class="main-pane"><slot /></div>
+  {Astro.locals.starlightRoute.toc && <aside class="right-sidebar-container print:hidden"><div class="right-sidebar"><slot name="right-sidebar" /></div></aside>}
+</div>
+<style>
+  .main-pane { min-width: 0; isolation: isolate; }
+  @media screen and (min-width: 72rem) {
+    .study-has-toc { display: grid; grid-template-columns: minmax(0, 1fr) var(--sl-sidebar-width); }
+    .right-sidebar-container { min-width: 0; }
+    .right-sidebar { position: fixed; top: var(--sl-nav-height); bottom: 0; width: var(--sl-sidebar-width); overflow-y: auto; border-inline-start: 1px solid var(--sl-color-hairline); }
+  }
+</style>
