@@ -21,7 +21,7 @@
 .study-content details dd > br { display: none; }
 .study-content details p.study-spacer { display: none; }
 .study-content img { display: block; max-width: 100%; height: auto; margin: 1.5rem auto; border-radius: .3rem; }
-.study-content img.study-banner { width: auto; max-width: 100%; max-height: min(18rem, 32vh); object-fit: contain; border-radius: .75rem; }
+.study-content img.study-banner { width: 100%; max-width: 100%; height: auto; max-height: none; object-fit: contain; border-radius: .75rem; }
 .study-content img.study-figure { background: white; }
 .study-content mjx-container[display='true'] { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: .4rem; }
 .study-content mjx-container { font-size: 1.05em; }
@@ -54,7 +54,7 @@
   .study-content :is(h2,h3,h4), .print-chapter > h2 { break-after: avoid; }
   .study-content p { orphans: 3; widows: 3; }
   .study-content img { max-height: 220mm; max-width: 100%; object-fit: contain; break-inside: avoid; }
-  .study-content img.study-banner { max-height: 35mm; }
+  .study-content img.study-banner { width: auto; max-height: 35mm; }
   .study-content table { display: table; width: 100%; font-size: 9pt; }
   .study-content td, .study-content th { padding: 1.5mm; }
   .study-content .study-callout { background: none; }
