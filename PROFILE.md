@@ -60,7 +60,7 @@ Every reader-facing string the rules prescribe lives here, in the wiki language 
 | test yourself intro | `*Our own questions (not from the notebook) - try to answer from memory first, then open the answer.*` | `*Saját kérdések (nem a füzetből) - előbb próbáld fejből, aztán nyisd le a választ.*` |
 | explanation label | `💡 <author>🤖 explanation` | `💡 <szerző>🤖 magyarázata` |
 | addition label | `➕ <author>🤖 addition` | `➕ <szerző>🤖 kiegészítése` |
-| textbook label | `📗 From the textbook` | `📗 Tankönyvből` |
+| textbook label | `📗 Based on the textbook` | `📗 A tankönyv alapján` |
 | background label | `📗 From background material` | `📗 Háttéranyagból` |
 | teacher-material words | *to learn* / *background* | `tanulni` / `olvasnivaló` |
 | lesson line | `🗓️ Lesson: <date>` | `🗓️ Óra: <dátum>` |

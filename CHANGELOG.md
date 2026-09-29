@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.5 — 2026-09-30
+
+- Textbook-derived explanations use the label “Based on the textbook” / “A tankönyv alapján”, with source locations and independent wording. The label must not imply verbatim quotation or permission to copy restricted material.
+- Migration: synchronize the shared set and the local wording label; update learner-facing labels and regenerate affected web/PDF derivatives. Preserve raw evidence and citations. This wording change does not grant rights to reproduce sources.
+
 ## 1.15.4 — 2026-09-29
 
 - Printable notes carry the explicitly approved content license in page footers and a compact closing notice, preserving third-party exceptions. Project introductions and site menus expose the same terms.

@@ -42,7 +42,7 @@ Keep source-omission commentary beside the relevant diagram, not printed on it. 
 <br />
 
 > [!NOTE]
-> A tankönyvből származó, pontos forrással hivatkozott kiegészítés.<br /><sub>📗 Tankönyvből</sub>
+> A tankönyv megértése alapján, saját szavakkal készített, pontos forráshellyel jelölt kiegészítés.<br /><sub>📗 A tankönyv alapján</sub>
 ```
 
 Keep GitHub's generated TIP/NOTE/WARNING heading; do not repeat it with a large manual heading. The role and author appear once, in the small footer after the content. A multiline list or table gets one footer after the block, separated by a quoted blank line where Markdown needs it. For a simple paragraph, keep the `<br /><sub>...</sub>` suffix on the same Markdown source line as the text; a separate quoted line can produce a second break in GitHub. Do not introduce an empty paragraph between a simple sentence and its label. Never collapse different source categories into one footer that falsely applies to the whole block. Split passages when needed. A list item, recap bullet or table cell can end with its own `<br /><sub>...</sub>` label.
