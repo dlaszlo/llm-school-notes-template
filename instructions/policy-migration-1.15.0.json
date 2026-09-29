@@ -13,7 +13,7 @@
       "heading": "Wiki structure",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "91416c932747a9e5a95b2c27ba7babf2ac8229afd251016b069bc5c142cb0b98",
-      "migrated_sha256": "b1235e7054fb7ba8bbbe75bcdc31a37d4ee9832fc59a08b757322bcfc94ee137",
+      "migrated_sha256": "9955301132d9bfe797e445cbe31c49d12aab30595c067bcaf2f93a2af37aff3d",
       "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
     },
     {
@@ -111,7 +111,7 @@
       "heading": "Workflows",
       "destination": "instructions/wiki-workflows.md",
       "source_sha256": "4002b650b71d3afec1c296105ed32cc47d22be691ef1ca640204d1a696c97abc",
-      "migrated_sha256": "584aec8adf71de928c9cf84508ccb3805052b02138db8a4c9318bbf844c6d4a8",
+      "migrated_sha256": "99a25a8eb350f7f986389effb440e0206ff3e463280b635da222ebe2588f2c7d",
       "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
     },
     {
@@ -142,11 +142,11 @@
   "semantic_changes": [
     {
       "location": "AGENTS.md introduction and rule map",
-      "change": "Task-routed normative modules replace all-in-one loading; universal scope/secrets/privacy protections remain mandatory; template maintenance does not authorize bootstrap."
+      "change": "Task-routed normative modules replace all-in-one loading; universal scope/secrets/privacy protections remain mandatory; template maintenance does not authorize bootstrap. Ingest always loads the visual-preservation policy."
     },
     {
       "location": "instructions/wiki-structure.md / Math and formulas",
-      "change": "Use a prepared MathJax renderer for all formulas on affected pages; repository page checker is optional. Setup occurs once, not in ordinary note editing."
+      "change": "Use a prepared MathJax renderer for all formulas on affected pages; repository page checker is optional. Setup occurs once, not in ordinary note editing. Missing required formula compilation blocks completed delivery of affected pages."
     },
     {
       "location": "instructions/content-and-curriculum.md / audience test",
@@ -154,7 +154,7 @@
     },
     {
       "location": "instructions/wiki-workflows.md / Bootstrap, Session start",
-      "change": "Initialize only on user request for a learner wiki; add portable work lifecycle, preserving authorization scope."
+      "change": "Initialize only on user request for a learner wiki; add portable work lifecycle, preserving authorization scope. Template update wording applies to any number of linked wikis."
     },
     {
       "location": "instructions/sources-and-evidence.md / Public version",

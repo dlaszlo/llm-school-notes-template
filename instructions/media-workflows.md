@@ -10,7 +10,7 @@ Make one short content plan: topic and context, learning goal, prerequisite brid
 
 Do not assume a fixed subject taxonomy. Decide which context dimensions the actual topic needs: time/place/causes, a problem and its notation, a system and its behavior, a practical starting state and evidence-supported steps, or other relevant dimensions. Explain necessary terms before relying on them. A model's successful answer is not proof that a learner understands the material; use actual learner feedback when supplied, without storing grades or behavioral profiles.
 
-For historical topics, apply *Orient historical learning in time and place* in [AGENTS.md](../AGENTS.md): put verified time and geographical context in the opening, adapted to each format. Distinguish the historical date from the lesson date. A banner may repeat this context where readable.
+For historical topics, apply *Orient historical learning in time and place* in [Content and curriculum](content-and-curriculum.md): put verified time and geographical context in the opening, adapted to each format. Distinguish the historical date from the lesson date. A banner may repeat this context where readable.
 
 ## Outputs
 

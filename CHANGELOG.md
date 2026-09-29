@@ -1,10 +1,13 @@
 # Template changelog
 
+Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
+
 ## 1.15.0 — 2026-09-29
 
 - Split shared policy into task-routed modules behind a short, harness-neutral AGENTS.md. Preserve the released 1.14.8 learning, evidence, curriculum, privacy and standardized-symbol requirements; record section hashes and deliberate wording changes in `instructions/policy-migration-1.15.0.json`.
 - Add a compact operation workflow: bounded rule retrieval, dependency-aware work, honest progress, source/visual checks and verified authorized delivery. No mandatory task JSON registry, completion gate, scheduler, runtime patch or automatic restart is installed.
 - Add an optional pinned repository-local Markdown preview and structural checker with reusable render receipts. It supports phone/desktop, MathJax, Mermaid, disclosures and offline local images; it is not a factual approval or proof of production-site/PDF rendering.
+- Opus review refinements: ingest always loads diagram-preservation rules; missing formula rendering blocks completion for affected pages; publication guidance, rule links and initialization wording are consistent. Renderer evidence-hash rejection has a regression test.
 - Migration: copy the complete shared manifest through Git, preserve learner profiles and authorization scope, update named-rule references and record this exact template commit. The template remains uninitialized. No VM, agent runtime, site deployment or source migration is part of this release.
 
 ## 1.14.8 - 2026-09-29
@@ -63,7 +66,6 @@
 * Corrected the remaining stale human-feedback sentence for the previous nine samples; new runner samples have their own pending human-review status.
 * **Migration**: synchronize the full shared set, record the release/commit, and install optional runtimes only for authorized machines/tasks using `instructions/install-visual-tools.md`. Ordinary note tools retain their dependencies. Local renderer paths and output caches are ignored. No automatic lesson change, paid call, agent configuration or credential transfer.
 
-Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [AGENTS.md](AGENTS.md)). A wiki records the version it is on in `PROFILE.md`.
 
 ## 1.13.6 - 2026-09-28
 

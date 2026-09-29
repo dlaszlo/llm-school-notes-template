@@ -6,8 +6,8 @@ This guide connects the shared workflows to agents with different jobs. It is an
 
 | Task | Repository entry | Detailed policy owner |
 |---|---|---|
-| Understand or practise existing material | [study-notes](../.agents/skills/study-notes/SKILL.md) | AGENTS.md Query and Curriculum-aware learning |
-| Incorporate supplied teaching material | [ingest-notes](../.agents/skills/ingest-notes/SKILL.md) | AGENTS.md Sources, Ingest and Visual evidence checks |
+| Understand or practise existing material | [study-notes](../.agents/skills/study-notes/SKILL.md) | [Query](wiki-workflows.md) and [Curriculum-aware learning](content-and-curriculum.md) |
+| Incorporate supplied teaching material | [ingest-notes](../.agents/skills/ingest-notes/SKILL.md) | [Sources / Visual evidence checks](sources-and-evidence.md) and [Ingest](wiki-workflows.md) |
 | Produce a requested learning medium | [learning-media](../.agents/skills/learning-media/SKILL.md) | Media workflows, prompt stages and handoff contract |
 | Select, render and check an authored visual | [learning-visuals](../.agents/skills/learning-visuals/SKILL.md) | Technical visuals and image/renderer execution guides |
 

@@ -25,6 +25,8 @@ test('links, malformed escapes, invalid math and evidence hashes are checked',()
  const r=renderMarkdown('$\\thisCommandDoesNotExist$');assert.ok(r.errors.some(e=>e.kind==='math'));
  fs.writeFileSync(file,content+'\n[missing](no.md)\n[bad anchor](page.md#missing)\n');
  const check=inspectPage(root,file);assert.ok(check.errors.some(e=>e.kind==='missing-link'));assert.ok(check.errors.some(e=>e.kind==='missing-anchor'));
+ fs.writeFileSync(file,content+'\n<!-- image-description\nasset: image.png\nsha256: '+ '0'.repeat(64)+'\n-->\n');
+ assert.ok(inspectPage(root,file).errors.some(e=>e.kind==='image-description-hash'));
  fs.writeFileSync(file,content);
 });
 test('TeX macros do not leak across pages',()=>{

@@ -35,7 +35,7 @@ Daily use: ask questions (useful answers can be filed back as pages), report hom
 ## Privacy
 
 * `wiki/` never contains grades, test results, names of private individuals (classmates, teachers), opinions about teachers, health or family data, or the name of the school, its town, or the class. The student's first name is the only personal name.
-* `sources/` (notebook photos, raw notes) and `references/` (textbooks) are private working copies: never publish them. If you ever make a copy of the wiki public, publish only `wiki/`.
+* `sources/` (notebook photos, raw notes) and `references/` (textbooks) are private working copies: never publish them. Public publication needs separate authorization and a filtered derivative of the canonical Markdown; do not publish the raw `wiki/` tree, which may contain restricted assets and source links. Follow [Public version](instructions/sources-and-evidence.md#sources).
 * No secrets anywhere - git history is forever.
 
 ## Layout
@@ -58,7 +58,7 @@ There is one set of rules plus one profile, so Claude Code and Codex do not main
 
 ## Updating from the template
 
-Updates are opt-in. When you request one, the agent follows [CHANGELOG.md](CHANGELOG.md), preserves local settings and copies the complete set in [shared-files.json](shared-files.json). Shared files are byte-identical across linked wikis on the same release; settings stay in `PROFILE.md`, `tools/subjects.json` and `tools/book-index.json`. Run `uv run tools/check_shared.py --template <template-checkout>` to detect drift. Both learner profiles record the canonical template URL, release and commit.
+Updates are opt-in. When you request one, the agent follows [CHANGELOG.md](CHANGELOG.md), preserves local settings and copies the complete set in [shared-files.json](shared-files.json). Shared files are byte-identical across linked wikis on the same release; settings stay in `PROFILE.md`, `tools/subjects.json` and `tools/book-index.json`. Run `uv run tools/check_shared.py --template <template-checkout>` to detect drift. Every linked wiki profile records the canonical template URL, release and commit.
 
 The common [media workflows](instructions/media-workflows.md), [prompts](instructions/media-prompts.md) and [handoff contract](instructions/media-handoff.md) apply to authorized work with locally configured tools. The template remains uninitialized; bootstrap supplies the learner and language settings.
 
