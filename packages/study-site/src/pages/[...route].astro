@@ -54,6 +54,7 @@ const subject = payload.pages.find(p => p.navigation === 'subject' && page.route
 </script>
 
 <style>
+  .study-pagination a { min-width: 0; overflow-wrap: anywhere; }
 .study-feedback { margin-block: 2rem; padding-block: 1rem; border-top: 1px solid var(--sl-color-hairline); font-size: .875rem; }
 .study-feedback p { margin-top: .4rem; color: var(--sl-color-gray-2); max-width: 78ch; }
 @media print { .study-feedback { display: none; } }

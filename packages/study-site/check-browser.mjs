@@ -65,11 +65,11 @@ try {
     return { count: result.results.length, hits: await Promise.all(result.results.slice(0, 10).map(async hit => ({ url: (await hit.data()).url }))) };
   }, { base: payload.base, query: searchQuery || payload.pages[1]?.title || payload.title });
   if (!report.search.count || report.search.hits.some(h => h.url.includes('/nyomtatas/'))) report.errors.push({ search: report.search });
-  const print = payload.collections[0];
+  const print = payload.collections.find(c => c.chapters.some(ch => ch.answers)) || payload.collections[0];
   if (print) {
     await page.goto(new URL(payload.base + 'nyomtatas/' + print.id + '/', address).href);
     report.print = await page.evaluate(() => ({ details: document.querySelectorAll('details').length, answers: document.querySelector('.print-answers')?.textContent.length, duplicateIds: [...document.querySelectorAll('[id]')].map(e => e.id).filter((id, i, a) => a.indexOf(id) !== i) }));
-    if (report.print.details || report.print.duplicateIds.length || !report.print.answers) report.errors.push(report.print);
+    if (report.print.details || report.print.duplicateIds.length || (print.chapters.some(ch => ch.answers) && !report.print.answers)) report.errors.push(report.print);
   }
 } finally {
   await browser.close();
