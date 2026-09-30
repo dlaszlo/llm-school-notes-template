@@ -115,6 +115,7 @@ starlight-theme-select select { width: auto; min-width: max-content; text-overfl
   .print-document .study-content img { display: block; width: auto; height: auto; max-height: 180mm; max-width: 100%; margin: 2mm auto; }
   .print-document .study-content img.study-banner { width: 100%; max-height: 65mm; object-fit: contain; }
   .print-document .study-content table { overflow: visible; }
+  .print-document .study-content :is(th,td) img { max-width: 30mm; max-height: 30mm; }
   .print-document .study-content tr { break-inside: avoid-page; }
   .print-document .study-content thead { display: table-header-group; }
   .print-document .study-content mjx-container[display='true'] { break-inside: avoid-page; }

@@ -83,6 +83,8 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
       for (let i = 0; i < tree.children.length; i++) {
         const n = tree.children[i];
         if (!isElement(n)) continue;
+        // A leading banner does not make the following repeated page title body content.
+        if (!seenBody && isElement(n, 'p') && n.children.some(c => isElement(c, 'img')) && !toText(n).trim()) continue;
         if (/^h[1-6]$/.test(n.tagName) && !seenBody && toText(n) === title) {
           tree.children[i] = el('span', { id: slugger.slug(toText(n)), className: ['heading-alias'] });
         } else { seenBody = true; }

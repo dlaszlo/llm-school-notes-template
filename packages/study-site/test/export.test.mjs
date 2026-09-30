@@ -206,3 +206,12 @@ test('public export needs reviewed hashes and rights and filters before HTML and
     await assert.rejects(run('source'),/Private or unrecognized/);
   } finally {await fs.rm(tmp,{recursive:true,force:true});}
 });
+
+
+test('a title following its opening banner is deduplicated, later section titles remain', async () => {
+  const source = '---\ntitle: Lesson\n---\n![Banner](image.svg)\n\n<!-- provenance -->\n\n# Lesson\n\nIntroduction.\n\n# Lesson\n\nSection.';
+  const r = await renderMarkdown(source, { resolveUrl });
+  assert.equal((r.html.match(/<h2/g) || []).length, 1);
+  assert.match(r.html, /class="heading-alias"/);
+  assert.match(r.html, /Introduction/);
+});
