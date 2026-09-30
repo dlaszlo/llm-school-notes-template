@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.6 — 2026-09-30
+
+- Keep the textbook label exactly “Based on the textbook” / “A tankönyv alapján”. Explain its meaning once in the root legend; omit repetitive source-absence and independent-wording qualifiers from individual labels.
+- Migration: synchronize the shared set and record its commit. In authorized learner pages, shorten expanded labels while preserving precise citations, source limitations needed for learning, and distinct author/correction labels. Regenerate affected web/PDF derivatives. Raw evidence and historical reports remain unchanged.
+
 ## 1.15.5 — 2026-09-30
 
 - Textbook-derived explanations use the label “Based on the textbook” / “A tankönyv alapján”, with source locations and independent wording. The label must not imply verbatim quotation or permission to copy restricted material.
