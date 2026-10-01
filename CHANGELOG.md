@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.15.7 — 2026-10-01
+
+- Preserve explicitly authorized private notebook/teacher-to-learn photo originals byte-for-byte, with verified archive and prepared-copy hashes. Git `sources/` still contains the metadata-free prepared photo. The original archive is append-only and excluded from public derivatives; archive authorization grants no new sharing permission. Teacher-background and book/reference originals and conversions remain local and never enter Drive archives or exports.
+- Migration: synchronize the shared set and record its commit. The obsolete automatic disposal of incoming originals is replaced by explicit archival/disposition handling to preserve evidence. Existing source bytes/hashes are immutable; do not re-encode archived photos or claim earlier originals are recoverable. This release creates no archive, OAuth grant, sharing permission or public publication by itself.
+
 ## 1.15.6 — 2026-09-30
 
 - Keep the textbook label exactly “Based on the textbook” / “A tankönyv alapján”. Explain its meaning once in the root legend; omit repetitive source-absence and independent-wording qualifiers from individual labels.
