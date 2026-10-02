@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from school_notes2.git import repos as gitrepos
 from school_notes2.git import run as gitrun
 from school_notes2.git.run import Git
 
@@ -75,5 +76,5 @@ def repos(tmp_path, log, monkeypatch) -> Repos:
     sh("git", "--git-dir", str(bare), "worktree", "add", "-q", "--detach", str(wt_path),
        "refs/remotes/origin/main")
     repo = Git(bare, "Tool Owner", "owner@example.com", log)
-    wt = Git(bare / "worktrees" / "review", "Tool Owner", "owner@example.com", log, None, wt_path)
+    wt = gitrepos.worktree_git(repo, wt_path)
     return Repos(origin, laptop, bare, wt_path, repo, wt)

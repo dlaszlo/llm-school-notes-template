@@ -11,10 +11,11 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Callable
 
+from ..git import repos
 from ..git.run import Git, with_retries
 from ..schemas import validate
 from ..state import phase
-from ..state.errors import NeedsOwner
+from ..state.errors import NeedsOwner, Transient
 from ..state.files import write_bytes, write_json, write_text
 from . import markers
 
@@ -39,7 +40,16 @@ class Range:
 
 
 def fetch(repo: Git, timeout: float) -> None:
-    with_retries(lambda: repo.run("fetch", "origin", timeout=timeout), log=repo.log)
+    """Fetch main and the marker explicitly; a missing marker is the owner's step (6.9/4)."""
+    def step():
+        try:
+            repos.fetch(repo, timeout, repos.MAIN_SPEC, repos.REVIEWED_SPEC)
+        except Transient as exc:
+            if "couldn't find remote ref" in str(exc):
+                raise NeedsOwner("claude-reviewed marker not created yet on origin",
+                                 todo="create it once at the cut-over (plan 6.9/4)") from None
+            raise
+    with_retries(step, log=repo.log)
 
 
 def rev(repo: Git, ref: str) -> str:

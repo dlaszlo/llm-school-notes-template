@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from ..evidence import records
-from ..git.run import Git, classify
+from ..git.run import Git, classify, failure_text
 from ..state import phase
 from ..state.errors import Race, Transient
 from . import files, index
@@ -50,8 +50,7 @@ def _push(repo: Git, r: str, m: str, timeout: float) -> None:
                     f"{m}:refs/heads/claude-reviewed", timeout=timeout, check=False)
     if proc.returncode == 0:
         return
-    # --porcelain prints ref results on stdout; the rejection reason is there, not on stderr.
-    text = proc.stdout.decode("utf-8", "replace") + proc.stderr.decode("utf-8", "replace")
+    text = failure_text(proc)  # --porcelain puts the rejection reason on stdout
     if "(fetch first)" in text or "(non-fast-forward)" in text:
         raise Race("review push rejected: origin moved")
     if "hook declined" in text:
@@ -131,6 +130,7 @@ def close(task: phase.Task, repo: Git, wt: Git, ident: Identity, t: Timeouts = T
 def discard_timeout(task: phase.Task, repo: Git, wt: Git, ident: Identity, commit: str,
                     t: Timeouts = Timeouts()) -> tuple[str, str]:
     """Owner's `--discard review`: close `commit` as not reviewed and step the marker past it."""
+    fetch(repo, t.fetch_s)
     parent = repo.out("rev-parse", f"{commit}^").strip()
 
     def write(worktree: Path) -> list[str]:
