@@ -1,11 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { sha256, readInside, relativeFile, routeFor, normalizeBase, urlFor } from './paths.mjs';
-import { publicSource } from './publication.mjs';
 import { renderMarkdown, printSection } from './markdown.mjs';
 import { safeSvg, mermaidRenderer } from './assets.mjs';
 
-export async function exportSite({ repo, config, output, browserPath, printEngine }) {
+export async function exportSite({ repo, config, output, browserPath, printEngine, lastUpdated = {} }) {
   const root = await fs.realpath(repo);
   const out = path.resolve(output);
   // Never overwrite source or an existing successful build.
@@ -13,8 +12,8 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
   try { await fs.lstat(out); throw new Error('Output already exists; choose a new build directory'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   if (!['private-preview', 'public'].includes(config.mode)) throw new Error('Explicit export mode required');
   const isPublic = config.mode === 'public';
-  if (isPublic && config.publicationApproved !== true) throw new Error('Public export requires explicit reviewed publication configuration');
-  if (isPublic && (!/^https:\/\/[^/]+$/.test(config.site || '') || !config.reviewRecord)) throw new Error('Public site origin and private review record required');
+  // The public site is the wiki 1:1 (plan D83): no per-page review, filtering or edits.
+  if (isPublic && !/^https:\/\/[^/]+$/.test(config.site || '')) throw new Error('Public site origin required');
   const base = normalizeBase(config.base);
   if (!Array.isArray(config.pages) || !config.pages.length) throw new Error('Explicit ordered page allowlist required');
   if (typeof config.title !== 'string' || !config.title.trim()) throw new Error('Site title required');
@@ -25,7 +24,9 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     const route = routeFor(p.path);
     if (routes.has(route)) throw new Error(`Duplicate route: ${route}`);
     if (!/^[a-f0-9]{64}$/.test(p.sha256)) throw new Error(`Page hash required: ${p.path}`);
-    if (isPublic && p.publicationReviewed !== true) throw new Error(`Page not reviewed for publication: ${p.path}`);
+    for (const retired of ['omitSections', 'publicEdits']) {
+      if (p[retired]?.length) throw new Error(`${retired} is no longer supported (the public site is the wiki 1:1): ${p.path}`);
+    }
     if (p.navigationLabel !== undefined && (typeof p.navigationLabel !== 'string' || !p.navigationLabel.trim() || p.navigationLabel.length > 160)) throw new Error('Invalid navigation label');
     pageMap.set(p.path, { ...p, route }); routes.add(route);
   }
@@ -35,8 +36,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     if (a.path.startsWith('wiki/assets/orai/')) throw new Error('Teacher-material copies cannot be exported; replace with an independently authored or licensed asset');
     if (!a.path.startsWith('wiki/assets/') || !/\.(svg|webp|png|jpg|jpeg|gif)$/i.test(a.path)) throw new Error(`Unsupported asset: ${a.path}`);
     if (!/^[a-f0-9]{64}$/.test(a.sha256)) throw new Error(`Asset hash required: ${a.path}`);
-    if (isPublic && a.publicationReviewed !== true) throw new Error(`Asset not reviewed: ${a.path}`);
-    if (isPublic && (!['authored', 'generated', 'licensed', 'public-domain', 'standard'].includes(a.rights) || !a.rightsEvidence)) throw new Error(`Asset rights evidence required: ${a.path}`);
+    if (isPublic && !['authored', 'generated', 'licensed', 'public-domain', 'standard'].includes(a.rights)) throw new Error(`Asset rights class required: ${a.path}`);
     assets.set(a.path, a);
   }
   const payload = { version: 1, mode: config.mode, title: config.title, base, ...(isPublic ? {site:config.site} : {}), pages: [], collections: [] };
@@ -102,18 +102,24 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
         }
         throw new Error(`Unapproved ${image ? 'image' : 'link'} in ${p.path}: ${url}`);
       };
-      const rendered = await renderMarkdown(isPublic ? publicSource(raw.toString(),p) : raw.toString(), {
-        publicMode: isPublic,
-        resolveUrl,
-        mermaid: async code => {
-          const key = 'mermaid:' + sha256(code);
-          if (!cache.has(key)) cache.set(key, (async () => saveAsset(key, await renderer.render(code, 'm' + sha256(code).slice(0, 16)), '.svg'))());
-          return cache.get(key);
-        }
-      });
-      if (isPublic && ['source', 'source-summary'].includes(rendered.metadata.type)) throw new Error(`Source summary is private: ${p.path}`);
+      let rendered;
+      try {
+        rendered = await renderMarkdown(raw.toString(), {
+          resolveUrl,
+          mermaid: async code => {
+            const key = 'mermaid:' + sha256(code);
+            if (!cache.has(key)) cache.set(key, (async () => saveAsset(key, await renderer.render(code, 'm' + sha256(code).slice(0, 16)), '.svg'))());
+            return cache.get(key);
+          }
+        });
+      } catch (error) {
+        // A rendering error is tied to its page, so the caller can send the writer back to it.
+        error.page = p.path; throw error;
+      }
       const { title, html, headings, audit } = rendered;
-      payload.pages.push({ route: p.route, title, navigationLabel: p.navigationLabel, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : p.navigation === 'info' ? 'info' : null, url: urlFor(base, p.route) });
+      const updated = lastUpdated[p.path];
+      if (updated !== undefined && Number.isNaN(Date.parse(updated))) throw new Error(`Invalid last-updated date: ${p.path}`);
+      payload.pages.push({ route: p.route, path: p.path, title, navigationLabel: p.navigationLabel, html, headings, group: p.group || '', navigation: p.path === 'wiki/index.md' ? 'home' : /^wiki\/[^/]+\/index\.md$/.test(p.path) ? 'subject' : p.navigation === 'info' ? 'info' : null, url: urlFor(base, p.route), ...(updated ? { lastUpdated: updated } : {}) });
       receipt.pages.push({ input: p.path, sourceSha256: p.sha256, route: p.route, audit });
     }
     const collectionMap = new Map((config.collections || []).map(c => [c.id, c]));

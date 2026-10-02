@@ -15,7 +15,7 @@ const reportPage = payload.feedbackRepository ? `https://${payload.feedbackRepos
 const reportUrl = payload.feedbackRepository ? `https://github.com/${payload.feedbackRepository}/issues/new?${new URLSearchParams({ template: 'bejelentes.yml', page: reportPage! })}` : undefined;
 const subject = payload.pages.find(p => p.navigation === 'subject' && page.route.startsWith(p.route + '/'));
 ---
-<StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: false, prev: false, next: false }} headings={page.headings}>
+<StarlightPage lang="hu" frontmatter={{ title: page.title, editUrl: false, lastUpdated: page.lastUpdated ? new Date(page.lastUpdated) : false, prev: false, next: false }} headings={page.headings}>
   <nav class="study-tools" aria-label="Tanulási eszközök" data-pagefind-ignore>
     <a href={payload.base}>Kezdőlap</a>
     {subject && <a href={subject.url}>{subject.title}</a>}

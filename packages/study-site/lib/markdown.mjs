@@ -34,7 +34,7 @@ schema.attributes.details = ['open'];
 const el = (tagName, properties = {}, children = []) => ({ type: 'element', tagName, properties, children });
 const isElement = (n, tag) => n.type === 'element' && (!tag || n.tagName === tag);
 
-export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források', publicMode = false } = {}) {
+export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források' } = {}) {
   const { metadata, body, title } = splitMarkdown(source);
   const headings = [];
   const sanitizedIds = new Map();
@@ -67,15 +67,6 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
       });
     })
     .use(rehypeSanitize, schema)
-    .use(() => tree => {
-      if (!publicMode) return;
-      visit(tree, 'element', (node,index,parent) => {
-        if (node.tagName === 'sub' && toText(node).trim().startsWith('🗓️')) {
-          const textbook = toText(node).split('🔖')[1];
-          node.children = textbook ? [{type:'text',value:'🔖'+textbook}] : [];
-        }
-      });
-    })
     .use(() => async tree => {
       const slugger = new GithubSlugger();
       let seenBody = false;
@@ -90,6 +81,7 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
         } else { seenBody = true; }
       }
       const jobs = [];
+      let imageCount = 0;
       visit(tree, 'element', (node, index, parent) => {
         const text = toText(node);
         for (const prop of ['ariaDescribedBy', 'ariaLabelledBy']) {
@@ -131,11 +123,14 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
           })());
         }
         if (node.tagName === 'img') {
+          // Decided in document order, before any await: the output must not depend on which
+          // asset resolves first, or unchanged pages would differ between builds.
+          const order = imageCount++;
+          node.properties.loading = order ? 'lazy' : 'eager';
           jobs.push((async () => {
             node.properties.src = await resolveUrl(String(node.properties.src), true);
-            node.properties.loading = audit.images.length ? 'lazy' : 'eager';
             node.properties.decoding = 'async';
-            audit.images.push(node.properties.src);
+            audit.images[order] = node.properties.src;
             node.properties.className = [node.properties.src.includes('/banner-') ? 'study-banner' : 'study-figure'];
           })());
         }
