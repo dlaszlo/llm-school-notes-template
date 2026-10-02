@@ -1,0 +1,56 @@
+#!/bin/bash
+# Pre-start check (plan 7.7), run by the entrypoint before the harness on every start.
+# Exit codes: 0 ok, 10 a security point failed, 11 the model API is unreachable.
+set -u
+
+fail() { echo "sn-preflight: $*" >&2; exit 10; }
+
+# 1. Only the expected mounts (Podman's own /proc, /sys and /dev mounts are allowed).
+allowed_mounts=" / /work /home/agent /run/sn /in /out /tmp /etc/hosts /etc/hostname /etc/resolv.conf /run/.containerenv "
+while read -r target; do
+    case "$target" in
+        /proc|/proc/*|/sys|/sys/*|/dev|/dev/*) continue ;;
+    esac
+    case "$allowed_mounts" in
+        *" $target "*) ;;
+        *) fail "unexpected mount: $target" ;;
+    esac
+done < <(findmnt -rn -o TARGET)
+
+# 2. Only the allowed environment keys; never an SSH agent socket.
+allowed_env=" PATH HOME HOSTNAME TERM container SN_RUN_ID SN_ALLOWED_DOMAINS SN_MODEL_PROBE SN_NO_NETWORK SN_AGENT_UID SN_AGENT_GID DISABLE_AUTOUPDATER DISABLE_TELEMETRY DISABLE_ERROR_REPORTING CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC UV_OFFLINE UV_NO_SYNC UV_FROZEN UV_PROJECT_ENVIRONMENT UV_PYTHON_DOWNLOADS NODE_VERSION YARN_VERSION PWD SHLVL _ "
+while IFS='=' read -r key _; do
+    [ -n "$key" ] || continue
+    case "$allowed_env" in
+        *" $key "*) ;;
+        *) fail "unexpected environment variable: $key" ;;
+    esac
+done < <(env)
+[ -z "${SSH_AUTH_SOCK:-}" ] || fail "SSH_AUTH_SOCK is set"
+
+# 3. No owner home and no tool configuration.
+for entry in /home/*; do
+    [ "$entry" = /home/agent ] || [ "$entry" = '/home/*' ] || fail "unexpected home: $entry"
+done
+found=$(find / -xdev -maxdepth 5 -path '*/.config/school-notes' -print -quit 2>/dev/null)
+[ -z "$found" ] || fail "tool configuration visible: $found"
+
+# 4. /run/sn holds only the MCP socket.
+if [ -d /run/sn ]; then
+    for entry in /run/sn/* /run/sn/.[!.]*; do
+        [ -e "$entry" ] || continue
+        [ "$entry" = /run/sn/mcp.sock ] || fail "unexpected entry in /run/sn: $entry"
+        [ -S "$entry" ] || fail "/run/sn/mcp.sock is not a socket"
+    done
+fi
+
+# 5. The firewall is alive: an unlisted address is unreachable, the model API is reachable.
+if curl -sS -m 5 -o /dev/null https://example.com/ 2>/dev/null; then
+    fail "firewall is not blocking https://example.com"
+fi
+probe=${SN_MODEL_PROBE:-}
+if [ -n "$probe" ] && ! curl -sS -m 5 -o /dev/null "$probe" 2>/dev/null; then
+    echo "sn-preflight: model API unreachable: $probe" >&2
+    exit 11
+fi
+exit 0

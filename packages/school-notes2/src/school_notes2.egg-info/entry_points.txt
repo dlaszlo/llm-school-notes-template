@@ -1,2 +1,0 @@
-[console_scripts]
-school-notes = school_notes2.cli:main

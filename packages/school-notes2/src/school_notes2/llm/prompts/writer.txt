@@ -1,0 +1,1 @@
+Olvasd el az `AGENTS.md`-t és a `PROFILE.md`-t, és a szabálytérképük szerint az ingesthez előírt szabályokat. Olvasd el a `.school-notes/fetch.json`-t. Ha a `.school-notes/changes.json` vagy a `.school-notes/check.json` nem üres, onnan folytasd. Végezd el a munkát, írd meg a `.school-notes/result.json`-t, majd hívd az MCP `check` műveletét, és javítsd, amit jelez.
