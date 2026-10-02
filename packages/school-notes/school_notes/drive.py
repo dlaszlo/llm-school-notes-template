@@ -25,6 +25,12 @@ FIELDS = "id,name,mimeType,parents,size,md5Checksum,version,modifiedTime,descrip
 MAX_BYTES = 128 * 1024 * 1024
 
 
+def effect_property(key):
+    """Drive limits each app-property key plus value to 124 UTF-8 bytes."""
+    encoded = key.encode('utf-8')
+    return key if len(b'school_notes_effect') + len(encoded) <= 124 else hashlib.sha256(encoded).hexdigest()
+
+
 class InventoryChanged(Blocked):
     pass
 
@@ -154,7 +160,7 @@ class DriveAPI:
         return checksum.hexdigest(), size
 
     def create_folder(self, file_id, name, parent, key):
-        payload = {"id": file_id, "name": name, "mimeType": FOLDER, "parents": [parent], "appProperties": {"school_notes_effect": key}}
+        payload = {"id": file_id, "name": name, "mimeType": FOLDER, "parents": [parent], "appProperties": {"school_notes_effect": effect_property(key)}}
         return self.request("POST", API + "/files?fields=" + urllib.parse.quote(FIELDS), payload)[2]
 
     def upload(self, file_id, path, mime, parent, key, sha, *, progress=None, checkpoint=None, name=None):
@@ -163,7 +169,7 @@ class DriveAPI:
         total = path.stat().st_size
         if not 0 < total <= MAX_BYTES or file_hash(path) != sha:
             raise Blocked("upload input size/hash differs from frozen artifact")
-        meta = {"id": file_id, "name": name or path.name, "parents": [parent], "appProperties": {"school_notes_effect": key, "sha256": sha}}
+        meta = {"id": file_id, "name": name or path.name, "parents": [parent], "appProperties": {"school_notes_effect": effect_property(key), "sha256": sha}}
         progress = dict(progress or {})
         location = progress.get("session")
         if location:
@@ -238,7 +244,7 @@ class DriveAPI:
                     return None
                 return {"absent": True}
             return None
-        expected = meta.get("parents") == [effect["target"]] and meta.get("appProperties", {}).get("school_notes_effect") == effect["stable_key"] and not meta.get("trashed")
+        expected = meta.get("id") == effect["external_id"] and meta.get("parents") == [effect["target"]] and meta.get("appProperties", {}).get("school_notes_effect") == effect_property(effect["stable_key"]) and not meta.get("trashed")
         if not expected:
             raise Blocked("Drive reconciliation target/ownership mismatch")
         if folder:
