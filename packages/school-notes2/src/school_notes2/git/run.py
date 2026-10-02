@@ -106,7 +106,7 @@ class Git:
                        target=" ".join(a for a in args[1:3]), duration_s=t.s, rc=proc.returncode,
                        stderr_head="\n".join(stderr.splitlines()[:20]) if proc.returncode else "")
         if check and proc.returncode != 0:
-            raise classify(args[0], stderr, proc.returncode)
+            raise classify(args[0], failure_text(proc), proc.returncode)
         return proc
 
     def out(self, *args: str, **kw) -> str:
@@ -114,6 +114,12 @@ class Git:
 
     def ok(self, *args: str, **kw) -> bool:
         return self.run(*args, check=False, **kw).returncode == 0
+
+
+def failure_text(proc: subprocess.CompletedProcess) -> str:
+    """stderr plus stdout: `push --porcelain` reports rejections on stdout."""
+    out = proc.stdout.decode("utf-8", "replace") if proc.stdout else ""
+    return proc.stderr.decode("utf-8", "replace") + "\n" + out[-4000:]
 
 
 class GitFailed(Exception):
