@@ -328,8 +328,9 @@ class Agent:
         role = "claude" if phase.split(":")[0] in ("review", "source_review", "external_review", "public_review") else "codex"
         settings = self._gate(role)
         timeout = int(settings.get("timeout", 600))
-        if not 1 <= timeout <= 1200:
-            raise Blocked("agent timeout must be finite and at most 20 minutes")
+        maximum = 1800 if self.owner_supervised and role == "codex" and settings["model"] == "gpt-6-astra" else 1200
+        if not 1 <= timeout <= maximum:
+            raise Blocked(f"agent timeout must be finite and at most {maximum // 60} minutes")
         self.window.require(timeout + 5)
         attempt_phase=envelope.get('attempt_phase',phase)
         if not isinstance(attempt_phase,str) or not re.fullmatch(r'[a-z_]+(?::[a-f0-9]{16})?',attempt_phase):

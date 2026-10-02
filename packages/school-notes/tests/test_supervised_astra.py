@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import Mock
 
 from school_notes.agents import Agent
 from school_notes.common import Blocked, private_dir
@@ -73,6 +74,28 @@ class SupervisedAstraTests(unittest.TestCase):
         self.config['claude']['model'] = 'gpt-6-astra'
         with self.assertRaisesRegex(Blocked, 'fixed model/effort'):
             self.agent().role_settings('claude')
+
+    def test_thirty_minutes_only_for_supervised_astra_author(self):
+        for model, phase, timeout, accepted in (
+            ('gpt-6-astra', 'candidate', 1800, True),
+            ('gpt-6-astra', 'candidate', 1801, False),
+            ('gpt-6-astra', 'candidate', 0, False),
+            ('gpt-6.1-sol', 'candidate', 1800, False),
+            ('claude-opus-5-5', 'source_review', 1800, False),
+        ):
+            with self.subTest(model=model, phase=phase, timeout=timeout):
+                agent = self.agent()
+                agent._gate = Mock(return_value={'model': model, 'timeout': timeout})
+                agent.window = Mock()
+                agent.window.require.side_effect = RuntimeError('window reached')
+                if accepted:
+                    with self.assertRaisesRegex(RuntimeError, 'window reached'):
+                        agent.call({}, phase, {}, self.repo, self.jobs, '')
+                    agent.window.require.assert_called_once_with(1805)
+                else:
+                    with self.assertRaisesRegex(Blocked, 'agent timeout'):
+                        agent.call({}, phase, {}, self.repo, self.jobs, '')
+                    agent.window.require.assert_not_called()
 
 
 if __name__ == '__main__':
