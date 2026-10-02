@@ -17,7 +17,7 @@ from ..schemas import validate
 from ..state import phase
 from ..state.errors import NeedsOwner, Transient
 from ..state.files import write_bytes, write_json, write_text
-from . import markers
+from ..wiki import markers
 
 DIFF_PATHS = ("wiki", "docs/review", "docs/evidence/pages")
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
@@ -74,7 +74,7 @@ def _text(data: bytes, path: str) -> list[str] | None:
     if PurePosixPath(path).suffix.lower() in IMAGE_EXT or b"\0" in data:
         return None
     text = data.decode("utf-8", "replace")
-    return (markers.blank(text) if path.endswith(".md") else text).splitlines(keepends=True)
+    return (markers.empty_all(text) if path.endswith(".md") else text).splitlines(keepends=True)
 
 
 def build_patch(repo: Git, a: str, b: str) -> str:

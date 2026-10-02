@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ..state.files import write_text
 from ..wiki import frontmatter as fm
-from . import markers
+from ..wiki import markers
 from .files import OPEN, OWNER, REVIEW_DIR, review_files
 
 BLOCK = "review-index"
@@ -42,9 +42,10 @@ def update(repo: Path) -> Path:
     path = repo / REVIEW_DIR / "index.md"
     old = path.read_text(encoding="utf-8") if path.exists() else ""
     content = render(repo)
-    new = markers.replace(old, BLOCK, content)
-    if new is None:
-        new = markers.block(BLOCK, content) + ("\n" + old if old else "")
+    if BLOCK in markers.names(old):
+        new = markers.replace(old, BLOCK, content)
+    else:
+        new = markers.wrap(BLOCK, content) + ("\n" + old if old else "")
     if new != old:
         write_text(path, new, 0o644)
     return path

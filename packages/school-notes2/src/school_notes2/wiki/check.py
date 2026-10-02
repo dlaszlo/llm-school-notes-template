@@ -16,13 +16,18 @@ SIZE_WARN = 40 * 1024
 TYPES_WITH_CHAPTER = ("topic", "chapter-summary")
 KNOWN_TYPES = ("topic", "chapter-summary", "lesson-notes", "review", "source-summary",
                "concept", "entity", "question")
-# Secrets and machine paths only (4.10): footnotes naming photos ship 1:1 now.
-SECRET_PATTERNS = (
-    r"/home/", r"file://", r"OPENROUTER_API_KEY", r"client_secret_", r"Claude-Session:",
-    r"\bsk-or-v1-[0-9a-f]{16,}", r"\bsk-ant-[A-Za-z0-9_-]{16,}", r"\bsk-[A-Za-z0-9]{32,}",
-    r"\bghp_[A-Za-z0-9]{30,}", r"\bgithub_pat_[A-Za-z0-9_]{20,}", r"\bAIza[0-9A-Za-z_-]{35}",
-    r"\bya29\.[0-9A-Za-z_-]{20,}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----", r"\b1//0[0-9A-Za-z_-]{20,}",
-)
+# The release's last gate (check-public.py) and this check share one pattern file, so the
+# check tells the writer everything the gate would stop (5.4/5). Secrets and machine paths
+# only (4.10): footnotes naming photos ship 1:1 now.
+PATTERNS_FILE = Path(__file__).resolve().parents[4] / "study-site" / "public-patterns.json"
+
+
+def load_patterns(path: Path = PATTERNS_FILE) -> tuple[str, ...]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return tuple(data["secrets"]) + tuple(data["machine_paths"])
+
+
+SECRET_PATTERNS = load_patterns()
 CONFLICT = re.compile(r"^(<<<<<<<|>>>>>>>)( |$)", re.M)
 TAG = re.compile(r"^(?=.*[a-z])[a-z0-9-]+(/[a-z0-9-]+)*$")
 FILE_NAME = re.compile(r"^[a-z0-9][a-z0-9-]*\.md$")
