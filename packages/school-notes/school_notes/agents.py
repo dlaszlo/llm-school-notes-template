@@ -138,11 +138,14 @@ class Agent:
     def role_settings(self, role):
         """Pure fixed role validation, shared by production and honest probes."""
         settings = self.config[role]
-        if settings.get("model") != MODELS[role] or settings.get("effort") != "high":
+        expected_model = MODELS[role]
+        if self.owner_supervised and role == "codex" and settings.get("model") == "gpt-6-astra":
+            expected_model = "gpt-6-astra"
+        if settings.get("model") != expected_model or settings.get("effort") != "high":
             raise Blocked("fixed model/effort contract violated")
         definition = Path(settings.get("definition", Path(__file__).resolve().parents[1] / "agents" / ("reviewer.md" if role == "claude" else "implementer.md")))
         body = definition.read_text()
-        if f"model: {MODELS[role]}\n" not in body or "effort: high\n" not in body or "delegation: forbidden\n" not in body:
+        if f"model: {expected_model}\n" not in body or "effort: high\n" not in body or "delegation: forbidden\n" not in body:
             raise Blocked("role definition does not fix the approved model/effort/delegation")
         settings = dict(settings)
         settings["definition"] = str(definition)
