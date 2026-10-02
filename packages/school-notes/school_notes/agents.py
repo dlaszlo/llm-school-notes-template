@@ -204,6 +204,32 @@ class Agent:
             for key, value in substitutions.items():
                 arg = arg.replace("{" + key + "}", value)
             argv.append(arg)
+        if self.owner_supervised and phase == 'classify':
+            # This generated private workspace has no Git metadata to protect.
+            # Retain every other deny/read/write entry and the configured template.
+            if execution_cwd.resolve() != execution_cwd:
+                raise Blocked('supervised classify workspace must be canonical')
+            git_path = execution_cwd / '.git'
+            try: git_path.lstat()
+            except FileNotFoundError: pass
+            else: raise Blocked('unexpected Git metadata in supervised classify workspace')
+            profiles = [i for i, value in enumerate(argv) if i and argv[i-1] == '-c'
+                        and value.startswith('permissions.school-notes=')]
+            if len(profiles) != 1:
+                raise Blocked('supervised classify requires one exact inline school-notes profile')
+            i = profiles[0]
+            try:
+                expected = tomllib.loads(argv[i])
+                filesystem = expected['permissions']['school-notes']['filesystem']
+                if filesystem.pop(str(git_path)) != 'deny': raise ValueError('unexpected Git permission')
+                entry = ',' + json.dumps(str(git_path)) + '="deny"'
+                if argv[i].count(entry) != 1: raise ValueError('unexpected inline Git deny shape')
+                before, _, after = argv[i].partition(entry)
+                amended = before + after
+                if tomllib.loads(amended) != expected: raise ValueError('other permission changed')
+            except (ValueError, KeyError, TypeError, AttributeError):
+                raise Blocked('cannot omit only the supervised classify Git deny entry') from None
+            argv[i] = amended
         environment = dict(settings.get("environment", {}))
         runtime = str(Path(self.config["python"]).parent.parent)
         environment.update(UV_PROJECT_ENVIRONMENT=runtime, UV_NO_SYNC="1", UV_OFFLINE="1")
