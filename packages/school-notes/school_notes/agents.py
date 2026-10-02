@@ -328,7 +328,7 @@ class Agent:
         role = "claude" if phase.split(":")[0] in ("review", "source_review", "external_review", "public_review") else "codex"
         settings = self._gate(role)
         timeout = int(settings.get("timeout", 600))
-        maximum = 1800 if self.owner_supervised and role == "codex" and settings["model"] == "gpt-6-astra" else 1200
+        maximum = 5400 if self.owner_supervised and role == "codex" and settings["model"] == "gpt-6-astra" else 1200
         if not 1 <= timeout <= maximum:
             raise Blocked(f"agent timeout must be finite and at most {maximum // 60} minutes")
         self.window.require(timeout + 5)

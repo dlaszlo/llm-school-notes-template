@@ -42,7 +42,7 @@ def load(path):
                 raise Blocked("input root requires known subject_slug and source_role context")
         if not re.fullmatch(r"[a-f0-9]{40}", learner.get("observed_sha", "")):
             raise Blocked("learner requires verified initial observed_sha")
-    if not 1 <= value.get("run_seconds", 3000) <= 3000 or value.get("reserve_bytes", 4 * 1024**3) < 0:
+    if not 1 <= value.get("run_seconds", 3000) <= 7200 or value.get("reserve_bytes", 4 * 1024**3) < 0:
         raise Blocked("invalid run window/disk reserve")
     prefix=value.get("interactive_command")
     if prefix is not None and (not isinstance(prefix,list) or not prefix or not all(isinstance(x,str) and "\0" not in x for x in prefix) or not Path(prefix[0]).is_absolute()):

@@ -75,13 +75,13 @@ class SupervisedAstraTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked, 'fixed model/effort'):
             self.agent().role_settings('claude')
 
-    def test_thirty_minutes_only_for_supervised_astra_author(self):
+    def test_ninety_minutes_only_for_supervised_astra_author(self):
         for model, phase, timeout, accepted in (
-            ('gpt-6-astra', 'candidate', 1800, True),
-            ('gpt-6-astra', 'candidate', 1801, False),
+            ('gpt-6-astra', 'candidate', 5400, True),
+            ('gpt-6-astra', 'candidate', 5401, False),
             ('gpt-6-astra', 'candidate', 0, False),
-            ('gpt-6.1-sol', 'candidate', 1800, False),
-            ('claude-opus-5-5', 'source_review', 1800, False),
+            ('gpt-6.1-sol', 'candidate', 5400, False),
+            ('claude-opus-5-5', 'source_review', 5400, False),
         ):
             with self.subTest(model=model, phase=phase, timeout=timeout):
                 agent = self.agent()
@@ -91,11 +91,25 @@ class SupervisedAstraTests(unittest.TestCase):
                 if accepted:
                     with self.assertRaisesRegex(RuntimeError, 'window reached'):
                         agent.call({}, phase, {}, self.repo, self.jobs, '')
-                    agent.window.require.assert_called_once_with(1805)
+                    agent.window.require.assert_called_once_with(5405)
                 else:
                     with self.assertRaisesRegex(Blocked, 'agent timeout'):
                         agent.call({}, phase, {}, self.repo, self.jobs, '')
                     agent.window.require.assert_not_called()
+
+    def test_config_accepts_finite_window_for_ninety_minute_author(self):
+        from school_notes.config import load
+        package = Path(__file__).resolve().parents[1]
+        config = json.loads((package / 'config.example.json').read_text())
+        path = Path(self.temp.name) / 'config.json'
+        for seconds in (3000, 7200, 7201, 0):
+            config['run_seconds'] = seconds
+            path.write_text(json.dumps(config))
+            if seconds in (3000, 7200):
+                self.assertEqual(load(path)['run_seconds'], seconds)
+            else:
+                with self.assertRaisesRegex(Blocked, 'run window'):
+                    load(path)
 
 
 if __name__ == '__main__':
