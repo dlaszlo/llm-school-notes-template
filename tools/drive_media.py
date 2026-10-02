@@ -70,26 +70,31 @@ def allowed_url(url):
 
 
 class Drive:
-    def __init__(self, home):
+    # `scope` is fixed per caller: this CLI only ever uses drive.file; the v2 tool passes the
+    # full drive scope it needs for listing, downloading and moving (plan 4.1).
+    def __init__(self, home, scope=SCOPE, token_name='token.json', timeout=90):
         self.home = home
+        self.scope = scope
+        self.token_name = token_name
+        self.timeout = timeout
         self.opener = urllib.request.build_opener(NoRedirect)
-        saved = private_json(home / 'token.json')
-        if saved.get('scopes') != [SCOPE]:
-            raise Refused('Only drive.file credentials are accepted.')
+        saved = private_json(home / token_name)
+        if saved.get('scopes') != [scope]:
+            raise Refused('Only ' + scope.rsplit('/', 1)[-1] + ' credentials are accepted.')
         form = urllib.parse.urlencode(dict(client_id=saved['client_id'], client_secret=saved['client_secret'], refresh_token=saved['refresh_token'], grant_type='refresh_token')).encode()
         req = urllib.request.Request('https://oauth2.googleapis.com/token', data=form)
         try:
-            with self.opener.open(req, timeout=60) as response:
+            with self.opener.open(req, timeout=min(60, self.timeout)) as response:
                 result = json.load(response)
         except urllib.error.HTTPError as exc:
             raise ApiError(exc.code) from None
         except (urllib.error.URLError, TimeoutError):
             raise Refused('Token refresh connection failed.') from None
-        if result.get('scope', SCOPE).split() != [SCOPE]:
+        if result.get('scope', scope).split() != [scope]:
             raise Refused('Unexpected refreshed scope.')
         self.token = result['access_token']
         saved.update(token=self.token, refresh_token=result.get('refresh_token', saved['refresh_token']), expiry=(dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=result['expires_in'])).strftime('%Y-%m-%dT%H:%M:%SZ'))
-        atomic_json(home / 'token.json', saved)
+        atomic_json(home / token_name, saved)
 
     def request(self, method, url, payload=None, headers=None):
         allowed_url(url)
@@ -100,7 +105,7 @@ class Drive:
             h['Content-Type'] = 'application/json; charset=UTF-8'
         req = urllib.request.Request(url, data=payload, headers=h, method=method)
         try:
-            response = self.opener.open(req, timeout=90)
+            response = self.opener.open(req, timeout=self.timeout)
         except urllib.error.HTTPError as exc:
             if exc.code != 308:
                 raise ApiError(exc.code) from None
@@ -119,7 +124,7 @@ class Drive:
         req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + self.token})
         digest, size = hashlib.sha256(), 0
         try:
-            with self.opener.open(req, timeout=90) as response:
+            with self.opener.open(req, timeout=self.timeout) as response:
                 while block := response.read(CHUNK):
                     size += len(block)
                     if size > MAX_BYTES:
