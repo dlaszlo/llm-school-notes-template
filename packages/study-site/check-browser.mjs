@@ -2,9 +2,12 @@
 // Integration checks against a built site; no source modification or installation.
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright';
-const [address, payloadPath, executablePath, reportPath, searchQuery] = process.argv.slice(2);
-if (!reportPath) throw new Error('check-browser.mjs ORIGIN PAYLOAD CHROMIUM REPORT.json');
+const [address, payloadPath, executablePath, reportPath, searchQuery, onlyPath] = process.argv.slice(2);
+if (!reportPath) throw new Error('check-browser.mjs ORIGIN PAYLOAD CHROMIUM REPORT.json [QUERY] [ONLY.json]');
 const payload = JSON.parse(await fs.readFile(payloadPath, 'utf8'));
+// ONLY.json lists wiki paths (changed pages and their indexes); the others are not revisited.
+const only = onlyPath ? new Set(JSON.parse(await fs.readFile(onlyPath, 'utf8'))) : null;
+const checked = only ? payload.pages.filter(p => only.has(p.path)) : payload.pages;
 const browser = await chromium.launch({ executablePath });
 const report = { pages: [], errors: [], search: null };
 const localLinks = new Set();
@@ -14,7 +17,7 @@ try {
     for (const width of [1440, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.emulateMedia({ colorScheme: theme });
-      for (const entry of payload.pages) {
+      for (const entry of checked) {
         const response = await page.goto(new URL(entry.url, address).href);
         await page.locator('.study-content').waitFor();
         const result = await page.evaluate(async () => {
@@ -33,12 +36,12 @@ try {
             disclosureCount: document.querySelectorAll('.study-content details').length,
             labelCount: document.querySelectorAll('.study-label').length };
         });
-        report.pages.push({ url: entry.url, theme, width, ...result });
+        report.pages.push({ url: entry.url, path: entry.path, theme, width, ...result });
         if (theme === 'light' && width === 1440) {
           const links = await page.locator('a[href]').evaluateAll(a => a.map(e => e.href));
           for (const link of links) if (link.startsWith(address + '/')) localLinks.add(link);
         }
-        if (response.status() !== 200 || result.h1 !== 1 || result.brokenImages.length || result.missingAnchors.length || result.duplicates.length || result.overflow || !result.inlineSvgDisplay) report.errors.push({ url: entry.url, theme, width, ...result });
+        if (response.status() !== 200 || result.h1 !== 1 || result.brokenImages.length || result.missingAnchors.length || result.duplicates.length || result.overflow || !result.inlineSvgDisplay) report.errors.push({ url: entry.url, path: entry.path, theme, width, ...result });
       }
     }
   }
@@ -58,6 +61,7 @@ try {
     }
   }
   report.checkedLinks = localLinks.size;
+  report.checkedPages = checked.map(p => p.path);
   await page.goto(new URL(payload.pages[0].url, address).href);
   report.search = await page.evaluate(async ({ base, query }) => {
     const index = await import(base + 'pagefind/pagefind.js');

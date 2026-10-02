@@ -1,0 +1,286 @@
+"""Public site build from a commit (plan 5.10, G5): render, browser check, check-public.
+
+The build reads the commit's own tree (`git archive`), never the worktree, and leaves out
+`sources/` and `references/`. The output in `<task>/build/` is exactly what the publish step
+later copies to gh-pages.
+"""
+
+import io
+import json
+import os
+import shutil
+import subprocess
+import tarfile
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+
+from ..git.run import Git
+from ..log import Log, Timer
+from ..state.errors import BadWork, Transient
+from ..state.files import read_json, write_json
+
+PRIVATE_TOP = ("sources", "references")
+CONFIG = "publication/public.json"
+PAGE_ERROR = "study-site-page-error "
+RENDER_EXIT_PAGE = 3
+
+
+@dataclass(frozen=True)
+class Renderer:
+    """Where the study-site lives and what it needs on this machine."""
+
+    study_site: Path          # packages/study-site of the installed release
+    browser: Path             # Chromium executable for Mermaid, PDFs and the browser check
+    pdf_cache: Path           # state/pdf-cache/<learner>/ (private, outside every repo)
+    node: str = "node"
+    python: str = "python3"
+    build_s: int = 1800
+    browser_check_s: int = 900
+    check_public_s: int = 300
+
+
+@dataclass(frozen=True)
+class BuildRecord:
+    commit: str
+    output: Path              # <task>/build; the site itself is output/"site"
+    duration_s: float
+    pages: int
+
+
+class BuildContentError(BadWork):
+    """The renderer, browser check or check-public found a problem the writer must fix.
+
+    `problems` has the check.json shape: [{file, line, message}].
+    """
+
+    def __init__(self, problems: list[dict]):
+        super().__init__(f"public build: {len(problems)} content problem(s)",
+                         details={"problems": problems})
+        self.problems = problems
+
+
+def existing(task_dir: Path, commit: str) -> BuildRecord | None:
+    """The finished build of `commit` in this task, if any (G5 runs once per commit)."""
+    record = read_json(task_dir / "build" / "build.json")
+    if not record or record.get("commit") != commit:
+        return None
+    return BuildRecord(commit, task_dir / "build", record["duration_s"], record["pages"])
+
+
+def build(git: Git, commit: str, task_dir: Path, renderer: Renderer, *, changed: list[str] | None,
+          log: Log) -> BuildRecord:
+    """Build and check the public site of `commit` into `<task>/build`.
+
+    `changed` lists the wiki paths changed since the last publish; the browser check visits
+    those pages and their indexes. None means "check every page" (first publish).
+    """
+    found = existing(task_dir, commit)
+    if found:
+        return found
+    out = task_dir / "build"
+    src = task_dir / "build-src"
+    for stale in (out, src):
+        shutil.rmtree(stale, ignore_errors=True)
+    with Timer() as t:
+        extract(git, commit, src)
+        dates = last_updated(git, commit)
+        write_json(task_dir / "last-updated.json", dates)
+        _render(renderer, src, out, task_dir / "last-updated.json")
+        payload = read_json(out / "payload.json")
+        only = None if changed is None else pages_to_check(changed, [p["path"] for p in payload["pages"]])
+        _browser_check(renderer, out, payload, only)
+        _check_public(renderer, out, payload)
+    shutil.rmtree(src, ignore_errors=True)
+    record = {"commit": commit, "duration_s": round(t.s, 1), "pages": len(payload["pages"])}
+    write_json(out / "build.json", record)  # written last: marks the build complete
+    log.event("site.build", target=commit[:12], duration_s=t.s, pages=len(payload["pages"]),
+              checked=len(only) if only is not None else len(payload["pages"]))
+    return BuildRecord(commit, out, t.s, len(payload["pages"]))
+
+
+def extract(git: Git, commit: str, dest: Path) -> int:
+    """Unpack the commit's tree without sources/ and references/; only regular files."""
+    pathspec = ["--", "."] + [f":(exclude){top}" for top in PRIVATE_TOP]
+    data = git.run("archive", "--format=tar", commit, *pathspec, timeout=300).stdout
+    count = 0
+    dest.mkdir(parents=True)
+    with tarfile.open(fileobj=io.BytesIO(data)) as tar:
+        for member in tar:
+            parts = Path(member.name).parts
+            if not parts or parts[0] in PRIVATE_TOP or not member.isfile():
+                continue
+            if member.name.startswith("/") or ".." in parts:
+                raise Transient(f"unsafe path in archive: {member.name}")
+            target = dest / member.name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(tar.extractfile(member).read())
+            count += 1
+    return count
+
+
+def last_updated(git: Git, commit: str) -> dict[str, str]:
+    """Per wiki Markdown file: the date of its last commit; the home page gets the latest."""
+    out = git.out("log", "--format=@%cI", "--name-only", "--no-renames", commit, "--", "wiki",
+                  timeout=300)
+    dates: dict[str, str] = {}
+    current = ""
+    for line in out.splitlines():
+        if line.startswith("@"):
+            current = line[1:]
+        elif line.endswith(".md") and line not in dates:
+            dates[line] = current
+    if dates:
+        dates["wiki/index.md"] = max(dates.values(), key=lambda d: datetime.fromisoformat(d))
+    return dates
+
+
+def pages_to_check(changed: list[str], pages: list[str]) -> list[str]:
+    """Changed pages plus their subject index and the home page, limited to built pages."""
+    wanted = set()
+    for path in changed:
+        if not (path.startswith("wiki/") and path.endswith(".md")):
+            continue
+        wanted.add(path)
+        parts = path.split("/")
+        if len(parts) >= 3:
+            wanted.add(f"wiki/{parts[1]}/index.md")
+        wanted.add("wiki/index.md")
+    return [p for p in pages if p in wanted]
+
+
+def _run(argv: list[str], *, cwd: Path, timeout: int, log_file: Path, what: str
+         ) -> subprocess.CompletedProcess:
+    """Run a renderer step; its full output goes to a file in the task, never the main log."""
+    try:
+        proc = subprocess.run(argv, cwd=cwd, capture_output=True, timeout=timeout,
+                              env=_env(), text=True)
+    except subprocess.TimeoutExpired:
+        raise Transient(f"{what} timed out after {timeout}s") from None
+    with open(log_file, "a", encoding="utf-8") as stream:
+        stream.write(f"$ {' '.join(argv[:3])} …\n{proc.stdout}\n{proc.stderr}\n")
+    return proc
+
+
+def _env() -> dict:
+    keep = ("PATH", "HOME", "LANG", "FONTCONFIG_FILE", "XDG_CACHE_HOME")
+    env = {k: os.environ[k] for k in keep if k in os.environ}
+    env["ASTRO_TELEMETRY_DISABLED"] = "1"
+    return env
+
+
+def _render(r: Renderer, src: Path, out: Path, dates: Path) -> None:
+    argv = [r.node, str(r.study_site / "cli.mjs"), "build", "--repo", str(src),
+            "--config", str(src / CONFIG), "--output", str(out), "--browser", str(r.browser),
+            "--pdf-cache", str(r.pdf_cache), "--last-updated", str(dates)]
+    proc = _run(argv, cwd=r.study_site, timeout=r.build_s, log_file=out.parent / "render.log",
+                what="site render")
+    if proc.returncode == RENDER_EXIT_PAGE:
+        problems = [_page_problem(line) for line in proc.stderr.splitlines()
+                    if line.startswith(PAGE_ERROR)]
+        raise BuildContentError(problems or [{"file": CONFIG, "line": None,
+                                              "message": "rendering failed on a page"}])
+    if proc.returncode != 0:
+        raise Transient(f"site render failed (rc={proc.returncode}); see render.log")
+
+
+def _page_problem(line: str) -> dict:
+    data = json.loads(line[len(PAGE_ERROR):])
+    return {"file": data["file"], "line": None, "message": "public build: " + data["message"]}
+
+
+def _browser_check(r: Renderer, out: Path, payload: dict, only: list[str] | None) -> None:
+    if only == []:
+        return
+    report = out / "browser-report.json"
+    argv = [r.node, str(r.study_site / "check-browser.mjs"), "", str(out / "payload.json"),
+            str(r.browser), str(report), ""]
+    if only is not None:
+        write_json(out / "browser-only.json", only)
+        argv.append(str(out / "browser-only.json"))
+    with _serve(r, out, payload["base"]) as origin:
+        argv[2] = origin
+        proc = _run(argv, cwd=r.study_site, timeout=r.browser_check_s,
+                    log_file=out.parent / "render.log", what="browser check")
+    data = read_json(report)
+    if proc.returncode != 0 and not (data and data.get("errors")):
+        raise Transient(f"browser check failed (rc={proc.returncode}); see render.log")
+    problems = _browser_problems(data["errors"]) if data else []
+    if problems:
+        raise BuildContentError(problems)
+
+
+def _browser_problems(errors: list[dict]) -> list[dict]:
+    """One problem per page; errors without a page (search, print) name the config file."""
+    seen: dict[str, dict] = {}
+    for err in errors:
+        file = err.get("path") or CONFIG
+        if file in seen:
+            continue
+        kinds = [k for k in ("brokenImages", "missingAnchors", "duplicates") if err.get(k)]
+        if err.get("overflow"):
+            kinds.append(f"overflow at {err.get('width')}px")
+        if err.get("h1", 1) != 1:
+            kinds.append("not exactly one H1")
+        what = ", ".join(kinds) or err.get("error") or "browser check failed"
+        seen[file] = {"file": file, "line": None, "message": f"public build: {what}"}
+    return list(seen.values())
+
+
+def _check_public(r: Renderer, out: Path, payload: dict) -> None:
+    argv = [r.python, str(r.study_site / "check-public.py"), str(out)]
+    proc = _run(argv, cwd=r.study_site, timeout=r.check_public_s,
+                log_file=out.parent / "render.log", what="check-public")
+    data = read_json(out / "privacy-report.json")
+    if proc.returncode == 0:
+        return
+    if not data or not data.get("errors"):
+        raise Transient(f"check-public failed (rc={proc.returncode}); see render.log")
+    routes = {p["url"]: p["path"] for p in payload["pages"]}
+    problems = []
+    for err in data["errors"]:
+        file = _page_of(err["file"], payload["base"], routes) or f"(public output) {err['file']}"
+        problems.append({"file": file, "line": None,
+                         "message": f"public output matches forbidden pattern {err['pattern']!r}"})
+    raise BuildContentError(problems)
+
+
+def _page_of(site_file: str, base: str, routes: dict[str, str]) -> str | None:
+    if not site_file.endswith("index.html"):
+        return None
+    url = base + site_file[: -len("index.html")]
+    return routes.get(url)
+
+
+class _serve:
+    """`node cli.mjs serve` on a free localhost port for the browser check."""
+
+    def __init__(self, r: Renderer, out: Path, base: str):
+        self.argv = [r.node, str(r.study_site / "cli.mjs"), "serve", "--directory",
+                     str(out / "site"), "--base", base, "--port", "0"]
+        self.cwd = r.study_site
+        self.base = base
+
+    def __enter__(self) -> str:
+        self.proc = subprocess.Popen(self.argv, cwd=self.cwd, stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL, text=True, env=_env())
+        deadline = time.monotonic() + 30
+        line = ""
+        while time.monotonic() < deadline and "http://" not in line:
+            line = self.proc.stdout.readline()
+            if not line and self.proc.poll() is not None:
+                break
+        if "http://" not in line:
+            self.proc.kill()
+            raise Transient("local preview server did not start")
+        # The server prints "Local preview: <origin><base>".
+        return line.split("Local preview: ", 1)[1].strip().removesuffix(self.base)
+
+    def __exit__(self, *exc):
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+        return False

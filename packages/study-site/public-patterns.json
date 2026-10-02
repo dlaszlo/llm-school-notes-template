@@ -1,0 +1,28 @@
+{
+  "comment": "Patterns that must never appear in the public site (plan 4.10, 5.4/5). Python `re` syntax, matched case-insensitively. `secrets` and `machine_paths` also apply to every wiki Markdown file (the tool's check reads this file); `output_only` applies only to rendered output, because the Markdown legitimately holds these in HTML comments that the renderer drops.",
+  "secrets": [
+    "OPENROUTER_API_KEY",
+    "\\bsk-or-v1-[0-9a-f]{20,}",
+    "\\bsk-ant-[A-Za-z0-9_-]{20,}",
+    "\\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}",
+    "client_secret",
+    "refresh_token",
+    "\\bgh[pousr]_[A-Za-z0-9]{36,}",
+    "github_pat_[A-Za-z0-9_]{40,}",
+    "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+    "\\bya29\\.[A-Za-z0-9_-]{20,}",
+    "\\bAIza[0-9A-Za-z_-]{35}",
+    "Claude-Session:"
+  ],
+  "machine_paths": [
+    "/home/",
+    "/srv/",
+    "/root/",
+    "file://",
+    "\\.school-notes/",
+    "/run/sn/"
+  ],
+  "output_only": [
+    "image-description"
+  ]
+}

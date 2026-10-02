@@ -47,7 +47,7 @@ test('source hashes, asset allowlists and unreviewed publication fail closed', a
   const config = await settings();
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-boundary-'));
   try {
-    await assert.rejects(exportSite({ repo: fixture, config: { ...config, mode: 'public', publicationApproved: true }, output: path.join(tmp, 'public') }), /origin and private review|not reviewed/);
+    await assert.rejects(exportSite({ repo: fixture, config: { ...config, mode: 'public' }, output: path.join(tmp, 'public') }), /Public site origin required/);
     await assert.rejects(exportSite({ repo: fixture, config: { ...config, assets: [] }, output: path.join(tmp, 'missing') }), /Unapproved image/);
     await assert.rejects(exportSite({ repo: fixture, config: { ...config, pages: [{ ...config.pages[0], sha256: '0'.repeat(64) }] }, output: path.join(tmp, 'changed') }), /Changed input/);
     await assert.rejects(exportSite({ repo: fixture, config, output: fixture }), /outside/);
@@ -182,28 +182,31 @@ test('content license is opt-in and changes invalidate PDF keys', async () => {
   } finally { await fs.rm(tmp,{recursive:true,force:true}); }
 });
 
-test('public export needs reviewed hashes and rights and filters before HTML and PDF', async () => {
+test('public export is the wiki 1:1: every page type and section, minus private files', async () => {
   const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'study-public-'));
   try {
     const repo=path.join(tmp,'repo');await fs.cp(fixture,repo,{recursive:true});
     const page='wiki/tema.md';
-    await fs.writeFile(path.join(repo,page),'---\ntype: topic\ntitle: Tananyag\nprivate: PRIVATE_METADATA\n---\n# Tananyag\n\nMegmarad.[^b]\n\n<sub>🗓️ Óra: PRIVATE_DATE · 🔖 Tankönyv: 12. oldal</sub>\n\n[Forrás](../sources/private.jpg)\n\n# Belső\n\nPRIVATE_SECTION\n\n[^b]: Megmaradó bibliográfia.\n\n<!-- PRIVATE_COMMENT -->\n');
-    const config=await settings();Object.assign(config,{mode:'public',publicationApproved:true,site:'https://example.org',reviewRecord:'review.md',citationOnlyLinks:['sources/private.jpg']});
-    config.pages=config.pages.map(p=>({...p,publicationReviewed:true}));
-    config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));config.pages[1].omitSections=['Belső'];
-    config.assets=config.assets.map(a=>({...a,publicationReviewed:true,rights:'authored',rightsEvidence:'review.md'}));
-    config.collections[0].pdf=true;
-    const run=(name,c=config)=>exportSite({repo,config:c,output:path.join(tmp,name),printEngine:'test'});
-    const {payload}=await run('good');
-    const visible=JSON.stringify([...payload.pages,...payload.collections.map(c=>c.chapters)]);
-    assert.doesNotMatch(visible,/PRIVATE_|sources\/private/);
-    assert.match(visible,/Megmaradó bibliográfia/);assert.match(visible,/Tankönyv: 12/);assert.match(visible,/nem nyilvános forrás/);
-    await assert.rejects(run('rights',{...config,assets:[{...config.assets[0],rights:undefined}]}),/rights evidence/);
-    await assert.rejects(run('approval',{...config,publicationApproved:false}),/explicit reviewed/);
-    await assert.rejects(run('page',{...config,pages:[{...config.pages[0],publicationReviewed:false}]}),/not reviewed/);
-    await fs.writeFile(path.join(repo,page),'---\ntype: lesson-notes\n---\nSecret notebook.');
+    await fs.writeFile(path.join(repo,page),'---\ntype: lesson-notes\ntitle: Órai jegyzet\nprivate: PRIVATE_METADATA\n---\n# Órai jegyzet\n\nMegmarad.[^b]\n\n<sub>🗓️ Óra: 2026-09-25 · 🔖 Tankönyv: 12. oldal</sub>\n\n[Fotó](../sources/fuzet/p0001.jpg) és [könyv](../references/konyv/document.md)\n\n# Nyitott kérdések\n\nEgy bizonytalan szó.\n\n[^b]: Füzet, 01.jpg.\n\n<!-- PRIVATE_COMMENT -->\n');
+    const config=await settings();Object.assign(config,{mode:'public',site:'https://example.org',citationOnlyLinks:['sources/fuzet/p0001.jpg','references/konyv/document.md']});
     config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));
-    await assert.rejects(run('source'),/Private or unrecognized/);
+    config.assets=config.assets.map(a=>({...a,rights:'authored'}));
+    config.collections[0].pdf=true;
+    const run=(name,c=config,extra={})=>exportSite({repo,config:c,output:path.join(tmp,name),printEngine:'test',...extra});
+    const {payload}=await run('good',config,{lastUpdated:{[page]:'2026-10-03T10:00:00+02:00'}});
+    const visible=JSON.stringify([...payload.pages,...payload.collections.map(c=>c.chapters)]);
+    assert.doesNotMatch(visible,/PRIVATE_|sources\/fuzet|references\/konyv/);
+    for (const kept of [/Nyitott kérdések/,/Egy bizonytalan szó/,/Óra: 2026-09-25/,/Tankönyv: 12/,/Füzet, 01\.jpg/]) assert.match(visible,kept);
+    assert.equal((payload.pages[1].html.match(/nem nyilvános forrás/g)||[]).length,2);
+    assert.equal(payload.pages[1].lastUpdated,'2026-10-03T10:00:00+02:00');assert.equal(payload.pages[1].path,page);
+    assert.equal(payload.pages[0].lastUpdated,undefined);
+    await assert.rejects(run('rights',{...config,assets:[{...config.assets[0],rights:undefined}]}),/rights class/);
+    await assert.rejects(run('omit',{...config,pages:[config.pages[0],{...config.pages[1],omitSections:['Nyitott kérdések']}]}),/omitSections is no longer supported/);
+    await assert.rejects(run('edit',{...config,pages:[config.pages[0],{...config.pages[1],publicEdits:[{before:'a',after:'b',reason:'c'}]}]}),/publicEdits is no longer supported/);
+    await assert.rejects(run('date',config,{lastUpdated:{[page]:'not a date'}}),/Invalid last-updated/);
+    await fs.appendFile(path.join(repo,page),'\n[Bizonyíték](../docs/evidence/x.md)\n');
+    config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));
+    await assert.rejects(run('unknown'),error=>error.page===page && /Unapproved link/.test(error.message));
   } finally {await fs.rm(tmp,{recursive:true,force:true});}
 });
 
@@ -214,4 +217,14 @@ test('a title following its opening banner is deduplicated, later section titles
   assert.equal((r.html.match(/<h2/g) || []).length, 1);
   assert.match(r.html, /class="heading-alias"/);
   assert.match(r.html, /Introduction/);
+});
+
+test('rendering is deterministic when assets resolve in a different order', async () => {
+  const source = '# Kép\n\n![A](a.svg)\n\n![B](b.svg)\n\n![C](c.svg)\n';
+  const delayed = order => async (url) => { await new Promise(r => setTimeout(r, order[url] || 0)); return '/m/' + url; };
+  const first = await renderMarkdown(source, { resolveUrl: delayed({ 'a.svg': 30, 'b.svg': 0, 'c.svg': 10 }) });
+  const second = await renderMarkdown(source, { resolveUrl: delayed({ 'a.svg': 0, 'b.svg': 30, 'c.svg': 20 }) });
+  assert.equal(first.html, second.html);
+  assert.match(first.html, /src="\/m\/a\.svg"[^>]*loading="eager"/);
+  assert.deepEqual(first.audit.images, ['/m/a.svg', '/m/b.svg', '/m/c.svg']);
 });
