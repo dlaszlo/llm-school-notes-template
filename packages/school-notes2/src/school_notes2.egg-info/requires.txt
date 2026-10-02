@@ -1,0 +1,4 @@
+jsonschema<5,>=4.23
+pillow<13,>=11
+pillow-heif<2,>=0.21
+pyyaml<7,>=6

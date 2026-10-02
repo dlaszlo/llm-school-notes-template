@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": ".school-notes/check.json: problems the writer must fix (plan 5.4/5)",
+  "type": "array",
+  "items": {"type": "object", "additionalProperties": false, "required": ["file", "line", "message"],
+            "properties": {"file": {"type": "string"}, "line": {"type": ["integer", "null"]},
+                           "message": {"type": "string"},
+                           "severity": {"enum": ["error", "warning"]}}}
+}

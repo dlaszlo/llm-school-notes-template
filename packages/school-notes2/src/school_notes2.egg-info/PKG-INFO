@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: school-notes2
+Version: 2.0.0.dev0
+Summary: School Notes v2: hourly notebook ingest, nightly review and public site for the learner wikis
+Requires-Python: >=3.12
+Requires-Dist: jsonschema<5,>=4.23
+Requires-Dist: pillow<13,>=11
+Requires-Dist: pillow-heif<2,>=0.21
+Requires-Dist: pyyaml<7,>=6

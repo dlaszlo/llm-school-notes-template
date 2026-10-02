@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "review.json, the reviewer's output (plan 4.7)",
+  "type": "object",
+  "required": ["verdict", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "verdict": {"enum": ["ok", "changes"]},
+    "findings": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+      "required": ["id", "file", "problem"],
+      "properties": {"id": {"type": "string", "pattern": "^R[0-9]+$"}, "file": {"type": "string"},
+                     "line": {"type": ["integer", "null"]}, "problem": {"type": "string", "minLength": 1},
+                     "suggestion": {"type": "string"}}}},
+    "figures": {"type": "array", "items": {"type": "object", "additionalProperties": false,
+      "required": ["file", "page", "verdict", "observed"],
+      "properties": {"file": {"type": "string"}, "page": {"type": "string"},
+                     "verdict": {"type": "string"}, "checks": {"type": "object"},
+                     "observed": {"type": "string"}, "description": {"type": "string"}}}},
+    "family_questions": {"type": "array", "items": {"type": "string"}}
+  }
+}
