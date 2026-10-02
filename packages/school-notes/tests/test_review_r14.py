@@ -124,12 +124,13 @@ class R14Tests(f.Base):
                 if process.poll() is None:process.kill();process.wait()
 
     def test_N1409_outer_deep_result_blocks_attempt_and_other_job_proceeds(self):
-        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass']);seen=[]
+        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}']);seen=[]
         class Deep(f.FakeAgents):
             def call(inner,job,phase,envelope,cwd,directory,instructions):
                 if phase!='candidate':return super().call(job,phase,envelope,cwd,directory,instructions)
                 def provider(argv,*args,**kwargs):
-                    attempt=Path(kwargs['log']).parent;path=attempt/'result.json';path.write_text('{"uncertainties":'+('['*200000)+'0'+(']'*200000)+'}');(attempt/'events.log').write_text('{"type":"turn.completed"}\n');seen.append(path)
+                    Path(str(kwargs['log'])+'.stderr').write_text('')
+                    attempt=Path(argv[-1]).parent;path=attempt/'result.json';path.write_text('{"uncertainties":'+('['*200000)+'0'+(']'*200000)+'}');Path(kwargs['log']).write_text('{"type":"turn.completed"}\n');seen.append(path)
                 with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):return agent.call(job,phase,envelope,cwd,directory,instructions)
         supervisor.agents=Deep(self.state,supervisor.lock)
         supervisor.observe_drive('student')
@@ -163,14 +164,16 @@ class PublicR14Tests(f.Base):
 class TransportR14Tests(f.Base):
     def test_N1409_deep_codex_event_and_claude_wrapper_are_failed_bounded_attempts(self):
         with RunLock(self.root/'run.lock') as lock:
+            worker=self.root/'transport-worker';worker.mkdir(mode=0o700)
             config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,lock,Window());proof=self.root/'synthetic-proof.json';atomic_json(proof,{'synthetic_only':True})
             for role,phase in (('codex','candidate'),('claude','review')):
                 with self.subTest(role=role):
-                    job_id=self.state.enqueue('controlled','student','deep-'+role,{});job=self.state.job(job_id);envelope={'job_id':job_id,'revision_seq':None,'inputs':[]};settings=agent.role_settings(role);settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass']);paths=[]
+                    job_id=self.state.enqueue('controlled','student','deep-'+role,{});job=self.state.job(job_id);envelope={'job_id':job_id,'revision_seq':None,'inputs':[]};settings=agent.role_settings(role);settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}']);paths=[]
                     def provider(argv,*args,**kwargs):
+                        Path(str(kwargs['log'])+'.stderr').write_text('')
                         path=Path(kwargs['log']);path.write_text('{"uncertainties":'+('['*200000)+'0'+(']'*200000)+'}');paths.append(path)
                     with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):
-                        with self.assertRaisesRegex(Blocked,'nesting'):agent.call(job,phase,envelope,self.root,self.root/'jobs','synthetic outer transport')
+                        with self.assertRaisesRegex(Blocked,'nesting'):agent.call(job,phase,envelope,worker,self.root/'jobs','synthetic outer transport')
                     self.assertTrue(paths[0].is_file());self.assertEqual('failed',self.state.rows('SELECT state FROM attempts WHERE job_id=?',(job_id,))[0]['state']);self.assertNotIn('invalid_manifest_attempt',self.state.job(job_id)['payload'])
 
     def test_N1408_parent_timeout_signals_guardian_and_waits_cleanup_reserve(self):

@@ -30,20 +30,22 @@ class R16Tests(f.Base):
         for phase,role in [('classify','codex'),('review:0','claude')]:
             for number,value in enumerate([[],None,1,'text']):
                 with self.subTest(phase=phase,value=value):
-                    settings=agent.role_settings(role);settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass']);directory=self.root/('call-'+role+'-'+str(number));envelope={'job_id':job_id,'revision_seq':None,'inputs':[],'attempt_phase':phase.split(':')[0]+':'+format(number,'016x')}
+                    settings=agent.role_settings(role);settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}']);directory=self.root/('call-'+role+'-'+str(number));envelope={'job_id':job_id,'revision_seq':None,'inputs':[],'attempt_phase':phase.split(':')[0]+':'+format(number,'016x')}
                     def provider(argv,*args,**kwargs):
-                        attempt=Path(kwargs['log']).parent;atomic_json(attempt/'result.json',f.result(envelope));(attempt/'events.log').write_text(json.dumps(value)+'\n')
+                        Path(str(kwargs['log'])+'.stderr').write_text('')
+                        attempt=Path(argv[-1]).parent;atomic_json(attempt/'result.json',f.result(envelope));Path(kwargs['log']).write_text(json.dumps(value)+'\n')
                     with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):
                         with self.assertRaisesRegex(Blocked,'object'):agent.call(job,phase,envelope,self.repo,directory,'bounded synthetic transport')
                     attempt=self.state.rows('SELECT * FROM attempts WHERE job_id=? ORDER BY id DESC LIMIT 1',(job_id,))[0];self.assertEqual('failed',attempt['state']);results=list(directory.rglob('result.json'));self.assertEqual(1,len(results));self.assertEqual(file_hash(results[0]),attempt['result_hash']);self.assertNotIn('invalid_manifest_attempt',self.state.job(job_id)['payload'])
 
     def test_N1602_nonobject_event_blocks_job_and_later_job_completes(self):
-        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass']);results=[]
+        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}']);results=[]
         class BadIdentity(f.FakeAgents):
             def call(inner,job,phase,envelope,cwd,directory,instructions):
                 if phase!='classify':return super().call(job,phase,envelope,cwd,directory,instructions)
                 def provider(argv,*args,**kwargs):
-                    response,_=super(BadIdentity,inner).call(job,phase,envelope,cwd,directory,instructions);attempt=Path(kwargs['log']).parent;path=attempt/'result.json';atomic_json(path,response);(attempt/'events.log').write_text('[]\n');results.append(path)
+                    Path(str(kwargs['log'])+'.stderr').write_text('')
+                    response,_=super(BadIdentity,inner).call(job,phase,envelope,cwd,directory,instructions);attempt=Path(argv[-1]).parent;path=attempt/'result.json';atomic_json(path,response);Path(kwargs['log']).write_text('[]\n');results.append(path)
                 with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):return agent.call(job,phase,envelope,cwd,directory,instructions)
         supervisor.agents=BadIdentity(self.state,supervisor.lock);supervisor.observe_drive('student');ingest=self.state.rows("SELECT id FROM jobs WHERE kind='ingest'")[0]['id'];later=self.state.enqueue('controlled','student','later-controlled',{});original=supervisor.process
         def process(job_id):
@@ -51,7 +53,7 @@ class R16Tests(f.Base):
             else:original(job_id)
         supervisor.process=process
         with patch('school_notes.pipeline.Renderer',f.FakeRenderer):supervisor.run_once()
-        job=self.state.job(ingest);self.assertEqual('blocked',job['state']);self.assertEqual('classify',job['phase']);self.assertIn('object',job['error']);self.assertNotIn('invalid_manifest_attempt',job['payload']);attempt=self.state.rows('SELECT * FROM attempts WHERE job_id=?',(ingest,))[0];self.assertEqual('failed',attempt['state']);self.assertEqual(file_hash(results[0]),attempt['result_hash']);self.assertEqual('[]\n',(results[0].parent/'events.log').read_text());self.assertEqual('complete',self.state.job(later)['state']);self.assertFalse(self.state.rows('SELECT * FROM effects'));self.assertFalse(job['payload'].get('worktree'));self.assertEqual([],self.drive.writes)
+        job=self.state.job(ingest);self.assertEqual('blocked',job['state']);self.assertEqual('classify',job['phase']);self.assertIn('object',job['error']);self.assertNotIn('invalid_manifest_attempt',job['payload']);attempt=self.state.rows('SELECT * FROM attempts WHERE job_id=?',(ingest,))[0];self.assertEqual('failed',attempt['state']);self.assertEqual(file_hash(results[0]),attempt['result_hash']);self.assertEqual('[]\n',Path(json.loads((results[0].parent/'transport.json').read_text())['stdout']['path']).read_text());self.assertEqual('complete',self.state.job(later)['state']);self.assertFalse(self.state.rows('SELECT * FROM effects'));self.assertFalse(job['payload'].get('worktree'));self.assertEqual([],self.drive.writes)
 
 class R16ProcessTests(f.Base):
     setUp=interactive.InteractiveTests.setUp

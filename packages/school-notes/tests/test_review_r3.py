@@ -210,14 +210,16 @@ class R3RecoveryTests(fixture.Base):
         supervisor=self.supervisor();config=json.loads((fixture.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable
         agent=Agent(config,self.state,supervisor.lock,Window());jobid=self.state.enqueue('ingest','student','attempt-budget',{})
         proof=self.root/'synthetic-proof.json';atomic_json(proof,{'synthetic_transport_only':True})
-        settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass'])
+        settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}'])
         def transport(argv,cwd,**kwargs):
-            directory=Path(kwargs['log']).parent;envelope=json.loads((directory/'input.json').read_text());atomic_json(directory/'result.json',fixture.result(envelope));(directory/'events.log').write_text('{"type":"turn.completed"}\n')
+            Path(str(kwargs['log'])+'.stderr').write_text('')
+            directory=Path(argv[-1]).parent;envelope=json.loads((directory/'input.json').read_text());atomic_json(directory/'result.json',fixture.result(envelope));Path(kwargs['log']).write_text('{"type":"turn.completed"}\n')
+        worker=self.root/'budget-worker';worker.mkdir()
         phase='candidate:1111111111111111'
         with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',transport):
-            for _ in range(3):agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':phase},self.root,self.root/'finite','test')
-            with self.assertRaisesRegex(Blocked,phase+r' \(3/3\)'):agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':phase},self.root,self.root/'finite','test')
-            agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':'candidate:2222222222222222'},self.root,self.root/'finite','test')
+            for _ in range(3):agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':phase},worker,self.root/'finite','test')
+            with self.assertRaisesRegex(Blocked,phase+r' \(3/3\)'):agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':phase},worker,self.root/'finite','test')
+            agent.call(self.state.job(jobid),'candidate',{'job_id':jobid,'revision_seq':None,'inputs':[],'attempt_phase':'candidate:2222222222222222'},worker,self.root/'finite','test')
         attempts=admin.inspect_job(supervisor,jobid)['attempts'];self.assertEqual(4,len(attempts));self.assertEqual([phase]*3+['candidate:2222222222222222'],[a['phase'] for a in attempts]);self.assertTrue(all(a['state']=='complete' for a in attempts))
 
     def test_R312_disk_diagnostics_deduplicate_job_and_report_semantics(self):

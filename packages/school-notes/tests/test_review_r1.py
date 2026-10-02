@@ -529,8 +529,10 @@ class FinalR1Tests(Base):
         atomic_json(response_file,result(envelope))
         with RunLock(self.root/'run.lock') as lock:
             agent=Agent(config,self.state,lock,Window())
-            self.assertEqual('complete',agent.call(job,'candidate',envelope,self.root,self.root/'job','test')[0]['status'])
-            log=next((self.root/'job').glob('attempt-*/events.log'))
+            worker=private_dir(self.root/'stream-worker')
+            self.assertEqual('complete',agent.call(job,'candidate',envelope,worker,self.root/'job','test')[0]['status'])
+            metadata=json.loads(next((self.root/'job').glob('attempt-*/transport.json')).read_text())
+            log=Path(metadata['stdout']['path'])
             self.assertGreater(log.stat().st_size,8*1024**2)
             self.assertNotIn('harmless warning',log.read_text())
             self.assertIn('harmless warning',log.with_name('events.log.stderr').read_text())

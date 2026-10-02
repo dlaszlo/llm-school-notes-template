@@ -317,8 +317,9 @@ class R2Tests(Base):
         response=self.root/'response.json';atomic_json(response,fixture.result(envelope))
         settings=agent.role_settings('codex')
         settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c',"import pathlib,sys;pathlib.Path(sys.argv[2]).write_bytes(pathlib.Path(sys.argv[1]).read_bytes());print('{' + chr(34) + 'type' + chr(34) + ':' + chr(34) + 'turn.completed' + chr(34) + '}')",str(response),'{result}'])
+        worker=self.root/'finite-adapter-worker';worker.mkdir()
         with patch.object(agent,'_gate',return_value=settings):
-            result,path=agent.call(self.state.job(jobid),'candidate',envelope,self.root,self.root/'job','synthetic finite wrapper')
+            result,path=agent.call(self.state.job(jobid),'candidate',envelope,worker,self.root/'job','synthetic finite wrapper')
         runtime=json.loads((path.parent/'runtime.json').read_text())
         self.assertEqual([str(self.repo)],runtime['read_dirs']);self.assertIsNone(runtime['resolved_model']);self.assertIsNone(runtime['resolved_effort'])
         self.assertEqual('complete',result['status']);self.assertEqual('complete',self.state.rows('SELECT state FROM attempts')[0]['state'])

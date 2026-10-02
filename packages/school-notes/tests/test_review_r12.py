@@ -17,18 +17,19 @@ class R12Tests(f.Base):
 
     def actual_transport(self,mode):
         supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable
-        agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass'])
+        agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}'])
         class Transport(f.FakeAgents):
             def call(inner,job,phase,envelope,cwd,directory,instructions):
                 if phase!='candidate':return super().call(job,phase,envelope,cwd,directory,instructions)
                 def provider(argv,execution_cwd,**kwargs):
+                    Path(str(kwargs['log'])+'.stderr').write_text('')
                     response,_=super(Transport,inner).call(job,phase,envelope,cwd,directory,instructions)
                     if mode=='deep' and not job['payload'].get('candidate_history'):
                         response['manifest_proposal']='['*200000;response['status']='question';response['uncertainties']=['Retain uncertainty alongside malformed manifest']
                     else:response['manifest_proposal']=json.dumps(response['manifest_proposal'])
-                    attempt=Path(kwargs['log']).parent;atomic_json(attempt/'result.json',response)
+                    attempt=Path(argv[-1]).parent;atomic_json(attempt/'result.json',response)
                     events=[{'type':'item.completed','item':{'type':'agent_message','text':'Source quotes quota_exceeded as instructional text'}},{'type':'turn.completed'}]
-                    (attempt/'events.log').write_text('\n'.join(json.dumps(e) for e in events)+'\n')
+                    Path(kwargs['log']).write_text('\n'.join(json.dumps(e) for e in events)+'\n')
                 with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):return agent.call(job,phase,envelope,cwd,directory,instructions)
         supervisor.agents=Transport(self.state,supervisor.lock)
         return supervisor

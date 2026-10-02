@@ -5,6 +5,9 @@ import json
 import hashlib
 import os
 import re
+import stat
+import tomllib
+import uuid
 from pathlib import Path
 import sqlite3
 
@@ -204,6 +207,86 @@ class Agent:
         return {"argv": argv, "environment": environment, "cwd": execution_cwd, "directory": directory,
                 "read_dirs": read_dirs, "result": result_path, "role_sha256": settings["role_sha256"], "input_hash": digest(envelope)}
 
+    def protected_transport(self, contract):
+        """Canonical provider bytes live beside the trusted operation lock.
+
+        Attempt files remain worker outputs, never authoritative transport.
+        This checks configured layout; native permission proof is still required.
+        """
+        if self.lock is None or self.lock.fd is None:
+            raise Blocked('protected agent transport requires the acquired operation lock')
+        root = self.lock.path.parent / 'agent-logs'
+        scopes = [Path(contract[key]) for key in ('cwd', 'directory')]
+        scopes.extend(map(Path, contract['read_dirs']))
+        scopes.append(Path(contract['environment']['TMPDIR']))
+        for index, argument in enumerate(contract['argv'][:-1]):
+            if argument != '-c' or not contract['argv'][index + 1].startswith('permissions.'):
+                continue
+            try:
+                profiles = tomllib.loads(contract['argv'][index + 1])['permissions']
+                for profile in profiles.values():
+                    for name, access in profile.get('filesystem', {}).items():
+                        if name == ':workspace_roots':
+                            scopes.extend(Path(contract['cwd']) / child for child, grant in access.items() if grant == 'write')
+                        elif access == 'write':
+                            if name == ':tmpdir': scopes.append(Path(contract['environment']['TMPDIR']))
+                            elif name == ':slash_tmp': scopes.append(Path('/tmp'))
+                            elif name == ':root': scopes.append(Path('/'))
+                            elif Path(name).is_absolute(): scopes.append(Path(name))
+                            else: raise Blocked('unknown configured agent write scope')
+            except (ValueError, TypeError, KeyError, AttributeError):
+                raise Blocked('unrecognized configured agent filesystem profile') from None
+        if any(root.resolve().is_relative_to(path.resolve()) for path in scopes):
+            raise Blocked('protected agent transport overlaps worker scope')
+        # Do not follow an alias or change permissions of an existing directory.
+        for path in (root, *root.parents):
+            if path.is_symlink(): raise Blocked('symlink in protected agent transport path')
+        root.mkdir(mode=0o700, exist_ok=True)
+        info = root.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+            raise Blocked('protected agent transport directory must be private and owner controlled')
+        directory = root / uuid.uuid4().hex
+        directory.mkdir(mode=0o700)
+        return directory / 'events.log'
+
+    @staticmethod
+    def transport_metadata(log):
+        result = {}
+        for name, path in [('stdout', log), ('stderr', Path(str(log) + '.stderr'))]:
+            item = {'path': str(path)}
+            try:
+                info = path.lstat()
+                item.update(device=info.st_dev, inode=info.st_ino, mode=info.st_mode,
+                            uid=info.st_uid, nlink=info.st_nlink, size=info.st_size,
+                            mtime_ns=info.st_mtime_ns, ctime_ns=info.st_ctime_ns)
+                if stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1:
+                    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                    with os.fdopen(fd, 'rb') as stream:
+                        fields = ('st_dev', 'st_ino', 'st_mode', 'st_uid', 'st_nlink',
+                                  'st_size', 'st_mtime_ns', 'st_ctime_ns')
+                        same = lambda value: all(getattr(value, key) == getattr(info, key) for key in fields)
+                        if not same(os.fstat(stream.fileno())):
+                            item['status'] = 'changed-before-read'
+                        else:
+                            sha = hashlib.sha256()
+                            for data in iter(lambda: stream.read(1024 * 1024), b''): sha.update(data)
+                            if same(os.fstat(stream.fileno())) and same(path.lstat()):
+                                item.update(status='retained', sha256=sha.hexdigest())
+                            else: item['status'] = 'changed-during-read'
+                else: item['status'] = 'nonordinary-not-read'
+            except OSError as error:
+                item.update(status='unavailable', error_class=type(error).__name__)
+            result[name] = item
+        return result
+
+    def retain_transport(self, log, directory, job_id, attempt_id, phase):
+        transport = dict(self.transport_metadata(log), job_id=job_id, attempt_id=attempt_id,
+                         phase=phase, directory=str(directory), result_path=str(directory / 'result.json'))
+        # The protected copy binds recovery context even if the attempt copy fails.
+        atomic_json(log.parent / 'transport.json', transport)
+        atomic_json(directory / 'transport.json', transport)
+        return transport
+
     def call(self, job, phase, envelope, cwd, directory, instructions):
         role = "claude" if phase.split(":")[0] in ("review", "source_review", "external_review", "public_review") else "codex"
         settings = self._gate(role)
@@ -227,6 +310,7 @@ class Agent:
         number = len(self.state.rows("SELECT id FROM attempts WHERE job_id=?", (job["id"],))) + 1
         contract = self.build_command(job, phase, envelope, cwd, directory, instructions, number, settings)
         argv, environment, execution_cwd, directory, result_path, read_dirs = (contract[k] for k in ("argv", "environment", "cwd", "directory", "result", "read_dirs"))
+        log_path = self.protected_transport(contract)
         job['payload']['active_attempt_phase']=attempt_phase
         self.state.update_job(job['id'],payload=job['payload'])
         with self.state.db:
@@ -235,10 +319,18 @@ class Agent:
         self.lock.phase(f"job-{job['id']}:{phase}")
         terminal_success=False
         try:
-            run(argv, execution_cwd, timeout=timeout, lock=self.lock, log=directory / "events.log", env=environment, read_output=False)
+            atomic_json(log_path.parent / 'transport.json', {
+                'job_id': job['id'], 'attempt_id': attempt_id, 'phase': attempt_phase,
+                'directory': str(directory), 'result_path': str(result_path),
+                'stdout': {'path': str(log_path), 'status': 'pending'},
+                'stderr': {'path': str(log_path) + '.stderr', 'status': 'pending'}})
+            run(argv, execution_cwd, timeout=timeout, lock=self.lock, log=log_path, env=environment, read_output=False)
+            transport = self.retain_transport(log_path, directory, job['id'], attempt_id, attempt_phase)
+            if any(transport[name]['status'] != 'retained' for name in ('stdout', 'stderr')):
+                raise Blocked('agent canonical transport changed or nonordinary; inspect protected logs')
             if role == "codex":
                 last = None
-                with (directory / "events.log").open() as events:
+                with log_path.open() as events:
                     while True:
                         line = events.readline(4 * 1024 * 1024 + 1)
                         if not line:
@@ -260,9 +352,9 @@ class Agent:
                 result = result_json(result_path.read_text())
                 resolved_model = None
             else:
-                if (directory / "events.log").stat().st_size > 8 * 1024 * 1024:
+                if log_path.stat().st_size > 8 * 1024 * 1024:
                     raise Blocked("Claude content exceeds finite schema result limit")
-                wrapper = result_json((directory / "events.log").read_text())
+                wrapper = result_json(log_path.read_text())
                 if not isinstance(wrapper,dict):raise Blocked("Claude result wrapper must be a JSON object")
                 if wrapper.get("type") != "result" or wrapper.get("subtype") != "success" or wrapper.get("is_error") is not False:
                     raise Blocked("Claude result wrapper is not successful")
@@ -288,14 +380,21 @@ class Agent:
                 self.state.db.execute("UPDATE attempts SET state='complete',result_hash=?,ended=? WHERE id=?", (file_hash(result_path), now(), attempt_id))
             return result, result_path
         except BaseException as error:
+            try:
+                transport = self.retain_transport(log_path, directory, job['id'], attempt_id, attempt_phase)
+            except Exception as retention_error:
+                # Retention problems must not replace the original provider failure.
+                error.transport_metadata_error = type(retention_error).__name__
+                transport = self.transport_metadata(log_path)
             result_hash=file_hash(result_path) if result_path.is_file() and not result_path.is_symlink() else None
             if isinstance(error,InvalidManifestProposal):
                 error.result_path=str(result_path)
                 error.result_hash=result_hash=file_hash(result_path)
                 error.attempt_id=attempt_id
             quota = False
-            for events_path in (() if terminal_success else (directory / "events.log", directory / "events.log.stderr")):
-                if events_path.exists():
+            for events_path in (() if terminal_success else (log_path, Path(str(log_path) + '.stderr'))):
+                name = 'stdout' if events_path == log_path else 'stderr'
+                if transport[name]['status'] == 'retained':
                     with events_path.open("rb") as stream:
                         sample = stream.read(8 * 1024 * 1024).lower()
                     quota |= any(marker in sample for marker in (b"rate_limit_exceeded", b"quota_exceeded", b"usage limit reached", b"credit balance is too low"))

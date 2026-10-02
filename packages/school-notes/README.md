@@ -165,6 +165,15 @@ The remaining run deadline also guards paginated inventories, Drive/network
 requests and every supervised tool process. Partial renders are retained and
 resume selects a bounded fresh attempt directory instead of overwriting them.
 
+Canonical provider stdout/stderr are retained under `agent-logs/<random-id>/`
+beside the acquired operation lock, outside the worker cwd, attempt, TMPDIR and
+configured writable paths. A protected `transport.json` binds job, attempt,
+phase and result location before execution, then records retained log identities
+and hashes. The attempt receives an inspection copy; an attempt `events.log`
+is never provider transport evidence. Symlink or overlapping layouts block before
+the provider starts. Synthetic transport tests verify this layout and parsing;
+native permission and capability proof remains a separate requirement.
+
 Runtime proof files must truthfully report each required successful check:
 model_resolution, effort_resolution, vision, schema, tool_network_denied,
 outside_write_denied, secret_read_denied, offline_runtime, memory_isolation,

@@ -16,12 +16,13 @@ class R15Tests(f.Base):
     evidence_records=r2.R2Tests.evidence_records
 
     def test_N1505_actual_classify_call_malformed_id_failed_receipt_and_later_job(self):
-        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass']);results=[]
+        supervisor=self.supervisor();config=json.loads((f.REPO/'packages/school-notes/config.example.json').read_text())['agents'];config['python']=sys.executable;agent=Agent(config,self.state,supervisor.lock,Window());proof=self.root/'synthetic-only.json';atomic_json(proof,{'synthetic_transport_only':True});settings=agent.role_settings('codex');settings.update(evidence=str(proof),timeout=30,argv=[sys.executable,'-c','pass','{result}']);results=[]
         class BadIdentity(f.FakeAgents):
             def call(inner,job,phase,envelope,cwd,directory,instructions):
                 if phase!='classify':return super().call(job,phase,envelope,cwd,directory,instructions)
                 def provider(argv,*args,**kwargs):
-                    response,_=super(BadIdentity,inner).call(job,phase,envelope,cwd,directory,instructions);response['classification'][0]['id']=[];attempt=Path(kwargs['log']).parent;path=attempt/'result.json';atomic_json(path,response);(attempt/'events.log').write_text('{"type":"turn.completed"}\n');results.append(path)
+                    Path(str(kwargs['log'])+'.stderr').write_text('')
+                    response,_=super(BadIdentity,inner).call(job,phase,envelope,cwd,directory,instructions);response['classification'][0]['id']=[];attempt=Path(argv[-1]).parent;path=attempt/'result.json';atomic_json(path,response);Path(kwargs['log']).write_text('{"type":"turn.completed"}\n');results.append(path)
                 with patch.object(agent,'_gate',return_value=settings),patch('school_notes.agents.run',provider):return agent.call(job,phase,envelope,cwd,directory,instructions)
         supervisor.agents=BadIdentity(self.state,supervisor.lock);supervisor.observe_drive('student');ingest=self.state.rows("SELECT id FROM jobs WHERE kind='ingest'")[0]['id'];later=self.state.enqueue('controlled','student','later-controlled',{});original=supervisor.process
         def process(job_id):
