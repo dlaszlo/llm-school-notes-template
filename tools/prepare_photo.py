@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Store an incoming photo in sources/: same resolution, smaller file, no metadata.
 
-Usage: python3 tools/prepare_photo.py <incoming image> <target path in sources/>
+Usage: python3 tools/prepare_photo.py [--max-side PX] [--quality Q] <incoming image> <target path in sources/>
 
 * The image is turned upright (the phone's EXIF orientation is applied to the pixels).
-* It is saved at the SAME resolution - nothing is scaled down - as JPEG quality 90
-  (PNG input to a .png target stays lossless PNG). Visually identical at 100% zoom,
-  about a quarter of a typical phone JPEG's size.
+* By default it is saved at the SAME resolution as JPEG quality 90 (PNG input to a .png
+  target stays lossless PNG). With --max-side the longer side is reduced to at most PX
+  pixels; a smaller image is never enlarged. The School Notes v2 tool uses 2000 px and
+  quality 85 (plan 4.2) through the importable `prepare()` function.
 * ALL metadata is dropped: EXIF (GPS position, device, date), XMP, ICC profile,
   comments. Only the pixels are kept.
 
@@ -30,13 +31,18 @@ except ImportError:
 QUALITY = 90
 
 
-def main():
-    if len(sys.argv) != 3:
-        sys.exit(__doc__)
-    src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+def prepare(src, dst, max_side_px=None, quality=QUALITY):
+    """Store `src` as `dst` (upright, optionally downscaled, no metadata); return (size, sha256).
+
+    Deterministic for a fixed Pillow version, so the same input always gives the same hash.
+    """
+    src, dst = Path(src), Path(dst)
     if dst.exists():
-        sys.exit(f"{dst} already exists - sources are never overwritten")
+        raise FileExistsError(f"{dst} already exists - sources are never overwritten")
     im = ImageOps.exif_transpose(Image.open(src))
+    if max_side_px and max(im.size) > max_side_px:
+        # thumbnail() only ever shrinks and keeps the aspect ratio.
+        im.thumbnail((max_side_px, max_side_px), Image.Resampling.LANCZOS)
     # A fresh image holds only pixels: no EXIF, XMP, ICC, or comments carry over.
     if dst.suffix.lower() == ".png":
         mode = "RGBA" if im.mode in ("RGBA", "LA", "P") else "RGB"
@@ -45,12 +51,27 @@ def main():
         clean.save(dst, optimize=True)
     else:
         if dst.suffix.lower() not in (".jpg", ".jpeg"):
-            sys.exit("target must end in .jpg, .jpeg or .png")
+            raise ValueError("target must end in .jpg, .jpeg or .png")
         clean = Image.frombytes("RGB", im.size, im.convert("RGB").tobytes())
         dst.parent.mkdir(parents=True, exist_ok=True)
-        clean.save(dst, quality=QUALITY, optimize=True)
-    digest = hashlib.sha256(dst.read_bytes()).hexdigest()
-    print(f"{dst}  {im.size[0]}x{im.size[1]}  {src.stat().st_size // 1024} KB -> {dst.stat().st_size // 1024} KB  sha256 {digest}")
+        clean.save(dst, quality=quality, optimize=True)
+    return im.size, hashlib.sha256(dst.read_bytes()).hexdigest()
+
+
+def main():
+    args = sys.argv[1:]
+    options = {}
+    while args and args[0] in ("--max-side", "--quality") and len(args) > 1:
+        options[args[0]] = int(args[1])
+        args = args[2:]
+    if len(args) != 2:
+        sys.exit(__doc__)
+    src, dst = Path(args[0]), Path(args[1])
+    try:
+        size, digest = prepare(src, dst, options.get("--max-side"), options.get("--quality", QUALITY))
+    except (FileExistsError, ValueError) as exc:
+        sys.exit(str(exc))
+    print(f"{dst}  {size[0]}x{size[1]}  {src.stat().st_size // 1024} KB -> {dst.stat().st_size // 1024} KB  sha256 {digest}")
 
 
 if __name__ == "__main__":

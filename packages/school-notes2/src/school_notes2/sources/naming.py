@@ -1,0 +1,48 @@
+"""Names on disk: ASCII folder slugs and the Drive subject → wiki subject mapping (plan 4.2)."""
+
+import json
+import re
+import unicodedata
+from pathlib import Path
+
+
+def slug(text: str) -> str:
+    """Accents removed, lowercase, every other run of characters becomes one dash."""
+    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-") or "csomag"
+
+
+def unique_dir(parent: Path, name: str) -> Path:
+    """`parent/name`, or `name-2`, `name-3` … when that folder already exists."""
+    candidate, n = parent / name, 1
+    while candidate.exists():
+        n += 1
+        candidate = parent / f"{name}-{n}"
+    return candidate
+
+
+def unique_name(taken: set[str], name: str) -> str:
+    stem, dot, ext = name.rpartition(".")
+    candidate, n = name, 1
+    while candidate in taken:
+        n += 1
+        candidate = f"{stem}-{n}{dot}{ext}" if dot else f"{name}-{n}"
+    taken.add(candidate)
+    return candidate
+
+
+def subject_key(drive_name: str, subjects_json: Path) -> tuple[str, bool]:
+    """(wiki subject folder, is_new). Known subjects match tools/subjects.json `name`."""
+    subjects = {}
+    if subjects_json.is_file():
+        subjects = json.loads(subjects_json.read_text(encoding="utf-8")).get("subjects", {})
+    wanted = _norm(drive_name)
+    for key, entry in subjects.items():
+        if _norm(entry.get("name", "")) == wanted:
+            return key, False
+    key = slug(drive_name)
+    return key, key not in subjects
+
+
+def _norm(text: str) -> str:
+    return " ".join(unicodedata.normalize("NFC", text).casefold().split())

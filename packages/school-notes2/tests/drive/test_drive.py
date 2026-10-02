@@ -1,0 +1,154 @@
+import io
+import json
+import urllib.error
+
+import pytest
+
+from school_notes2.drive import client as client_mod
+from school_notes2.drive.download import download_package
+from school_notes2.drive.inventory import scan
+from school_notes2.drive.move import move_to_processed
+from school_notes2.sources.toolload import load_tool
+from school_notes2.state.errors import NeedsOwner, Prerequisite, Transient
+
+from fakedrive import NOW
+
+
+def test_ready_needs_ten_minutes_of_server_time(fake, client, tree):
+    old = fake.folder("Szept 30", tree["ready"])
+    fake.file("1.jpg", old, created_ago=30)
+    fresh = fake.folder("Okt 3", tree["ready"])
+    # An old phone timestamp in modifiedTime must not make a fresh upload look ready.
+    fake.file("1.jpg", fresh, created_ago=5, modified_ago=60 * 24 * 30)
+    inv = scan(client, tree["root"], now=NOW, ready_after_s=600)
+    assert [p.name for p in inv.ready] == ["Szept 30"]
+    assert [p.name for p in inv.waiting] == ["Okt 3"]
+
+
+def test_loose_office_and_unknown_files_are_ignored(fake, client, tree):
+    fake.file("laza.jpg", tree["ready"])
+    pkg = fake.folder("Óra", tree["ready"])
+    fake.file("2.jpg", pkg)
+    fake.file("dia.pptx", pkg, mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+    fake.file("jegyzet.txt", pkg, mime="text/plain")
+    only_office = fake.folder("Tanári", tree["ready"])
+    fake.file("anyag.docx", only_office, mime="application/msword")
+    inv = scan(client, tree["root"], now=NOW)
+    assert [p.name for p in inv.ready] == ["Óra"]
+    assert [f.rel for f in inv.ready[0].files] == ["2.jpg"]
+    reasons = {i["path"]: i["reason"] for i in inv.summary()["ignored"]}
+    assert "loose file" in reasons["fuzet/Matek/Feltöltés_Kész/laza.jpg"]
+    assert "doc-extract" in reasons["fuzet/Matek/Óra/dia.pptx"]
+    assert reasons["fuzet/Matek/Óra/jegyzet.txt"] == "unsupported format"
+    assert reasons["fuzet/Matek/Feltöltés_Kész/Tanári"] == "no usable file"
+
+
+def test_subfolders_and_paging(fake, client, tree):
+    pkg = fake.folder("Nagy", tree["ready"])
+    sub = fake.folder("második nap", pkg)
+    for name in ("1.jpg", "2.jpg", "3.jpg"):
+        fake.file(name, pkg)
+    fake.file("1.jpg", sub)
+    inv = scan(client, tree["root"], now=NOW)
+    assert sorted(f.rel for f in inv.ready[0].files) == ["1.jpg", "2.jpg", "3.jpg", "második nap/1.jpg"]
+
+
+def test_download_verifies_md5(fake, client, tree, tmp_path):
+    pkg = fake.folder("Óra", tree["ready"])
+    fid = fake.file("1.jpg", pkg, data=b"photo")
+    package = scan(client, tree["root"], now=NOW).ready[0]
+    records = download_package(client, package, tmp_path / "dl")
+    assert (tmp_path / "dl" / "1.jpg").read_bytes() == b"photo" and records[0]["sha256"]
+    fake.content[fid] = b"other"        # Drive metadata no longer matches the bytes
+    with pytest.raises(Transient):
+        download_package(client, package, tmp_path / "dl2")
+    assert not list((tmp_path / "dl2").rglob("1.jpg*"))   # neither the file nor a .part stays
+
+
+def _ready_package(fake, client, tree):
+    pkg = fake.folder("Óra", tree["ready"])
+    fake.file("1.jpg", pkg, data=b"one")
+    return pkg, scan(client, tree["root"], now=NOW).ready[0]
+
+
+def test_move_after_unchanged_relist(fake, client, tree):
+    pkg_id, package = _ready_package(fake, client, tree)
+    assert move_to_processed(client, pkg_id, package.listed, tree["root"]) == "moved"
+    assert fake.items[pkg_id]["parents"] == [tree["done"]]
+    assert move_to_processed(client, pkg_id, package.listed, tree["root"]) == "already"
+
+
+@pytest.mark.parametrize("change", ["new_file", "content"])
+def test_changed_package_is_not_moved(fake, client, tree, change):
+    pkg_id, package = _ready_package(fake, client, tree)
+    if change == "new_file":
+        fake.file("2.jpg", pkg_id)
+    else:
+        fid = next(i for i, m in fake.items.items() if m["name"] == "1.jpg")
+        fake.items[fid]["md5Checksum"] = "0" * 32
+    assert move_to_processed(client, pkg_id, package.listed, tree["root"]) == "changed"
+    assert fake.patches == []
+
+
+def test_foreign_root_is_not_moved(fake, client, tree):
+    pkg_id, package = _ready_package(fake, client, tree)
+    other_root = fake.folder("Barna")
+    with pytest.raises(NeedsOwner):
+        move_to_processed(client, pkg_id, package.listed, other_root)
+    assert fake.patches == []
+
+
+def test_lost_patch_answer_is_resolved_by_rereading(fake, client, tree):
+    pkg_id, package = _ready_package(fake, client, tree)
+    fake.lose_patch_answer = True
+    assert move_to_processed(client, pkg_id, package.listed, tree["root"]) == "moved"
+    assert fake.patches == [pkg_id]
+
+
+class _Opener:
+    def __init__(self, answer):
+        self.answer = answer
+
+    def open(self, req, timeout):
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return io.BytesIO(json.dumps(self.answer).encode())
+
+
+def _token(tmp_path, scope):
+    path = tmp_path / "drive-token.json"
+    path.write_text(json.dumps({"scopes": [scope], "client_id": "c", "client_secret": "s",
+                                "refresh_token": "r"}))
+    path.chmod(0o600)
+
+
+def _transport(tmp_path, monkeypatch, answer):
+    dm = load_tool("drive_media")
+    monkeypatch.setattr(dm.urllib.request, "build_opener", lambda *a: _Opener(answer))
+    return client_mod.DriveMediaTransport(tmp_path, timeout_s=30)
+
+
+def test_full_scope_token_is_accepted(tmp_path, monkeypatch):
+    _token(tmp_path, client_mod.FULL_SCOPE)
+    t = _transport(tmp_path, monkeypatch, {"access_token": "a", "expires_in": 3600,
+                                           "scope": client_mod.FULL_SCOPE})
+    assert t.drive.token == "a" and t.drive.timeout == 30
+
+
+def test_drive_file_token_is_a_missing_prerequisite(tmp_path, monkeypatch):
+    _token(tmp_path, "https://www.googleapis.com/auth/drive.file")
+    with pytest.raises(Prerequisite):
+        _transport(tmp_path, monkeypatch, {})
+
+
+def test_invalid_grant_is_a_missing_prerequisite(tmp_path, monkeypatch):
+    _token(tmp_path, client_mod.FULL_SCOPE)
+    error = urllib.error.HTTPError("https://oauth2.googleapis.com/token", 400, "Bad", {}, None)
+    with pytest.raises(Prerequisite):
+        _transport(tmp_path, monkeypatch, error)
+
+
+@pytest.mark.parametrize("status,cls", [(429, Transient), (503, Transient), (404, NeedsOwner),
+                                        (401, Prerequisite)])
+def test_http_status_classes(status, cls):
+    assert isinstance(client_mod._mapped(status), cls)
