@@ -1,0 +1,93 @@
+"""The writer call per range (plan 5.3): fetch.json, changes.json, fixed prompt, result."""
+
+
+from ..git import workbranch
+from ..llm import launch
+from ..schemas import validate
+from ..state.errors import BadWork
+from ..state.files import read_json, write_json
+from ..state.phase import Task
+from . import fetch as fetch_flow
+from .context import Ctx
+from .session import mcp
+
+
+def write_inputs(ctx: Ctx, task: Task, k: int) -> None:
+    """fetch.json and changes.json for range k; the old result.json is removed (5.3)."""
+    workdir = ctx.notes_path / workbranch.WORKDIR
+    workdir.mkdir(exist_ok=True)
+    write_json(workdir / "fetch.json", fetch_flow.fetch_json(task, k), mode=0o644)
+    write_changes(ctx, task)
+    (workdir / "result.json").unlink(missing_ok=True)
+
+
+def write_changes(ctx: Ctx, task: Task) -> None:
+    changed = workbranch.changed_files(ctx.worktree("notes"), task.get("base"))
+    data = {"base": task.get("base"), "changed": changed}
+    validate("changes", data)
+    write_json(ctx.notes_path / workbranch.WORKDIR / "changes.json", data, mode=0o644)
+
+
+def run_ranges(ctx: Ctx, task: Task, handlers) -> str:
+    """Call the writer for each remaining range; returns 'done' or 'question'."""
+    role, harness = ctx.cfg.role("writer")
+    n = len(task.get("ranges"))
+    k = task.get("writing_k", 1)
+    while k <= n:
+        task.set_phase("writing", writing_k=k)
+        write_inputs(ctx, task, k)
+        result = _call(ctx, task, k, role, harness, handlers)
+        write_json(task.dir / f"result-{k}.json", result)
+        task.data["llm_failures"] = 0
+        task.save()
+        if result["status"] == "question":
+            task.update(question=result.get("questions", []))
+            return "question"
+        k += 1
+        task.update(writing_k=k)
+    return "done"
+
+
+def _call(ctx: Ctx, task: Task, k: int, role, harness, handlers) -> dict:
+    with mcp(ctx, task.dir, "cron", handlers, lambda: task.run_id) as sessdir:
+        run = launch.RoleRun(
+            learner=ctx.name, run_id=task.run_id, role_name="writer", role=role,
+            harness=harness, image=ctx.image_tag(),
+            mounts=launch.Mounts(work=ctx.notes_path, sessdir=sessdir),
+            output_host=ctx.notes_path / workbranch.WORKDIR / "result.json",
+            schema="result", task_dir=task.dir, label=str(k))
+        outcome = launch.run_headless(run, log=ctx.log,
+                                      snapshot=lambda: launch.tree_fingerprint(ctx.notes_path))
+    return outcome.output
+
+
+def results(task: Task) -> list[dict]:
+    """The saved result-<k>.json files in range order."""
+    out = []
+    for k in range(1, len(task.get("ranges")) + 1):
+        data = read_json(task.dir / f"result-{k}.json")
+        if data is None:
+            raise BadWork(f"result-{k}.json is missing")
+        validate("result", data)
+        out.append(data)
+    return out
+
+
+def merge(results_: list[dict]) -> dict:
+    """4.5: notes by file with page union, closures last-wins per item, lists concatenated."""
+    notes: dict[str, set] = {}
+    closures: dict[tuple, dict] = {}
+    merged = {"status": "done", "questions": [], "new_subjects": [], "checks": []}
+    for r in results_:
+        if r["status"] == "question":
+            merged["status"] = "question"
+        merged["questions"] += r.get("questions", [])
+        merged["new_subjects"] += r.get("new_subjects", [])
+        merged["checks"] += r.get("checks", [])
+        for note in r.get("notes", []):
+            notes.setdefault(note["file"], set()).update(note["pages"])
+        for c in r.get("review_closure", []):
+            closures[(c["file"], c["item_id"])] = c
+    merged["notes"] = [{"file": f, "pages": sorted(p)} for f, p in sorted(notes.items())]
+    merged["review_closure"] = list(closures.values())
+    return merged

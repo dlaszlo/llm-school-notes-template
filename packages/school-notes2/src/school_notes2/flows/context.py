@@ -1,6 +1,7 @@
 """Builds the per-learner objects every flow needs from the configuration."""
 
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 
 from ..config import Config, Student
@@ -40,6 +41,35 @@ class Ctx:
 
     def task_root(self) -> Path:
         return self.cfg.root
+
+    @property
+    def notes_path(self) -> Path:
+        return self.cfg.worktree(self.name, "notes")
+
+    def release(self) -> Path:
+        """The installed release (template copy) this process runs from."""
+        return self.cfg.release_dir.resolve()
+
+    def image_tag(self) -> str:
+        """The container image belongs to the release: same tag (plan 10.1)."""
+        return f"localhost/school-notes-agent:{self.release().name}"
+
+    def tools_dir(self) -> Path:
+        return self.release() / "tools"
+
+    def image_settings(self):
+        from ..images.settings import ImageSettings
+        state, limits = self.cfg.state_dir, self.cfg.limits
+        return ImageSettings(
+            learner=self.name, worktree=self.notes_path,
+            script=self.tools_dir() / "learning_image.py",
+            state_root=state / "images", plans_root=state / "image-plans",
+            lock_path=state / "images.lock", key_file=self.cfg.secrets_dir / "openrouter.key",
+            max_total_usd=Decimal(str(limits.image_year_total_usd)),
+            learner_max_usd=Decimal(str(limits.image_year_learner_usd)),
+            daily_usd=Decimal(str(limits.image_daily_usd)),
+            reservation_usd=Decimal(str(limits.image_reservation_usd)),
+            timeout_s=self.cfg.timeouts.image_generate_s)
 
 
 def make(cfg: Config, student: str, console: bool = True) -> Ctx:
