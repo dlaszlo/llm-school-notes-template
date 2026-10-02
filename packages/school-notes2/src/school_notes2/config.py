@@ -2,6 +2,7 @@
 
 import re
 import tomllib
+from importlib import resources
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -164,8 +165,21 @@ def _role(name: str, t: dict, harnesses: dict) -> Role:
                 timeout_s=int(t["timeout_s"]), nested_sandbox=bool(t.get("nested_sandbox", False)))
 
 
+def default_harnesses() -> dict:
+    """The release's harness templates (llm/templates.toml); config.toml may override keys."""
+    text = resources.files("school_notes2.llm").joinpath("templates.toml").read_text("utf-8")
+    return tomllib.loads(text).get("harnesses", {})
+
+
+def _merged_harnesses(own: dict) -> dict:
+    merged = {name: dict(table) for name, table in default_harnesses().items()}
+    for name, table in own.items():
+        merged.setdefault(name, {}).update(table)
+    return merged
+
+
 def parse(data: dict) -> Config:
-    harnesses = {n: _harness(n, t) for n, t in data.get("harnesses", {}).items()}
+    harnesses = {n: _harness(n, t) for n, t in _merged_harnesses(data.get("harnesses", {})).items()}
     roles = {n: _role(n, t, harnesses) for n, t in data.get("roles", {}).items()}
     for needed in ("writer", "reviewer"):
         if needed not in roles:

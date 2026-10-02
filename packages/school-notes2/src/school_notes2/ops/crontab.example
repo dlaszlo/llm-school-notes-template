@@ -1,0 +1,10 @@
+# School Notes v2 (plan 10.2). Install with `crontab -e` as the owner.
+# The two learners are offset so that two LLM calls never run at once, and the nightly
+# review does not coincide with the hourly run.
+CRON_TZ=Europe/Budapest
+XDG_RUNTIME_DIR=/run/user/1000
+PATH=/usr/local/bin:/usr/bin:/bin
+0  * * * *  /srv/school-notes/current/bin/school-notes run benedek
+30 * * * *  /srv/school-notes/current/bin/school-notes run barna
+15 3 * * *  /srv/school-notes/current/bin/school-notes nightly benedek
+45 3 * * *  /srv/school-notes/current/bin/school-notes nightly barna
