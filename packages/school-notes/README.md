@@ -824,3 +824,22 @@ maintenance. Review invalidation, authorization closure and renewed payload are
 one transaction; serialization/SQL failure leaves every old record unchanged.
 Successful provider text mentioning a quota marker does not fabricate a quota
 failure. Source/policy/envelope guards still run before manifest-only retention.
+
+
+Manual owner-supervised processing is an explicit alternative to capability proof
+prerequisites for `sync` and `run-once`. Invoke it directly outside a protected
+agent session with `--owner-supervised --learner <learner> --drive-reader-config
+<absolute-existing-reader-directory>`. It uses existing read-only credentials for
+input discovery; authentication, token scopes, content/result bindings and learner
+isolation still apply. It creates no capability evidence or persistent bypass.
+Unfinished initial Drive inventory remains an explicit baseline blocker.
+
+A supervised private ingest/metadata job is retained in `owner_wait` before Git
+push, with its candidate, web/PDF and normal attempt artifacts available for owner
+inspection. After agreeing to that private push, use the same flags plus
+`--job <exact-retained-job> --allow-private-push` on `run-once`. This releases only
+that retained push phase and stops again before family output or public phases.
+The job's retained manual fence is a restriction; ordinary/background processing,
+generic resume and candidate rebase cannot release it. Local status reports are
+still written; supervised runs do not upload status reports. Public/external
+finalization commands have no supervised bypass, and no timer is enabled.

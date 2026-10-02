@@ -105,10 +105,18 @@ def result_json(text):
 
 
 class Agent:
-    def __init__(self, config, state, lock, window):
+    def __init__(self, config, state, lock, window, *, owner_supervised=False):
         self.config, self.state, self.lock, self.window = config, state, lock, window
+        self.owner_supervised = owner_supervised
 
     def _gate(self, role):
+        if self.owner_supervised:
+            settings = self.role_settings(role)
+            if not Path(self.config['python']).is_absolute() or not Path(self.config['python']).is_file():
+                raise Blocked('preinstalled explicit agent Python required')
+            if not settings['argv'] or not Path(settings['argv'][0]).is_absolute():
+                raise Blocked('agent executable must be an explicit absolute path')
+            return settings
         settings = self.config[role]
         if settings.get("model") != MODELS[role] or settings.get("effort") != "high":
             raise Blocked("fixed model/effort contract violated; substitution forbidden")
@@ -370,7 +378,9 @@ class Agent:
             atomic_json(directory / "runtime.json", {"requested_model": settings["model"], "requested_effort": settings["effort"],
                                                      "resolved_model": resolved_model, "resolved_effort": None,
                                                      "role_sha256": settings["role_sha256"], "cwd": str(execution_cwd), "read_dirs": read_dirs,
-                                                     "proof_path": settings["evidence"], "proof_sha256": file_hash(settings["evidence"])})
+                                                     "proof_path": None if self.owner_supervised else settings["evidence"],
+                                                     "proof_sha256": None if self.owner_supervised else file_hash(settings["evidence"]),
+                                                     "owner_supervised": self.owner_supervised})
             # Verify that tools did not mutate supplied evidence while reviewing.
             for source in envelope.get("inputs", [])+envelope.get("trusted_policy", [])+envelope.get("comparison_context", []):
                 if file_hash(source["path"]) != source["sha256"]:

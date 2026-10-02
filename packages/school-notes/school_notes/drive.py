@@ -40,13 +40,14 @@ class DriveError(Blocked):
 
 
 class DriveAPI:
-    def __init__(self, tool_path, config_dir, visibility_evidence, window=None, reader_config=None, *, _readonly=False):
+    def __init__(self, tool_path, config_dir, visibility_evidence, window=None, reader_config=None, *, _readonly=False, owner_supervised=False):
         self.window = window
         self.guard(65)
-        evidence = json.loads(Path(visibility_evidence).read_text())
-        required = ("token_refresh", "oauth_project_status_checked") if reader_config is not None else ("manual_upload_read", "recursive_visibility", "child_account_access", "token_refresh", "oauth_project_status_checked")
-        if any(evidence.get(k) is not True for k in required):
-            raise Blocked("Drive capability proof incomplete; drive.file list success is not full visibility")
+        if not owner_supervised:
+            evidence = json.loads(Path(visibility_evidence).read_text())
+            required = ("token_refresh", "oauth_project_status_checked") if reader_config is not None else ("manual_upload_read", "recursive_visibility", "child_account_access", "token_refresh", "oauth_project_status_checked")
+            if any(evidence.get(k) is not True for k in required):
+                raise Blocked("Drive capability proof incomplete; drive.file list success is not full visibility")
         spec = importlib.util.spec_from_file_location("school_notes_existing_drive_media", tool_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -66,10 +67,11 @@ class DriveAPI:
         if reader_config is not None:
             if _readonly or reader_config.get('scope')!='https://www.googleapis.com/auth/drive.readonly':
                 raise Blocked('optional reader accepts only explicitly existing drive.readonly credentials')
-            proof=json.loads(Path(reader_config['evidence']).read_text())
-            if proof.get('scope')!=reader_config['scope'] or proof.get('config_dir')!=str(Path(reader_config['config_dir']).resolve()) or proof.get('readonly_only') is not True:
-                raise Blocked('read-only proof must bind exact reader credential directory and scope')
-            self.input_reader=ReadOnlyDriveAPI(tool_path,reader_config['config_dir'],reader_config['evidence'],window)
+            if not owner_supervised:
+                proof=json.loads(Path(reader_config['evidence']).read_text())
+                if proof.get('scope')!=reader_config['scope'] or proof.get('config_dir')!=str(Path(reader_config['config_dir']).resolve()) or proof.get('readonly_only') is not True:
+                    raise Blocked('read-only proof must bind exact reader credential directory and scope')
+            self.input_reader=ReadOnlyDriveAPI(tool_path,reader_config['config_dir'],reader_config.get('evidence'),window,owner_supervised=owner_supervised)
 
     def guard(self, seconds=95):
         if self.window:
@@ -257,11 +259,12 @@ class DriveAPI:
 
 class ReadOnlyDriveAPI(DriveAPI):
     """Explicit existing-credential reader; no login/grant or write surface."""
-    def __init__(self,tool_path,config_dir,evidence,window=None):
-        proof=json.loads(Path(evidence).read_text())
-        if proof.get('scope')!='https://www.googleapis.com/auth/drive.readonly' or proof.get('config_dir')!=str(Path(config_dir).resolve()) or proof.get('readonly_only') is not True:
-            raise Blocked('readonly reader proof scope/configuration mismatch')
-        super().__init__(tool_path,config_dir,evidence,window,_readonly=True)
+    def __init__(self,tool_path,config_dir,evidence,window=None,*,owner_supervised=False):
+        if not owner_supervised:
+            proof=json.loads(Path(evidence).read_text())
+            if proof.get('scope')!='https://www.googleapis.com/auth/drive.readonly' or proof.get('config_dir')!=str(Path(config_dir).resolve()) or proof.get('readonly_only') is not True:
+                raise Blocked('readonly reader proof scope/configuration mismatch')
+        super().__init__(tool_path,config_dir,evidence,window,_readonly=True,owner_supervised=owner_supervised)
 
     def request(self,method,url,*args):
         parsed=urllib.parse.urlsplit(url)

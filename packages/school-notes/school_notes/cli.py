@@ -26,7 +26,11 @@ def parser():
     for command in ('run-once','sync'):
         item=sub.add_parser(command,help='finite processing' if command=='run-once' else 'observation only; no models/archive/finalization')
         item.add_argument('--learner');item.add_argument('--max-seconds',type=int)
-        if command=='run-once':item.add_argument('--job',type=int)
+        item.add_argument('--owner-supervised',action='store_true',help='manual capability-proof bypass; retains private job before push')
+        item.add_argument('--drive-reader-config',help='explicit existing read-only credential directory; requires owner-supervised')
+        if command=='run-once':
+            item.add_argument('--job',type=int)
+            item.add_argument('--allow-private-push',action='store_true',help='release only the exact retained supervised push job; family/public output stays paused')
     item=sub.add_parser('status',help='read-only state and lock/session-owner report');item.add_argument('--learner')
     item=sub.add_parser('build-preview',help='private unreviewed renderer/browser/PDF QA only');item.add_argument('learner')
     sub.add_parser("recover", help="retain interrupted work and require effect reconciliation")
@@ -252,8 +256,19 @@ def main(argv=None):
     args = parser().parse_args(argv)
     state = None
     try:
+        supervised = getattr(args,'owner_supervised',False)
+        reader = getattr(args,'drive_reader_config',None)
+        allow_push = getattr(args,'allow_private_push',False)
+        if supervised and (not args.learner or not reader or not Path(reader).is_absolute()):
+            raise Blocked('owner-supervised requires explicit --learner and absolute --drive-reader-config')
+        if reader and not supervised:
+            raise Blocked('--drive-reader-config requires --owner-supervised')
+        if allow_push and (not supervised or not args.learner or args.job is None):
+            raise Blocked('--allow-private-push requires --owner-supervised --learner --job')
         config = load(args.config)
         joined=session.verify(config,args.config)
+        if supervised and joined:
+            raise Blocked('owner-supervised mode requires direct owner invocation outside protected agent session')
         if args.command=='interactive':
             result=wrapper(config,args.learner,args.argv,config_path=args.config)
             print(json.dumps(result,ensure_ascii=False,indent=2));return 0
@@ -279,8 +294,13 @@ def main(argv=None):
                 runtime_config=dict(config,run_seconds=args.max_seconds)
             def drive_factory(learner):
                 settings = config["learners"][learner]
-                return DriveAPI(config["drive_tool"], settings["drive_config_dir"], settings["drive_evidence"], supervisor.window, reader_config=settings.get("drive_reader"))
-            supervisor = Supervisor(runtime_config, state, lock, drive_factory)
+                reader_config = ({'config_dir':reader,'scope':'https://www.googleapis.com/auth/drive.readonly'}
+                                 if supervised else settings.get('drive_reader'))
+                return DriveAPI(config["drive_tool"], settings["drive_config_dir"], settings["drive_evidence"], supervisor.window,
+                                reader_config=reader_config, owner_supervised=supervised)
+            supervisor = Supervisor(runtime_config, state, lock, drive_factory, owner_supervised=supervised,
+                                    supervised_learner=learner if supervised else None,
+                                    allow_private_push_job=args.job if allow_push else None)
             supervisor.actor_origin="owner-session" if joined else "direct-vm-admin"
             result = {}
             if args.command == "init":
@@ -380,7 +400,7 @@ def main(argv=None):
             except (Blocked,OSError,ValueError,KeyError) as error:
                 result['report_error'] = str(error)
                 state.meta('report-failure',str(error))
-            if args.command == "run-once":
+            if args.command == "run-once" and not supervised:
                 result["report_drive"] = {}
                 for learner in learners:
                     settings=config["learners"][learner]

@@ -319,7 +319,7 @@ def rebase_candidate(supervisor,job_id):
     if len(old.get('candidate_history',[]))>=5:
         raise Blocked('finite candidate rebase limit reached; close or manual maintenance required')
     history=old.get('candidate_history',[])+[retained]
-    keep={'manifest','previous','classification','classification_result','archive_receipts','source_context','attempt_exceptions','quota_block','quota_reset','owner_policy_recoveries'}
+    keep={'manifest','previous','classification','classification_result','archive_receipts','source_context','attempt_exceptions','quota_block','quota_reset','owner_policy_recoveries','owner_supervised'}
     payload={key:value for key,value in old.items() if key in keep}
     payload.update(candidate_history=history,reconciled_from=retained,worktree_name=f'worktree-rebase-{len(history)}',base=head,fix_round=0)
     # Encode before any transition; one transaction preserves all approvals

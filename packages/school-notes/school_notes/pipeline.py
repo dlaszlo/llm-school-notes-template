@@ -47,15 +47,23 @@ def register_divergence(state,git,learner,base,head):
 
 
 class Supervisor:
-    def __init__(self, config, state, lock, drive_factory):
+    def __init__(self, config, state, lock, drive_factory, *, owner_supervised=False, supervised_learner=None, allow_private_push_job=None):
         self.config, self.state, self.lock, self.drive_factory = config, state, lock, drive_factory
+        self.owner_supervised = owner_supervised
+        self.supervised_learner = supervised_learner
+        self.allow_private_push_job = allow_private_push_job
+        if owner_supervised and supervised_learner not in config['learners']:
+            raise Blocked('owner-supervised operation requires one explicit configured learner')
+        if allow_private_push_job is not None and not owner_supervised:
+            raise Blocked('private push override requires owner-supervised invocation')
         self.window = Window(config.get("run_seconds", 3000))
         if lock:
             lock.window = self.window
-        self.agents = Agent(config["agents"], state, lock, self.window)
+        self.agents = Agent(config["agents"], state, lock, self.window, owner_supervised=owner_supervised)
         self.drives = {}
 
     def drive(self, learner):
+        self.learner(learner)
         if learner not in self.drives:
             self.drives[learner] = self.drive_factory(learner)
         return self.drives[learner]
@@ -65,6 +73,8 @@ class Supervisor:
         return getattr(api,"input_reader",api)
 
     def learner(self, name):
+        if self.owner_supervised and name != self.supervised_learner:
+            raise Blocked('owner-supervised operation cannot access another learner')
         return self.config["learners"][name]
 
     def job_dir(self, job):
@@ -73,6 +83,16 @@ class Supervisor:
     def run_once(self, *, initialize_inventory=False, learners=None, job_id=None):
         learners=list(self.config["learners"]) if learners is None else list(learners)
         if job_id is not None and self.state.job(job_id)["learner"] not in learners:raise Blocked("selected job belongs to another learner")
+        if self.owner_supervised and learners != [self.supervised_learner]:
+            raise Blocked('owner-supervised operation requires its one explicit learner')
+        if self.allow_private_push_job is not None:
+            if job_id != self.allow_private_push_job:
+                raise Blocked('private push permission applies only to the exact selected job')
+            pending = self.state.job(job_id)
+            if (pending['kind'] not in ('ingest','metadata_update') or pending['phase'] != 'push'
+                    or pending['state'] != 'owner_wait' or pending['payload'].get('owner_supervised') is not True):
+                raise Blocked('private push requires an exact retained supervised push job')
+            self.state.admin_resume(job_id)
         eligible=[]
         for learner in learners:
             try:self.preflight_owner([learner],allow_behind=getattr(self,"actor_origin",None)!="owner-session")
@@ -110,6 +130,11 @@ class Supervisor:
         for row in jobs:
             job = self.state.job(row["id"])
             if job["learner"] not in learners or job['learner'] in blocked_git or (job_id is not None and job["id"]!=job_id):continue
+            if job['payload'].get('owner_supervised') and not self.owner_supervised:
+                self.pause_supervised(job)
+                continue
+            if self.owner_supervised and job['kind'] not in ('ingest','metadata_update'):
+                continue
             # Baseline Git acknowledgement is an explicit gate. It cannot be
             # inferred from a clean checkout or bypassed by first ingestion.
             baseline = self.state.rows("SELECT * FROM observations WHERE id=?", (f"baseline:{job['learner']}",))
@@ -179,6 +204,8 @@ class Supervisor:
                 raise Busy(prefix+'; sync remains available: '+str(error)) from None
 
     def sync(self,learners):
+        if self.owner_supervised and list(learners) != [self.supervised_learner]:
+            raise Blocked('owner-supervised sync requires its one explicit learner')
         for ledger in self.config.get('required_ledgers',[]):
             if not Path(ledger).is_file():raise Blocked('required executor ledger missing; recovery required')
         self.lock.phase('sync')
@@ -439,11 +466,29 @@ class Supervisor:
             old.update(inventory=fresh['inventory'],snapshot_hash=fresh['snapshot_hash'])
             self.state.update_job(job['id'],payload=job['payload'])
 
+    def pause_supervised(self, job):
+        self.state.update_job(job['id'], 'owner_wait', error=
+            'owner-supervised job retained: inspect private web/PDF; private push requires exact --owner-supervised --learner --job --allow-private-push; family/public output remains paused')
+
     def process(self, job_id):
+        initial = self.state.job(job_id)
+        if initial['payload'].get('owner_supervised') and not self.owner_supervised:
+            self.pause_supervised(initial)
+            return
+        if self.owner_supervised:
+            self.learner(initial['learner'])
+            if initial['kind'] not in ('ingest','metadata_update'):
+                raise Blocked('owner-supervised mode processes only private ingest/metadata jobs')
+            initial['payload']['owner_supervised'] = True
+            self.state.update_job(job_id, payload=initial['payload'])
         if self.state.job(job_id)['kind']=='divergence_maintenance':raise Blocked('observer-only divergence maintenance cannot enter model processing; acknowledge-maintenance required')
         while True:
             job = self.state.job(job_id)
             phase = job["phase"]
+            if self.owner_supervised and (phase in ('family_output','public') or
+                    (phase == 'push' and self.allow_private_push_job != job_id)):
+                self.pause_supervised(job)
+                return
             if job['payload'].get('quota_block'):
                 self.state.update_job(job_id,'retry_wait',error='provider quota block: clear-quota requires verified reset/direct-admin evidence')
                 return
