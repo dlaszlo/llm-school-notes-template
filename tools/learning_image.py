@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 import sys
 import urllib.error
 import urllib.request
@@ -206,6 +207,38 @@ def status(config):
                 for j in ledger['jobs'].values()]}
 
 
+# Attempts that cost nothing and never count toward max_attempts: the request was
+# certainly not sent, or the provider answered with an error status.
+FREE_FAILURE = 'failed'
+# A sent request whose outcome stayed unknown, settled after a day as spent and failed.
+SETTLED = 'lost'
+SETTLE_AFTER_HOURS = 24
+
+
+def counted(attempts):
+    """Attempts that count toward max_attempts (free failures do not)."""
+    return [a for a in attempts if a['state'] != FREE_FAILURE]
+
+
+def last_outcome(attempts):
+    """The latest attempt that produced or could have produced an image decision."""
+    real = [a for a in attempts if a['state'] not in (FREE_FAILURE, SETTLED)]
+    return real[-1] if real else None
+
+
+def free_failure(exc):
+    """Failure kind when the provider certainly did not charge, else None."""
+    if isinstance(exc, urllib.error.HTTPError):
+        exc.close()
+        return f'http-{exc.code}'
+    reason = getattr(exc, 'reason', None)
+    if isinstance(exc, urllib.error.URLError) and isinstance(reason, (socket.gaierror, ConnectionRefusedError)):
+        return 'not-sent'
+    if isinstance(exc, (socket.gaierror, ConnectionRefusedError)):
+        return 'not-sent'
+    return None
+
+
 def spent(ledger):
     return sum((money(a['cost_usd']) for j in ledger['jobs'].values() for a in j['attempts'] if a.get('cost_usd') is not None), Decimal(0))
 
@@ -307,13 +340,14 @@ def run_generate(config, job_path, repair=None, transport=None):
         for other in ledger['jobs'].values():
             if any(a['state'] == 'unknown' or a.get('cost_usd') is None for a in other['attempts']):
                 raise ValueError('Reconcile pending provider call/cost before new spending')
-        if entry and entry['attempts'][-1]['state'] == 'generated':
-            return {'state': 'needs-review', **entry['attempts'][-1], 'folder': str(attempt_folder(config, job, entry['attempts'][-1]))}
-        if entry and (not repair or entry['attempts'][-1]['state'] != 'rejected'):
+        last = last_outcome(entry['attempts']) if entry else None
+        if last and last['state'] == 'generated':
+            return {'state': 'needs-review', **last, 'folder': str(attempt_folder(config, job, last))}
+        if last and (not repair or last['state'] != 'rejected'):
             raise ValueError('Repair requires a recorded rejected review and targeted instructions')
-        if entry and len(entry['attempts']) >= int(config.get('max_attempts', 3)):
+        if entry and len(counted(entry['attempts'])) >= int(config.get('max_attempts', 3)):
             raise ValueError('Attempt bound reached; select a usable candidate or request a specific exception')
-        if repair and not entry:
+        if repair and not last:
             raise ValueError('No initial attempt to repair')
         reserve = money(config['reservation_usd'])
         if not reserve or spent(ledger) + reserve > money(config['max_total_usd']):
@@ -342,9 +376,14 @@ def run_generate(config, job_path, repair=None, transport=None):
             write(ledger_path, ledger)
             return {'job': job['id'], **attempt, 'folder': str(folder), 'total_usd': str(spent(ledger))}
         except Exception as exc:
-            # Preserve reserved/unknown; never print raw provider errors or secrets.
+            # Never print raw provider errors or secrets.
             attempt['failure_type'] = type(exc).__name__
-            write(ledger_path, ledger)
+            kind = free_failure(exc)
+            if kind:
+                attempt.update({'state': FREE_FAILURE, 'cost_usd': '0', 'failure': kind, 'finished_at': now()})
+                write(ledger_path, ledger)
+                raise ValueError(f'Provider attempt failed without charge ({kind}); not counted, generation may continue') from None
+            write(ledger_path, ledger)  # Preserve reserved/unknown.
             raise ValueError('Provider attempt unresolved; inspect saved response and reconcile, no automatic retry') from None
 
 
@@ -360,6 +399,41 @@ def reconcile(config, job_path):
         finish_response(folder, read(folder / 'response.json'), attempt)
         write(ledger_path, ledger)
         return attempt
+
+
+def settle_unknown(config, max_age_hours=SETTLE_AFTER_HOURS, at=None):
+    """Settle unknown-outcome attempts older than max_age_hours (owner decision, plan 4.6).
+
+    A saved response is reconciled as usual. Without one, the reserved amount is booked
+    as spent and the attempt as failed ('lost'); it still counts toward max_attempts.
+    Returns the settled attempts so the caller can notify the owner.
+    """
+    at = at or datetime.now(timezone.utc)
+    settled = []
+    with locked(config) as (state, ledger_path, ledger):
+        for entry in ledger['jobs'].values():
+            for attempt in entry['attempts']:
+                if attempt['state'] != 'unknown' and attempt.get('cost_usd') is not None:
+                    continue
+                age = at - datetime.fromisoformat(attempt['started_at'])
+                if age.total_seconds() < max_age_hours * 3600:
+                    continue
+                folder = within(state, attempt['folder'])
+                if (folder / 'response.json').exists():
+                    try:
+                        finish_response(folder, read(folder / 'response.json'), attempt)
+                    except (ValueError, KeyError, OSError):
+                        pass
+                if attempt['state'] == 'unknown' or attempt.get('cost_usd') is None:
+                    attempt.update({'state': SETTLED, 'cost_usd': attempt['reserved_usd'],
+                                    'settled_at': at.isoformat(),
+                                    'settled_reason': f'unknown outcome after {max_age_hours}h'})
+                settled.append({'job': entry['id'], 'learner': entry['learner'],
+                                'attempt': attempt['number'], 'state': attempt['state'],
+                                'cost_usd': attempt['cost_usd']})
+        if settled:
+            write(ledger_path, ledger)
+    return {'settled': settled, 'total_usd': str(spent(read_ledger(config)))}
 
 
 def revise(config, previous_job_path, job_path, reason):
@@ -381,7 +455,7 @@ def revise(config, previous_job_path, job_path, reason):
         if any(a.get('cost_usd') is None or a['state'] == 'unknown'
                for j in ledger['jobs'].values() for a in j['attempts']):
             raise ValueError('Resolve unknown provider charges before revision')
-        if len(entry['attempts']) >= int(config.get('max_attempts', 3)):
+        if len(counted(entry['attempts'])) >= int(config.get('max_attempts', 3)):
             raise ValueError('Attempt bound reached; a specific exception is required')
         reserve = money(config['reservation_usd'])
         learner_spent = sum((money(a['cost_usd']) for j in ledger['jobs'].values()
@@ -454,8 +528,8 @@ def preview_publication(config, job_path, infographic=False):
         entry = ledger['jobs'][job['id']]
         if entry['fingerprint'] != hashlib.sha256(json.dumps(job, sort_keys=True).encode()).hexdigest():
             raise ValueError('Job changed since generation')
-        attempt = entry['attempts'][-1]
-        if attempt.get('cost_usd') is None or not attempt.get('sha256'):
+        attempt = last_outcome(entry['attempts'])
+        if attempt is None or attempt.get('cost_usd') is None or not attempt.get('sha256'):
             raise ValueError('Resolve generation before preview')
         source = attempt_folder(config, job, attempt) / 'image.png'
         if sha(source) != attempt['sha256']:
@@ -560,6 +634,8 @@ def main():
     revision_parser.add_argument('--job', required=True)
     revision_parser.add_argument('--reason', required=True)
     sub.add_parser('status')
+    sub.add_parser('settle', help='Settle unknown-outcome attempts older than 24 hours').add_argument(
+        '--max-age-hours', type=float, default=SETTLE_AFTER_HOURS)
     sub.add_parser('check').add_argument('--provider', action='store_true',
                                        help='Read-only authenticated key/limit check; no image generation')
     sub.add_parser('init-state', help='Initialize a NEW request only; restore state for resumed work')
@@ -595,6 +671,8 @@ def main():
             print(json.dumps(preview_banner(config, args.job), ensure_ascii=False))
         elif args.command == 'preview-infographic':
             print(json.dumps(preview_infographic(config, args.job), ensure_ascii=False))
+        elif args.command == 'settle':
+            print(json.dumps(settle_unknown(config, args.max_age_hours), ensure_ascii=False))
         elif args.command == 'reconcile':
             print(json.dumps(reconcile(config, args.job), ensure_ascii=False))
         elif args.command == 'revise':
