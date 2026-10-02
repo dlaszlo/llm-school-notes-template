@@ -21,6 +21,7 @@ class Student:
     site_repo: str       # SSH address of the public site repo (gh-pages)
     site_key: Path
     drive_root: str      # Drive folder id of `Tanulási anyagok/<Tanuló>`
+    grade: int = 0       # school year, written into lesson-notes pages
     publish: bool = False
 
 
@@ -101,6 +102,7 @@ class Config:
     ssh_hostname: str = ""        # e.g. ssh.github.com when port 22 is closed
     ssh_port: int = 22
     release_dir: Path = Path("/srv/school-notes/current")
+    browser: Path = Path("~/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome").expanduser()
 
     def student(self, name: str) -> Student:
         if name not in self.students:
@@ -145,7 +147,8 @@ def _student(name: str, t: dict) -> Student:
     try:
         return Student(name=name, repo=t["repo"], repo_key=_path(t["repo_key"]),
                        site_repo=t["site_repo"], site_key=_path(t["site_key"]),
-                       drive_root=t["drive_root"], publish=bool(t.get("publish", False)))
+                       drive_root=t["drive_root"], grade=int(t.get("grade", 0)),
+                       publish=bool(t.get("publish", False)))
     except KeyError as exc:
         raise ConfigError(f"[students.{name}] missing {exc.args[0]}") from None
 
@@ -200,6 +203,7 @@ def parse(data: dict) -> Config:
         sources=_sub(Sources, data.get("sources")),
         limits=_sub(Limits, data.get("limits")),
         release_dir=_path(data.get("release_dir", "/srv/school-notes/current")),
+        **({"browser": _path(data["browser"])} if "browser" in data else {}),
     )
 
 

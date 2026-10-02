@@ -3,6 +3,8 @@ root = "/srv/school-notes"
 secrets_dir = "~/.config/school-notes/secrets"
 known_hosts = "~/.config/school-notes/github_known_hosts"
 email_to = "laszlo.david@gmail.com"
+# Chromium for the study-site (Playwright's copy on the VM).
+browser = "~/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"
 
 [git]
 name = "David Laszlo"
@@ -18,6 +20,7 @@ repo_key = "~/.ssh/school-notes-benedek"
 site_repo = "git@github.com:school-notes-hub/benedek9.git"
 site_key = "~/.ssh/school-notes-benedek9"
 drive_root = "REPLACE-with-folder-id-of-Tanulasi-anyagok/Benedek"
+grade = 9
 publish = false
 
 [students.barna]
@@ -26,6 +29,7 @@ repo_key = "~/.ssh/school-notes-barna"
 site_repo = "git@github.com:school-notes-hub/barna11.git"
 site_key = "~/.ssh/school-notes-barna11"
 drive_root = "REPLACE-with-folder-id-of-Tanulasi-anyagok/Barna"
+grade = 11
 publish = false
 
 # Owner's choice: the automatic writer is Astra/high, the reviewer Opus 5.5/high.

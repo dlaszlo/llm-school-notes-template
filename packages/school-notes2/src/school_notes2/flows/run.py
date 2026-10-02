@@ -1,0 +1,160 @@
+"""`school-notes run <learner>` (plan 5.1): the hourly cron entry point."""
+
+from datetime import datetime
+
+from ..git import workbranch
+from ..images import generate as image_generate
+from ..images import pending as image_pending
+from ..llm import launch
+from ..log import TZ
+from ..notify import Notice
+from ..state import phase
+from ..state.errors import Prerequisite
+from ..state.phase import Task
+from ..wiki import machine
+from . import fetch as fetch_flow
+from . import finish as finish_flow
+from . import handlers, policy, prereq, publish, setup, steps, writer
+from .context import Ctx
+
+
+def run(ctx: Ctx) -> int:
+    lock = ctx.lock()
+    if not lock.try_acquire("run"):
+        ctx.log.event("run.skip", "locked", target=str(lock.holder()))
+        _lock_alert(ctx, lock.holder())
+        return 0
+    task = None
+    try:
+        setup.ensure(ctx)
+        _settle_images(ctx)
+        task = phase.open_task(ctx.task_root(), ctx.name, "notes")
+        if not _may_run(ctx, task):
+            return 0
+        _prerequisites(ctx, task)
+        if task is None:
+            task = _new_task(ctx)
+        if task is None:
+            publish.catch_up(ctx)
+            return 0
+        task = ctx_bind(ctx, task)
+        advance(ctx, task)
+        policy.on_success(task)
+        return 0
+    except Exception as exc:  # noqa: BLE001 - every error has one documented outcome (8.1)
+        policy.on_error(exc, task=task, student=ctx.name, step="run", log=ctx.log,
+                        mailer=ctx.mailer)
+        return 1
+    finally:
+        lock.release()
+
+
+def ctx_bind(ctx: Ctx, task: Task) -> Task:
+    ctx.log = ctx.log.bind(run_id=task.run_id, run_log=task.dir / "run.log")
+    return task
+
+
+def _may_run(ctx: Ctx, task: Task | None) -> bool:
+    """5.1/1–2: needs-owner, an open interactive run, or stray edits keep cron away."""
+    if task is not None and task.data.get("needs_owner"):
+        ctx.log.event("run.skip", "needs_owner", target=task.run_id)
+        return False
+    if task is not None and task.mode == "interactive":
+        _daily(ctx, "interactive_open", task.run_id, "an interactive run was left without finish",
+               "finish or discard it in `school-notes chat`")
+        return False
+    if task is None and workbranch.worktree_dirty(ctx.worktree("notes")):
+        _daily(ctx, "worktree_dirty", "", "the notes worktree has changes outside any run",
+               "take them over or discard them in `school-notes chat`")
+        return False
+    return True
+
+
+def _prerequisites(ctx: Ctx, task: Task | None) -> None:
+    prereq.disk(ctx.cfg.root, ctx.cfg.limits.min_free_gb)
+    prereq.podman()
+    role, harness = ctx.cfg.role("writer")
+    if not launch.login_ok(learner=ctx.name, run_id=task.run_id if task else "", harness=harness,
+                           image=ctx.image_tag(), log=ctx.log):
+        raise Prerequisite(f"the {harness.name} login in the container expired",
+                           todo=f"log in once in `school-notes chat {ctx.name}`")
+
+
+def _new_task(ctx: Ctx) -> Task | None:
+    drive = fetch_flow.drive_client(ctx)
+    state = ctx.cfg.state_dir / ctx.name / "image-only-run.json"
+    today = datetime.now(TZ).date()
+    found = image_pending.scan(ctx.image_settings())
+    allow = bool(found["pending"]) and image_pending.image_only_run_allowed(state, today)
+    task = fetch_flow.start(ctx, "cron", drive, allow_image_only=allow)
+    if task is not None and task.get("image_only"):
+        image_pending.record_image_only_run(state, today)
+    return task
+
+
+def advance(ctx: Ctx, task: Task) -> None:
+    """Drive a cron notes task from its recorded phase to `done` (8.2)."""
+    if task.phase in ("downloading", "downloaded"):
+        drive = fetch_flow.drive_client(ctx)
+        if task.phase == "downloading":
+            fetch_flow.download(ctx, task, drive)
+        fetch_flow.move(ctx, task, drive)
+    if task.phase == "moved":
+        fetch_flow.prepare(ctx, task, new_subject_index=new_subject)
+    if task.phase in ("prepared", "writing") and not task.get("skip_writer"):
+        writer.run_ranges(ctx, task, handlers.build(ctx, task.dir))
+    try:
+        finish_flow.finish(ctx, task, notify_owner_items=lambda items: owner_items(ctx, task, items))
+    except steps.CheckFailed as exc:
+        steps.write_check_items(ctx, exc.items)
+        task.set_phase("writing", writing_k=len(task.get("ranges")))
+        raise
+
+
+def new_subject(repo, subject: str, drive_name: str) -> list[str]:
+    """5.9: the index skeleton of a subject seen for the first time."""
+    path = machine.create_subject(repo, subject, drive_name, f"{subject}-banner")
+    return [path] if path else []
+
+
+def owner_items(ctx: Ctx, task: Task, items: list[dict]) -> None:
+    """4.7: an item left open five times waits for the owner; one e-mail each."""
+    for item in items:
+        ctx.mailer.send(Notice(ctx.name, f"review_owner:{item['file']}:{item['item_id']}",
+                               task.run_id, "finish", "owner", f"{item['file']} {item['item_id']}"
+                               " stayed open five times", "settle it in `school-notes chat`"))
+
+
+def _settle_images(ctx: Ctx) -> None:
+    for settled in image_generate.settle_unknown(ctx.image_settings(), log=ctx.log):
+        ctx.mailer.send(Notice(ctx.name, f"image_settled:{settled.get('job', '')}", "",
+                               "images", "image", "an unknown-outcome image call was settled "
+                               "after 24 hours (booked as spent)", "nothing to do"))
+
+
+def _lock_alert(ctx: Ctx, holder: dict) -> None:
+    """7.8: a long-held lock stops automatic processing; one e-mail a day."""
+    since = holder.get("since")
+    if not since:
+        return
+    age_h = (datetime.now(TZ) - datetime.fromisoformat(since)).total_seconds() / 3600
+    limit = ctx.cfg.limits.chat_lock_alert_h if holder.get("kind") == "chat" else _other_limit_h(ctx)
+    if age_h > limit:
+        _daily(ctx, "lock_held", "", f"the lock is held by {holder.get('kind')} for {age_h:.1f} h",
+               "check the session or process holding it")
+
+
+def _other_limit_h(ctx: Ctx) -> float:
+    """The sum of the step time limits of a big run plus one hour (7.8)."""
+    t = ctx.cfg.timeouts
+    role, _ = ctx.cfg.role("writer")
+    seconds = 3 * role.timeout_s + t.build_s + t.browser_check_s + t.push_s + t.fetch_s
+    return seconds / 3600 + 1
+
+
+def _daily(ctx: Ctx, kind: str, run_id: str, message: str, todo: str) -> None:
+    ctx.log.event("run.skip", kind, target=run_id)
+    ctx.mailer.send(Notice(ctx.name, kind, run_id, "run", "stopped", message, todo))
+
+
+

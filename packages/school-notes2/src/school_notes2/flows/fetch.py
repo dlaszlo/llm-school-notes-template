@@ -101,7 +101,8 @@ def move(ctx: Ctx, task: Task, drive) -> None:
 def prepare(ctx: Ctx, task: Task, *, new_subject_index) -> None:
     """`moved` → `prepared`: work branch, sources, fetch data, tool writes (5.2/5, 6.5).
 
-    `new_subject_index(repo, subject) -> list[str]` writes a new subject's index skeleton."""
+    `new_subject_index(repo, subject, drive_name) -> list[str]` writes a new subject's
+    index skeleton."""
     wt = ctx.worktree("notes")
     base = _base(ctx, task, wt)
     workbranch.start(wt, task.run_id, base, interactive=task.mode == "interactive")
@@ -142,7 +143,7 @@ def _place_all(ctx: Ctx, task: Task, new_subject_index):
         pkg = item["package"]
         subject, is_new = subject_key(pkg["subject_name"], repo / "tools" / "subjects.json")
         if is_new:
-            written += new_subject_index(repo, subject)
+            written += new_subject_index(repo, subject, pkg["subject_name"])
         placed = place_package(repo, Downloaded(
             drive_folder=pkg["name"], subject=subject, role=pkg["role"],
             description=pkg["description"], new_subject=is_new,

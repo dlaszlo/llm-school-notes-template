@@ -8,10 +8,13 @@ RESULT = ".school-notes/result.json"
 
 
 def check_result(repo: Path, result: dict, fetch: dict, open_items: set[tuple[str, str]],
-                 closure_limit: int = 20) -> list[dict]:
-    """`open_items`: {(file, item_id)} the run may close (fetch.json's list)."""
+                 closure_limit: int = 20, whole_run: bool = True) -> list[dict]:
+    """`open_items`: {(file, item_id)} the run may close (fetch.json's list).
+
+    `whole_run`: coverage of every page of the run (finish, merged results); False checks
+    only the pages of fetch.json's `range` (the writer's MCP check of one range)."""
     out = []
-    out += check_coverage(result, fetch)
+    out += check_coverage(result, fetch, whole_run)
     new = {p["subject"] for p in fetch["packages"] if p.get("new_subject")}
     for s in result.get("new_subjects") or []:
         if s["subject"] not in new:
@@ -28,9 +31,12 @@ def check_result(repo: Path, result: dict, fetch: dict, open_items: set[tuple[st
     return out
 
 
-def check_coverage(result: dict, fetch: dict) -> list[dict]:
-    """The notes must cover every non-duplicate page of the whole run, and only those."""
+def check_coverage(result: dict, fetch: dict, whole_run: bool = True) -> list[dict]:
+    """The notes must cover every non-duplicate page (of the run, or of the range)."""
     wanted = {p["seq"] for p in fetch["pages"] if not p.get("duplicate_of")}
+    if not whole_run:
+        first, last = fetch["range"]["from"], fetch["range"]["to"]
+        wanted = {seq for seq in wanted if first <= seq <= last}
     known = {p["seq"] for p in fetch["pages"]}
     covered: set[int] = set()
     out = []
