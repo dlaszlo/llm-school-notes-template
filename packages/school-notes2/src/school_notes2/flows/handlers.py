@@ -8,6 +8,7 @@ from ..log import now_iso
 from ..mcp.server import Handlers
 from ..schemas import errors as schema_errors
 from ..state import phase
+from ..state.errors import NeedsOwner
 from ..state.files import read_json
 from ..wiki import check as wiki_check
 from ..wiki.check_result import check_result
@@ -17,12 +18,18 @@ from . import steps
 from .context import Ctx
 
 
-def build(ctx: Ctx, task_dir, *, fetch=None, finish=None) -> Handlers:
-    """`task_dir` names the run; the task is reloaded per call because background jobs run
-    in their own processes."""
+def build(ctx: Ctx, task_dir=None, *, fetch=None, finish=None) -> Handlers:
+    """`task_dir` names the run (cron). Interactive sessions pass None: the current run is
+    the learner's open notes task, which a new `fetch` replaces. The task is reloaded per
+    call because background jobs run in their own processes."""
 
     def task():
-        return phase.load(task_dir)
+        if task_dir is not None:
+            return phase.load(task_dir)
+        found = phase.open_task(ctx.task_root(), ctx.name, "notes")
+        if found is None:
+            raise NeedsOwner("there is no open run in this session", todo="call fetch first")
+        return found
 
     return Handlers(
         check=lambda: check(ctx, task()),

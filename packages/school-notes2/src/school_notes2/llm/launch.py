@@ -178,6 +178,10 @@ def _read_output(run: RoleRun, transcript: Path) -> tuple[dict | None, list[str]
     return value, problems, run.output_host.exists()
 
 
+class TimedOut(BadWork):
+    """The role ran out of time: bad work for the writer, a halved range for the reviewer."""
+
+
 def classify(rc: int, timed_out: bool, changed: bool, produced: bool,
              output: dict | None, problems: list[str]) -> Exception | None:
     """Map one role call to the 8.1 classes; None means success."""
@@ -196,7 +200,7 @@ def classify(rc: int, timed_out: bool, changed: bool, produced: bool,
         return NeedsOwner(f"the harness command is missing in the image (exit {rc})",
                           todo="check the role template and the installed image")
     if timed_out:
-        return BadWork("the LLM ran out of time")
+        return TimedOut("the LLM ran out of time")
     if rc == 0 and output is not None:
         return None
     if rc == 0:
