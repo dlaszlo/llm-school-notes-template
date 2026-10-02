@@ -24,7 +24,7 @@ dev = ["pytest>=8,<10"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-school_notes2 = ["schemas/*.json", "container/*", "ops/*", "llm/prompts/*.txt"]
+school_notes2 = ["schemas/*.json", "container/*", "ops/*", "llm/prompts/*.txt", "llm/*.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
