@@ -1,5 +1,6 @@
 """Behavior checks for spending, versioning and review boundaries; no API calls."""
 import base64
+from datetime import datetime, timedelta, timezone
 import io
 import json
 from pathlib import Path
@@ -238,6 +239,66 @@ class ExecutorTest(unittest.TestCase):
         self.job['id']='topic-infographic';self.job['role']='infographic';self.save()
         with self.assertRaisesRegex(ValueError,'Reconcile'):self.generate()
         self.assertEqual(self.calls,0)
+
+    def test_free_failures_cost_nothing_and_do_not_count(self):
+        import socket
+        def http(code):
+            def call(payload, config):
+                raise m.urllib.error.HTTPError(m.API, code, 'PRIVATE', {}, io.BytesIO(b'PRIVATE_BODY'))
+            return call
+        def refused(payload, config):
+            raise m.urllib.error.URLError(ConnectionRefusedError())
+        def dns(payload, config):
+            raise m.urllib.error.URLError(socket.gaierror('no name'))
+        for transport, kind in ((http(429), 'http-429'), (http(503), 'http-503'), (http(400), 'http-400'),
+                                (refused, 'not-sent'), (dns, 'not-sent')):
+            with self.assertRaisesRegex(ValueError, 'without charge'):
+                m.run_generate(self.config, self.path, transport=transport)
+            last = m.read(self.root/'state/ledger.json')['jobs'][self.job['id']]['attempts'][-1]
+            self.assertEqual((last['state'], last['cost_usd'], last['failure']), ('failed', '0', kind))
+        # Five free failures neither block other jobs nor use up the three attempts.
+        repair = self.root/'repair.txt'; repair.write_text('Fix')
+        for n in range(3):
+            r = self.generate(repair if n else None)
+            m.review(self.config, self.path, self.report(r, 'rejected'))
+        self.assertEqual(self.calls, 3)
+        with self.assertRaisesRegex(ValueError, 'Attempt bound'):
+            self.generate(repair)
+        self.assertEqual(m.spent(m.read(self.root/'state/ledger.json')), m.Decimal('0.3'))
+
+    def test_free_failure_after_rejection_still_needs_repair(self):
+        r = self.generate()
+        m.review(self.config, self.path, self.report(r, 'rejected'))
+        repair = self.root/'repair.txt'; repair.write_text('Fix')
+        def refused(payload, config):
+            raise m.urllib.error.URLError(ConnectionRefusedError())
+        with self.assertRaisesRegex(ValueError, 'without charge'):
+            m.run_generate(self.config, self.path, str(repair), refused)
+        with self.assertRaisesRegex(ValueError, 'Repair requires'):
+            self.generate()
+        self.assertEqual(self.generate(repair)['state'], 'generated')
+
+    def test_unknown_outcome_settled_after_a_day(self):
+        def timeout(payload, config): raise TimeoutError()
+        with self.assertRaises(ValueError): m.run_generate(self.config, self.path, transport=timeout)
+        self.assertEqual(m.settle_unknown(self.config)['settled'], [])  # too young
+        later = datetime.now(timezone.utc) + timedelta(hours=25)
+        result = m.settle_unknown(self.config, at=later)
+        self.assertEqual(result['settled'][0]['state'], 'lost')
+        self.assertEqual(result['settled'][0]['cost_usd'], '0.2')
+        self.assertEqual(result['total_usd'], '0.2')
+        # Generation continues; the lost attempt counts toward the bound.
+        r = self.generate()
+        self.assertEqual(r['state'], 'generated')
+        self.assertEqual(r['number'], 2)
+        self.assertEqual(m.settle_unknown(self.config, at=later)['settled'], [])
+
+    def test_settle_reconciles_a_saved_response(self):
+        r = self.generate()
+        ledger_path = self.root/'state/ledger.json'
+        ledger = m.read(ledger_path); ledger['jobs'][self.job['id']]['attempts'][0]['state'] = 'unknown'; m.write(ledger_path, ledger)
+        later = datetime.now(timezone.utc) + timedelta(hours=25)
+        self.assertEqual(m.settle_unknown(self.config, at=later)['settled'][0]['state'], 'generated')
 
     def test_rename_cannot_reset_attempts(self):
         self.generate();self.job['id']='renamed';self.save()

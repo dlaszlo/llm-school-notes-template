@@ -1,0 +1,50 @@
+"""Which images can be generated now (plan 5.5), decided by the tool alone.
+
+Pending: its marker is in the wiki, its plan exists, attempts are left, today's budget
+is not used up, and no paid call has an unknown outcome. Exhausted images are listed
+separately for `status` and the one-time e-mail.
+"""
+
+from datetime import date
+from pathlib import Path
+
+from ..state.files import read_json, write_json
+from . import plans
+from .budget import budget_left, unknown_calls
+from .generate import attempts_used, awaiting_review
+from .settings import ImageSettings
+
+
+def scan(settings: ImageSettings) -> dict:
+    ledger = settings.ledger()
+    waiting = bool(unknown_calls(ledger))
+    has_budget = budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd)
+    result = {"pending": [], "accepted_not_inserted": [], "exhausted": [], "missing_plan": [],
+              "waiting_unknown": waiting, "budget_left": has_budget}
+    for plan_id, pages in sorted(plans.find_markers(settings.worktree).items()):
+        item = {"plan_id": plan_id, "page": pages[0]}
+        entry = ledger["jobs"].get(plans.job_id(settings.learner, plan_id))
+        if not _plan_exists(settings, plan_id):
+            result["missing_plan"].append(item)
+        elif entry and entry.get("accepted"):
+            result["accepted_not_inserted"].append(item)
+        elif (entry and attempts_used(entry) >= settings.max_attempts
+              and not awaiting_review(entry)):
+            result["exhausted"].append(item)
+        elif has_budget and not waiting:
+            result["pending"].append(item)
+    return result
+
+
+def _plan_exists(settings: ImageSettings, plan_id: str) -> bool:
+    return ((settings.worktree / plans.target(plan_id)).is_file()
+            or (settings.plans_dir / f"{plan_id}.json").is_file())
+
+
+def image_only_run_allowed(state_file: Path, today: date) -> bool:
+    """A run without a new notebook, only to fill images, at most once a day."""
+    return (read_json(state_file, {}) or {}).get("last") != today.isoformat()
+
+
+def record_image_only_run(state_file: Path, today: date) -> None:
+    write_json(state_file, {"last": today.isoformat()})

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Image plan written by the LLM: .school-notes/images/<id>.json (plan 4.6)",
+  "type": "object",
+  "required": ["role", "goal", "scope", "decision_reason", "context", "composition", "visible_text",
+               "claims", "style", "aspect_ratio", "constraints"],
+  "additionalProperties": false,
+  "properties": {
+    "role": {"enum": ["banner", "infographic", "infographic-2"]},
+    "language": {"type": "string"},
+    "goal": {"type": "string", "minLength": 1},
+    "scope": {"type": "string", "minLength": 1},
+    "decision_reason": {"type": "string", "minLength": 1},
+    "context": {"type": "string", "minLength": 1},
+    "composition": {"type": "string", "minLength": 1},
+    "visible_text": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "claims": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "additionalProperties": false, "required": ["text", "source"],
+      "properties": {"text": {"type": "string", "minLength": 1},
+                     "source": {"type": "string", "minLength": 1}}}},
+    "style": {"type": "string", "minLength": 1},
+    "aspect_ratio": {"enum": ["21:9", "3:2", "2:3", "4:3", "3:4"]},
+    "constraints": {"type": "string", "minLength": 1},
+    "relationships": {}, "sequence": {}, "comparison": {}, "metaphor": {}, "example": {},
+    "optional": {}
+  },
+  "allOf": [{"if": {"properties": {"role": {"const": "banner"}}},
+             "then": {"properties": {"aspect_ratio": {"const": "21:9"}}}}]
+}

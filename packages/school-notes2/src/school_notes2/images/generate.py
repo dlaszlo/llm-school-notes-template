@@ -1,0 +1,144 @@
+"""`image_generate` (plan 4.6, 5.5): budget, lock, call, preview, hand back to the LLM.
+
+Expected outcomes are returned as a `state`, never raised, so the MCP answer can explain
+them: generated, accepted, waiting-unknown, budget-exhausted, exhausted, failed,
+unknown, error. Retries only on a connection error and on 429.
+"""
+
+import shutil
+import time
+from pathlib import Path
+
+from ..log import Log
+from . import plans
+from .budget import budget_left, images_lock, unknown_calls
+from .executor import ExecutorError, ExecutorTimeout, call, ensure_ledger
+from .settings import ImageSettings
+
+MAX_REPAIR_CHARS = 2000
+RETRY_DELAYS = (15, 60)
+RETRYABLE = ("not-sent", "http-429")
+
+
+def generate(settings: ImageSettings, plan_id: str, repair_note: str | None = None, *,
+             log: Log, sleep=time.sleep) -> dict:
+    plans.check_id(plan_id)
+    if repair_note is not None and len(repair_note) > MAX_REPAIR_CHARS:
+        return {"state": "error", "message": f"repair_note is longer than {MAX_REPAIR_CHARS}"}
+    with images_lock(settings.lock_path, settings.lock_timeout_s):
+        try:
+            job = plans.build_job(settings, plan_id)
+        except ValueError as exc:
+            return {"state": "error", "message": str(exc)}
+        plans.keep(settings, plan_id)
+        job_path = plans.write_job(settings, plan_id, job)
+        blocked = _blocked(settings, job["id"])
+        if blocked:
+            log.event("image.generate", blocked["state"], target=plan_id)
+            return blocked
+        ensure_ledger(settings, job["target"])
+        result = _attempts(settings, job, job_path, repair_note, log, sleep)
+        if result["state"] == "generated":
+            result.update(_preview(settings, job, result))
+        log.event("image.generate", result["state"], target=plan_id,
+                  cost_usd=result.get("cost_usd"), attempt=result.get("number"))
+        return result
+
+
+def _blocked(settings: ImageSettings, job_id: str) -> dict | None:
+    ledger = settings.ledger()
+    entry = ledger["jobs"].get(job_id)
+    if entry and entry.get("accepted"):
+        return None  # learning_image answers with the accepted image; no spending
+    if unknown_calls(ledger):
+        return {"state": "waiting-unknown",
+                "message": "a paid image call has an unknown outcome; generation waits "
+                           "(settled automatically after 24 hours)"}
+    if entry and awaiting_review(entry):
+        return None
+    if entry and attempts_used(entry) >= settings.max_attempts:
+        return {"state": "exhausted", "message": "all attempts used; only interactive work"}
+    if not budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd):
+        return {"state": "budget-exhausted", "message": "today's image budget is used up"}
+    return None
+
+
+def attempts_used(entry: dict) -> int:
+    return sum(1 for a in entry["attempts"] if a["state"] != "failed")
+
+
+def awaiting_review(entry: dict) -> bool:
+    real = [a for a in entry["attempts"] if a["state"] not in ("failed", "lost")]
+    return bool(real) and real[-1]["state"] == "generated"
+
+
+def _attempts(settings, job, job_path, repair_note, log, sleep) -> dict:
+    files = {"repair.txt": repair_note} if repair_note else None
+    args = ["--job", str(job_path)] + (["--repair", "{tmp}/repair.txt"] if repair_note else [])
+    for delay in (*RETRY_DELAYS, None):
+        try:
+            answer = call(settings, "generate", args, job["target"], with_key=True, files=files)
+            return _success(settings, job["id"], answer)
+        except ExecutorTimeout:
+            return {"state": "unknown", "message": "the call timed out after sending; "
+                                                   "generation waits until it is settled"}
+        except ExecutorError as exc:
+            last = _last_attempt(settings, job["id"])
+            failure = last.get("failure") if last and last["state"] == "failed" else None
+            if failure in RETRYABLE and delay is not None and _blocked(settings, job["id"]) is None:
+                log.event("image.generate", f"retry ({failure})", target=job["id"])
+                sleep(delay)
+                continue
+            if last and last["state"] == "unknown":
+                return {"state": "unknown", "message": str(exc)}
+            if failure:
+                return {"state": "failed", "failure": failure, "cost_usd": "0", "message": str(exc)}
+            return {"state": "error", "message": str(exc)}
+    raise AssertionError("unreachable")
+
+
+def _success(settings: ImageSettings, job_id: str, answer: dict) -> dict:
+    if answer.get("state") == "accepted":
+        return {"state": "accepted", "path": answer.get("path"),
+                "message": "already accepted; call image_accept to insert it if the marker remains"}
+    entry = settings.ledger()["jobs"][job_id]
+    return {"state": "generated", "number": answer["number"], "sha256": answer["sha256"],
+            "cost_usd": answer.get("cost_usd"),
+            "attempts_left": settings.max_attempts - attempts_used(entry)}
+
+
+def _last_attempt(settings: ImageSettings, job_id: str) -> dict | None:
+    entry = settings.ledger()["jobs"].get(job_id)
+    return entry["attempts"][-1] if entry and entry["attempts"] else None
+
+
+def _preview(settings: ImageSettings, job: dict, result: dict) -> dict:
+    """Publication preview + both files under .school-notes/images/ for the LLM to view."""
+    command = "preview-banner" if job["role"] == "banner" else "preview-infographic"
+    plan_id = job["id"].removeprefix(f"{settings.learner}-")
+    preview = call(settings, command, ["--job", str(plans.job_path(settings, plan_id))],
+                   job["target"])
+    folder = Path(preview["path"]).parent
+    settings.work_images.mkdir(parents=True, exist_ok=True)
+    stem = f"{plan_id}-{result['number']}"
+    image = settings.work_images / f"{stem}.png"
+    publication = settings.work_images / f"{stem}-publication.webp"
+    shutil.copyfile(folder / "image.png", image)
+    shutil.copyfile(preview["path"], publication)
+    return {"image": image.relative_to(settings.worktree).as_posix(),
+            "preview": publication.relative_to(settings.worktree).as_posix(),
+            "preview_sha256": preview["sha256"]}
+
+
+def settle_unknown(settings: ImageSettings, *, log: Log, max_age_hours: float = 24) -> list[dict]:
+    """Settle unknown-outcome calls older than 24 hours; the caller e-mails the result."""
+    if not (settings.state_dir / "ledger.json").is_file():
+        return []
+    with images_lock(settings.lock_path, settings.lock_timeout_s):
+        if not unknown_calls(settings.ledger()):
+            return []
+        settled = call(settings, "settle", ["--max-age-hours", str(max_age_hours)],
+                       plans.target("settle"))["settled"]
+    for item in settled:
+        log.event("image.settle", item["state"], target=item["job"], cost_usd=item["cost_usd"])
+    return settled
