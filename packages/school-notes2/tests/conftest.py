@@ -36,3 +36,11 @@ def git_factory(log):
     def factory(git_dir: Path, work_tree: Path | None = None) -> Git:
         return Git(git_dir, "Test Owner", "owner@example.com", log, None, work_tree)
     return factory
+
+
+@pytest.fixture
+def local_origin(monkeypatch):
+    """Production forbids the file protocol; tests use local bare origins."""
+    from school_notes2.git import run
+    fixed = tuple(c for c in run.FIXED_C if not c.startswith("protocol.file"))
+    monkeypatch.setattr(run, "FIXED_C", fixed + ("protocol.file.allow=always",))

@@ -12,7 +12,7 @@ MAIN_SPEC = "refs/heads/main:refs/remotes/origin/main"
 REVIEWED_SPEC = "refs/heads/claude-reviewed:refs/remotes/origin/claude-reviewed"
 GH_PAGES_SPEC = "refs/heads/gh-pages:refs/remotes/origin/gh-pages"
 NOTES_REFSPECS = (MAIN_SPEC,)
-SITE_REFSPECS = (GH_PAGES_SPEC,)
+SITE_REFSPECS = (MAIN_SPEC,)    # gh-pages is fetched explicitly once it exists
 
 
 def ensure_bare(git: Git, url: str, refspecs: tuple[str, ...], timeout: float = 600) -> None:

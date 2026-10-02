@@ -134,7 +134,7 @@ class GitFailed(Exception):
 def classify(command: str, stderr: str, rc: int) -> Exception:
     """Map a failed Git call to the 6.8 classes. Unknown network errors count as transient."""
     if any(m in stderr for m in RACE) and command == "push":
-        return Race(f"push rejected: someone pushed first")
+        return Race("push rejected: someone pushed first")
     if command == "fetch" and ("non-fast-forward" in stderr or "(forced update)" in stderr
                                or "rejected" in stderr):
         return NeedsOwner("the remote history was rewritten (non-fast-forward fetch)",
