@@ -19,4 +19,9 @@ log = work / "wiki/log.md"
 log.write_text(log.read_text(encoding="utf-8") + "\n## 2026-10-03\n\n* **Update**: Teszt óra feldolgozva.\n",
                encoding="utf-8")
 result = {"status": "done", "notes": [{"file": note, "pages": seqs}]}
+if mode == "question":
+    result = {"status": "question", "questions": [{"text": "Melyik tantárgy füzete ez?"}]}
+calls = work / ".school-notes" / "calls"
+with open(work.parent / f"{work.name}-writer-calls.log", "a") as stream:
+    stream.write(f"{fetch['range']['k']}/{fetch['range']['n']}\n")
 (work / ".school-notes/result.json").write_text(json.dumps(result), encoding="utf-8")
