@@ -79,3 +79,10 @@ test('public view: footnotes stay consistent when private items, headings or cit
   // A title that is only a grade prefix keeps its text.
   assert.equal((await renderMarkdown('# 9. évfolyam: *Halmazok*\n', { resolveUrl, publicView: true })).title, '9. évfolyam: ');
 });
+
+test('the footnote list has a visible heading', async () => {
+  const { renderMarkdown } = await import('../lib/markdown.mjs');
+  const out = await renderMarkdown('---\ntitle: T\n---\n# Nyitott kérdések\n\nKérdés.[^w]\n\n[^w]: [W](https://w.example)\n', { resolveUrl: async h => h, publicView: true });
+  assert.match(out.html, /<section data-footnotes="" class="footnotes"><h2 id="user-content-footnote-label">Források<\/h2>/);
+  assert.doesNotMatch(out.html, /sr-only/);
+});

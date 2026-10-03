@@ -175,7 +175,9 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
   const audit = { title, formulas: [], mermaid: [], labels: [], links: [], images: [] };
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
     .use(() => tree => { if (publicView) publicMarkdown(tree); })
-    .use(remarkRehype, { allowDangerousHtml: true, footnoteLabel })
+    // The footnote list gets a visible heading (no sr-only class), so it never reads as part of
+    // the section above it.
+    .use(remarkRehype, { allowDangerousHtml: true, footnoteLabel, footnoteLabelProperties: {} })
     .use(rehypeRaw)
     .use(() => tree => {
       // Markdown inside an HTML summary is raw text; recover its inline formulas.

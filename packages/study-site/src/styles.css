@@ -140,3 +140,8 @@ starlight-theme-select select { width: auto; min-width: max-content; text-overfl
 
 /* The one-line note on what the notes are based on: small and quiet, under the content. */
 .study-source-note { margin-block: 2rem 0; font-size: .8rem; color: var(--sl-color-gray-3, #666); }
+
+/* The footnote list: set apart from the last section by a rule and a visible heading. */
+.study-content section.footnotes { margin-top: 2.5rem; padding-top: .75rem; border-top: 1px solid var(--sl-color-hairline, #ccc); font-size: .875rem; }
+.study-content section.footnotes > h2 { margin-top: 0; font-size: 1rem; }
+
