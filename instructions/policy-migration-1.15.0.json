@@ -80,9 +80,9 @@
       "heading": "Sources",
       "destination": "instructions/sources-and-evidence.md",
       "source_sha256": "666eba81e2908049ac684ac9238acd1008b77d14afc370bec536d9045bb5c503",
-      "migrated_sha256": "3dd901d7a6cf87dd50fc4dc94e4c9103d6c2305799daf68bfd97b911504fcb20",
+      "migrated_sha256": "938b90051df6c61b2f482efbf2e5962cb219a7c0216937885283d24f79985a24",
       "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
-      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
+      "updated_in": "1.16.1: original teaching files stay on Drive (owner, 2026-10-03)"
     },
     {
       "heading": "References",
