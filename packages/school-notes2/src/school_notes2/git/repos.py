@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from ..state import safefs
 from .run import Git
 
 # No `+`: a rewritten remote history makes the fetch fail instead of silently moving.
@@ -62,7 +63,10 @@ def ensure_worktree(git: Git, path: Path, start: str) -> Path:
 def dot_git_ok(path: Path, recorded: bytes) -> bool:
     """The worktree's .git file must be byte-identical to the recorded one (plan 7.6)."""
     dot_git = path / ".git"
-    return dot_git.is_file() and not dot_git.is_symlink() and dot_git.read_bytes() == recorded
+    try:
+        return safefs.read_bytes(path, ".git") == recorded
+    except (FileNotFoundError, safefs.UnsafePath):
+        return False
 
 
 def has_ref(git: Git, ref: str) -> bool:

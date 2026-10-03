@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from ..state.errors import NeedsOwner, Race, Transient
+from ..state import safefs
 from ..state.phase import Task
 from . import conflicts, repos
 from .run import Git, GitFailed, classify, failure_text, with_retries
@@ -103,8 +104,8 @@ def g0_cleanup(task: Task, wt: Git, hooks: Hooks) -> None:
 def _continue_conflicted_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
     """The owner resolved the content conflict interactively (6.7): finish the rebase."""
     for path in task.get("conflict_files", []):
-        file = wt.work_tree / path
-        if file.is_file() and conflicts.has_markers(file.read_text("utf-8", "replace")):
+        if safefs.is_file(wt.work_tree, path) and conflicts.has_markers(
+                safefs.read_text(wt.work_tree, path, errors="replace")):
             raise NeedsOwner(f"{path} still has conflict markers",
                              todo="resolve the markers in `school-notes chat`, then finish")
     _add(wt, hooks)

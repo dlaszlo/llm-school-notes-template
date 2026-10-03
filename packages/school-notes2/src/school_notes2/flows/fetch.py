@@ -2,7 +2,6 @@
 
 Every phase is recorded before its external action (8.2) and can be repeated."""
 
-import hashlib
 import shutil
 from dataclasses import asdict
 from datetime import datetime
@@ -26,6 +25,7 @@ from ..sources.naming import subject_key
 from ..sources.place import Downloaded, Settings, place_package
 from ..sources.prepare import pdf_page_count
 from ..state import phase
+from ..state import safefs
 from ..state.errors import Transient
 from ..state.files import write_json
 from ..state.phase import Task
@@ -132,7 +132,7 @@ def prepare(ctx: Ctx, task: Task, *, new_subject_index) -> None:
                    open_review_items=review_files.open_items(ctx.notes_path, task.mode),
                    pending_images=found["pending"],
                    skip_writer=bool(pages) and not fresh and not found["pending"],
-                   dot_git=(ctx.notes_path / ".git").read_text(encoding="utf-8"))
+                   dot_git=safefs.read_text(ctx.notes_path, ".git"))
 
 
 def _base(ctx: Ctx, task: Task, wt) -> str:
@@ -204,10 +204,6 @@ def fetch_json(task: Task, k: int) -> dict:
         data["offline"] = True
     validate("fetch", data)
     return data
-
-
-def _sha(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _pack(pkg: Package) -> dict:
