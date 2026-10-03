@@ -9,7 +9,7 @@ from ..mcp.server import Handlers
 from ..schemas import errors as schema_errors
 from ..state import phase
 from ..state.errors import NeedsOwner
-from ..state.files import read_json
+from ..state import safefs
 from ..wiki import check as wiki_check
 from ..wiki.check_result import check_result
 from . import fetch as fetch_flow
@@ -48,7 +48,7 @@ def check(ctx: Ctx, task) -> dict:
         steps.guard_step(ctx, task)
     except steps.CheckFailed as exc:
         problems += exc.items
-    result = read_json(ctx.notes_path / workbranch.WORKDIR / "result.json")
+    result = safefs.read_json(ctx.notes_path, f"{workbranch.WORKDIR}/result.json")
     if result is not None:
         invalid = schema_errors("result", result)
         if invalid:

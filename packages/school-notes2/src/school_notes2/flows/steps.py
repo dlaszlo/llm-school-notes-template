@@ -12,7 +12,8 @@ from ..review import files as review_files
 from ..review import index as review_index
 from ..schemas import validate
 from ..state.errors import BadWork, NeedsOwner
-from ..state.files import read_json, write_json
+from ..state import safefs
+from ..state.files import write_json
 from ..state.phase import Task
 from ..wiki import check as wiki_check
 from ..wiki import frontmatter, generate, guard, machine, markers, public
@@ -79,7 +80,7 @@ def merged_result(ctx: Ctx, task: Task) -> dict:
     range it worked on (writing_k); in a session earlier ranges are optional (5.8)."""
     n = len(task.get("ranges"))
     if task.mode == "interactive":
-        own = read_json(ctx.notes_path / workbranch.WORKDIR / "result.json")
+        own = safefs.read_json(ctx.notes_path, f"{workbranch.WORKDIR}/result.json")
         if own is not None:
             validate("result", own)
             write_json(task.dir / f"result-{min(task.get('writing_k', n), n)}.json", own)
@@ -136,8 +137,8 @@ def check_changed(ctx: Ctx, task: Task) -> None:
     errors = wiki_check.errors(items)
     if errors:
         raise CheckFailed(errors)
-    write_json(ctx.notes_path / workbranch.WORKDIR / "check.json",
-               [i for i in items if i.get("severity") == "warning"], mode=0o644)
+    safefs.write_json(ctx.notes_path, f"{workbranch.WORKDIR}/check.json",
+                      [i for i in items if i.get("severity") == "warning"])
 
 
 def generate_all(ctx: Ctx, task: Task) -> None:
@@ -155,7 +156,7 @@ def generate_all(ctx: Ctx, task: Task) -> None:
 
 def write_check_items(ctx: Ctx, items: list[dict]) -> None:
     validate("check", items)
-    write_json(ctx.notes_path / workbranch.WORKDIR / "check.json", items, mode=0o644)
+    safefs.write_json(ctx.notes_path, f"{workbranch.WORKDIR}/check.json", items)
 
 
 def is_llm_writable(rel: str) -> bool:
@@ -174,12 +175,12 @@ def record_tool_files(task: Task, repo: Path, written: list[str]) -> None:
 def _record_writes(task: Task, repo: Path, *, whole: list[str], parts: list[str]) -> None:
     files = dict(task.get("tool_writes", {}))
     for rel in whole:
-        if (repo / rel).is_file():
-            files[rel] = hashlib.sha256((repo / rel).read_bytes()).hexdigest()
+        if safefs.is_file(repo, rel):
+            files[rel] = hashlib.sha256(safefs.read_bytes(repo, rel)).hexdigest()
     tool_parts = dict(task.get("tool_parts", {}))
     for rel in parts:
-        if (repo / rel).is_file():
-            tool_parts[rel] = guard.parts_hash((repo / rel).read_text(encoding="utf-8"))
+        if safefs.is_file(repo, rel):
+            tool_parts[rel] = guard.parts_hash(safefs.read_text(repo, rel))
     task.update(tool_writes=files, tool_parts=tool_parts)
 
 
@@ -205,7 +206,8 @@ def llm_snapshot(ctx: Ctx, task: Task) -> dict:
         if rel in task.get("tool_writes", {}):
             continue
         path = ctx.notes_path / rel
-        now = _llm_hash(rel, path.read_bytes()) if path.is_file() else None
+        now = _llm_hash(rel, safefs.read_bytes(ctx.notes_path, rel)) \
+            if safefs.is_file(ctx.notes_path, rel) else None
         old = wt.run("show", f"{base}:{rel}", check=False)
         if old.returncode == 0 and now == _llm_hash(rel, old.stdout):
             continue

@@ -11,6 +11,7 @@ import tempfile
 from functools import cache
 from pathlib import Path
 
+from ..state import safefs
 from .settings import ImageSettings
 
 
@@ -37,9 +38,22 @@ def read_key(key_file: Path) -> str:
     raise ExecutorError("OpenRouter key missing in the secrets file")
 
 
+# The folders learning_image.py writes into inside the worktree. It resolves and contains
+# its own paths; refusing a symlink here first means it never starts on a planted link.
+WRITTEN_DIRS = (".school-notes", ".school-notes/images", "wiki", "wiki/assets",
+                "wiki/assets/banner", "wiki/assets/infographic", "docs", "docs/evidence",
+                "docs/evidence/media")
+
+
+def assert_no_links(worktree: Path) -> None:
+    for rel in WRITTEN_DIRS:
+        safefs.exists(worktree, rel)          # raises UnsafePath on any symlink component
+
+
 def call(settings: ImageSettings, command: str, args: list[str], target: str,
          with_key: bool = False, files: dict[str, str] | None = None) -> dict:
     """Run one learning_image.py command; `files` are written next to the config first."""
+    assert_no_links(settings.worktree)
     with tempfile.TemporaryDirectory(prefix="li-", dir=_scratch(settings)) as tmp:
         folder = Path(tmp)
         config = settings.write_executor_config(folder, target)

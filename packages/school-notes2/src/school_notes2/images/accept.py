@@ -15,7 +15,7 @@ from pathlib import Path
 
 from ..log import Log
 from ..schemas import SchemaError, validate
-from ..state.files import write_text
+from ..state import safefs
 from . import plans
 from .budget import images_lock
 from .executor import ExecutorError, call, module
@@ -91,14 +91,14 @@ def _insert(settings, plan_id, job, attempt, answer, review, append_evidence) ->
     receipt_dir = f"docs/evidence/media/{job['id']}"
     page = _page_with_marker(settings, plan_id)
     if page is not None:
-        text = (settings.worktree / page).read_text(encoding="utf-8")
+        text = safefs.read_text(settings.worktree, page)
         block = description_block(page, asset, answer["published_sha256"], job, review,
                                   f"{receipt_dir}/review-{attempt['number']}.json")
-        write_text(settings.worktree / page, text.replace(plans.marker(plan_id), block, 1), 0o644)
+        safefs.write_text(settings.worktree, page, text.replace(plans.marker(plan_id), block, 1))
         append_evidence(page, evidence_entry(job, attempt, answer, review, receipt_dir))
     writes = [asset, *([page] if page else []), *_receipt_files(settings.worktree, receipt_dir)]
     return {"state": "accepted", "path": asset, "page": page,
-            "tool_writes": [{"path": p, "sha256": _sha(settings.worktree / p)} for p in writes]}
+            "tool_writes": [{"path": p, "sha256": _sha(settings.worktree, p)} for p in writes]}
 
 
 def _page_with_marker(settings: ImageSettings, plan_id: str) -> str | None:
@@ -138,9 +138,8 @@ def evidence_entry(job, attempt, answer, review, receipt_dir) -> dict:
 
 
 def _receipt_files(worktree: Path, receipt_dir: str) -> list[str]:
-    folder = worktree / receipt_dir
-    return sorted(p.relative_to(worktree).as_posix() for p in folder.iterdir() if p.is_file())
+    return safefs.walk_files(worktree, receipt_dir)
 
 
-def _sha(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _sha(worktree: Path, rel: str) -> str:
+    return hashlib.sha256(safefs.read_bytes(worktree, rel)).hexdigest()

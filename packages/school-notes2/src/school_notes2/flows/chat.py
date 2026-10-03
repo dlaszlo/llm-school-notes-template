@@ -10,7 +10,8 @@ from ..llm import launch
 from ..schemas import errors as schema_errors
 from ..state import phase
 from ..state.errors import NeedsOwner, SnError, Transient
-from ..state.files import read_json, write_json
+from ..state import safefs
+from ..state.files import write_json
 from . import clear, fetch as fetch_flow
 from . import finish as finish_flow
 from . import handlers, policy, run as run_flow, setup, steps, writer
@@ -137,7 +138,7 @@ def _after_question_session(ctx: Ctx, task: phase.Task) -> None:
 
 def save_session_result(ctx: Ctx, task: phase.Task) -> bool:
     """Store a valid `done` result.json of a question session as result-<k>."""
-    own = read_json(ctx.notes_path / ".school-notes" / "result.json")
+    own = safefs.read_json(ctx.notes_path, ".school-notes/result.json")
     if own is None or schema_errors("result", own) or own.get("status") != "done":
         return False
     k = min(task.get("writing_k", 1), len(task.get("ranges")))
