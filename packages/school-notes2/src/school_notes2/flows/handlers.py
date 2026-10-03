@@ -74,7 +74,7 @@ def accept(ctx: Ctx, task, plan_id: str, review: dict) -> dict:
                                observed=entry["observed"], decision=entry["decision"],
                                note=entry.get("description", ""), checks=entry.get("checks"))
         evidence.extend(records.append(ctx.notes_path, [record], run_id=task.run_id,
-                                       checker=f"{verifier} (kép)", at=now_iso()))
+                                       checker=verifier, at=now_iso(), kind=f"image:{plan_id}"))
 
     answer = image_accept.accept(ctx.image_settings(), plan_id, review, verifier=verifier,
                                  append_evidence=append_evidence, log=ctx.log)

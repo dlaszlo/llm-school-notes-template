@@ -145,25 +145,12 @@ def generate_all(ctx: Ctx, task: Task) -> None:
     repo = ctx.notes_path
     indexes = generate.write_indexes(repo)
     try:
-        public.write(repo, public.either(public.render_rights(repo), generated_rights(ctx)))
+        public.write(repo, public.either(public.render_rights(repo),
+                                         public.media_receipt_rights(repo)))
     except public.PublicError as exc:
-        raise CheckFailed([wiki_check.item(p, None, "image without a rights record (render.json "
-                                                    "or image ledger)") for p in exc.paths])
+        raise CheckFailed([wiki_check.item(p, None, exc.reason) for p in exc.paths])
     review_index.update(repo)
     _record_writes(task, repo, whole=list(TOOL_WHOLE_FILES), parts=indexes)
-
-
-def generated_rights(ctx: Ctx):
-    """New generated images: the receipt the image tool wrote under docs/evidence/media/."""
-    prefix = f"{ctx.name}-"
-
-    def lookup(rel: str):
-        stem = Path(rel).stem
-        receipt = f"docs/evidence/media/{stem}"
-        if stem.startswith(prefix) and (ctx.notes_path / receipt).is_dir():
-            return ("generated", receipt)
-        return None
-    return lookup
 
 
 def write_check_items(ctx: Ctx, items: list[dict]) -> None:

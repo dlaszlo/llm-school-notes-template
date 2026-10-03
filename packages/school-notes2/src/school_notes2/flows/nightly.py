@@ -117,7 +117,7 @@ def _review(ctx: Ctx, task: phase.Task) -> None:
         review.record_timeout(task)       # 5.6/6: not an error; next night halves the range
         ctx.log.event("review.timeout", target=task.run_id)
         return
-    review.record_review(task, outcome.output)
+    review.record_review(task, outcome.output, ctx.cfg.worktree(ctx.name, "review"))
 
 
 def _close(ctx: Ctx, task: phase.Task) -> None:

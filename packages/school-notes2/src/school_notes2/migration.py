@@ -21,7 +21,7 @@ def run(repo: Path, original: Path) -> dict:
     lesson_type = _lesson_type_problems(repo)
     generate.write_indexes(repo)
     review_index.update(repo)
-    rights = public.render_rights(repo)
+    rights = public.either(public.render_rights(repo), public.media_receipt_rights(repo))
     diff = compare.report(original, repo, rights)
     if not diff["unknown_assets"]:
         public.write(repo, rights)
