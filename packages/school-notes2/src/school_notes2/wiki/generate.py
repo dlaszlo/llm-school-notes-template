@@ -115,8 +115,9 @@ def lessons_block(subject: Subject) -> str:
     rows = []
     for page, lesson in lessons(subject):
         topics = ", ".join(topic_link(subject, t) for t in lesson.get("topics") or [])
+        anchor = f"#{lesson['anchor']}" if lesson.get("anchor") else ""
         rows.append(f"| {lesson_date(lesson)} | {lesson.get('title', '')} | "
-                    f"[jegyzet]({page.file}) | {topics} |")
+                    f"[jegyzet]({page.file}{anchor}) | {topics} |")
     return TABLE_HEAD + "".join(r + "\n" for r in rows)
 
 

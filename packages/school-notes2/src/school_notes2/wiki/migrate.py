@@ -16,6 +16,7 @@ from . import frontmatter, markers
 
 LINK = re.compile(r"\[([^\]]+)\]\(([^)#\s]+)(?:#[^)]*)?\)")
 TOPIC = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
+NOTE_LINK = re.compile(r"\[[^\]]+\]\(([^)#\s]+)(?:#([^)\s]+))?\)")
 GRADE = re.compile(r"^\d+\. évfolyam: ")
 TRIM = ("", "<br />")
 
@@ -88,18 +89,19 @@ def parse_row(row: str) -> tuple[dict, str] | None:
     cells = [c.strip() for c in row.strip().strip("|").split(" | ")]
     if len(cells) == 4:
         date, title, note_cell, topic_cell = cells
-        note_links = LINK.findall(note_cell)
     elif len(cells) == 3:
         date, title, mixed = cells
-        note_part, _, topic_cell = mixed.partition(";")
-        note_links = LINK.findall(note_part)
+        note_cell, _, topic_cell = mixed.partition(";")
     else:
         return None
-    if not note_links:
+    note = NOTE_LINK.search(note_cell)
+    if not note:
         return None
     lesson = parse_date(date) | {"title": title,
                                  "topics": [f for _, f in TOPIC.findall(topic_cell)]}
-    return lesson, note_links[0][1]
+    if note.group(2):
+        lesson["anchor"] = note.group(2)      # the lesson's section on the notes page
+    return lesson, note.group(1)
 
 
 def parse_lessons(lines, secs, slug, mig) -> tuple[int, int] | None:

@@ -214,6 +214,10 @@ def check_lessons(repo: Path, rel: str, meta: dict) -> list[dict]:
         for topic in lesson.get("topics") or []:
             if not _topic_exists(repo, folder, str(topic).split("#", 1)[0]):
                 out.append(item(rel, None, f"lesson {n}: topic page {topic!r} does not exist"))
+        anchor = lesson.get("anchor")
+        if anchor and f'id="{anchor}"' not in safefs.read_text(repo, rel):
+            out.append(item(rel, None, f"lesson {n}: anchor {anchor!r} has no "
+                                       f'<a id="{anchor}"></a> on this page', "warning"))
     return out
 
 

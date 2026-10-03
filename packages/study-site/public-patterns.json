@@ -1,5 +1,5 @@
 {
-  "comment": "Patterns that must never appear in the public site (plan 4.10, 5.4/5). Python `re` syntax, matched case-insensitively. `secrets` and `machine_paths` also apply to every wiki Markdown file (the tool's check reads this file); `output_only` applies only to rendered output, because the Markdown legitimately holds these in HTML comments that the renderer drops.",
+  "comment": "Patterns that must never appear in the public site (plan 4.10, 5.4/5). Python `re` syntax, matched case-insensitively. `secrets` and `machine_paths` also apply to every wiki Markdown file (the tool's check reads this file); `output_only` applies only to rendered output, because the Markdown legitimately holds these in HTML comments that the renderer drops. The last output_only rule: no link or image may point into sources/ or references/ (owner, 2026-10-03: those files are strictly private).",
   "secrets": [
     "OPENROUTER_API_KEY",
     "\\bsk-or-v1-[0-9a-f]{20,}",
@@ -23,6 +23,7 @@
     "/run/sn/"
   ],
   "output_only": [
-    "image-description"
+    "image-description",
+    "(?:href|src|srcset)\\s*=\\s*[\"']?[^\"'>\\s]*(?:^|/)(?:sources|references)/"
   ]
 }

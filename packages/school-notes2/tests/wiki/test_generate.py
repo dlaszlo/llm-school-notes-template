@@ -42,3 +42,11 @@ def test_partly_legible_date_is_kept_as_written():
     assert lesson_date({"date_note": "2026-09-1? (levágva: 2026-09-10 és 2026-09-19 között)"}) == \
         "2026-09-1? (levágva: 2026-09-10 és 2026-09-19 között)"
     assert lesson_date({"date_note": "legkésőbb 2026-09-25"}) == "? (legkésőbb 2026-09-25)"
+
+
+def test_lesson_anchor_survives_migration_and_generation():
+    from school_notes2.wiki.migrate import parse_row
+    lesson, file = parse_row("| 2026-09-17 | Hővezetés | [Füzet](2026-09-29-x-jegyzet.md#pdf-13-oldal); "
+                             "[Hőterjedés](hoterjedes.md) |")
+    assert file == "2026-09-29-x-jegyzet.md" and lesson["anchor"] == "pdf-13-oldal"
+    assert lesson["topics"] == ["hoterjedes.md"]
