@@ -157,6 +157,28 @@ def _place_all(ctx: Ctx, task: Task, new_subject_index):
     return packages, pages, written
 
 
+def advance(ctx: Ctx, task: Task, drive_factory) -> None:
+    """`downloading` … `prepared` from the recorded phase (8.2); shared by cron and chat.
+    `drive_factory()` returns the Drive client, or None when a session works offline."""
+    if task.phase in ("downloading", "downloaded"):
+        drive = drive_factory()
+        if drive is None:
+            task.set_phase("moved", selected=[])        # offline session: no new packages
+        else:
+            if task.phase == "downloading":
+                download(ctx, task, drive)
+            move(ctx, task, drive)
+    if task.phase == "moved":
+        prepare(ctx, task, new_subject_index=new_subject)
+
+
+def new_subject(repo, subject: str, drive_name: str) -> list[str]:
+    """5.9: the index skeleton of a subject seen for the first time."""
+    from ..wiki import machine
+    path = machine.create_subject(repo, subject, drive_name, f"{subject}-banner")
+    return [path] if path else []
+
+
 def fetch_json(task: Task, k: int) -> dict:
     """The fetch.json of range k (1-based), validated (4.4)."""
     first, last = task.get("ranges")[k - 1]

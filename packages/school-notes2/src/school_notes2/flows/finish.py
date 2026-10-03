@@ -8,7 +8,7 @@ from ..git import finish as git_finish
 from ..git import workbranch
 from ..site import build as site_build
 from ..site import publish as site_publish
-from ..state.errors import NeedsOwner, Transient
+from ..state.errors import NeedsOwner, SnError
 from ..state.phase import Task
 from ..wiki import markers
 from . import steps
@@ -26,7 +26,7 @@ def finish(ctx: Ctx, task: Task, *, notify_owner_items) -> str:
     start = None
     if task.phase in ("prepared", "writing", "finishing"):
         task.set_phase("finishing")
-        start = steps.llm_snapshot(ctx, task)
+        start = _snapshot(ctx, task)
         prepared = steps.content_steps(ctx, task)
         task.data["llm_failures"] = 0       # the work passed the check: a success (8.1)
         task.save()
@@ -42,12 +42,17 @@ def finish(ctx: Ctx, task: Task, *, notify_owner_items) -> str:
         build=lambda commit: _build(ctx, task, commit),
         publish=lambda record: _publish(ctx, task, record),
         message=lambda: message(ctx, task),
-        snapshot=lambda: steps.llm_snapshot(ctx, task),
+        snapshot=lambda: _snapshot(ctx, task),
         empty_blocks=markers.empty_all,
         extra_paths=("references",) if task.mode == "interactive" else ())
     t = git_finish.Timeouts(ctx.cfg.timeouts.fetch_s, ctx.cfg.timeouts.push_s,
                             ctx.cfg.timeouts.ls_remote_s)
     return git_finish.run(task, wt, hooks, t, start if start is not None else hooks.snapshot())
+
+
+def _snapshot(ctx: Ctx, task: Task) -> dict:
+    """5.4/9 guards against a session editing during finish; cron has no session."""
+    return steps.llm_snapshot(ctx, task) if task.mode == "interactive" else {}
 
 
 def renderer(ctx: Ctx) -> site_build.Renderer:
@@ -65,7 +70,8 @@ def _build(ctx: Ctx, task: Task, commit: str) -> dict:
         site_publish.fetch_gh_pages(site, ctx.log, fetch_s=ctx.cfg.timeouts.fetch_s,
                                     ls_remote_s=ctx.cfg.timeouts.ls_remote_s)
         changed = site_publish.changed_since_publish(ctx.bare(), site, commit)
-    except Transient:
+    except SnError as exc:      # the site repo's trouble never stops the notes run (5.10)
+        ctx.log.event("site.changed_since_publish", "error", message=str(exc)[:200])
         changed = None          # the browser check then visits every page
     try:
         record = site_build.build(ctx.bare(), commit, task.dir, renderer(ctx), changed=changed,

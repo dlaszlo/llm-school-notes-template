@@ -10,22 +10,22 @@ from tests.e2e.test_run_e2e import HERE, show, world  # noqa: F401 - shared fixt
 
 def test_session_fetch_edit_finish(world):
     ctx, origin, drive, package = world
-    answer = chat._mcp_fetch(ctx)
+    answer = chat.session_fetch(ctx)
     assert answer["pages"] == 2
     task = phase.open_task(ctx.task_root(), "benedek", "notes")
     assert task.mode == "interactive"
     subprocess.run([sys.executable, str(HERE / "fake_writer.py"), str(ctx.notes_path)], check=True)
-    result = chat._mcp_finish(ctx)
+    result = chat.session_finish(ctx)
     assert result["state"] == "done", result
     assert f"Run-Id: {task.run_id}" in show(origin, "main")
 
 
 def test_session_check_failure_is_reported_not_counted(world, monkeypatch):
     ctx, origin, drive, package = world
-    chat._mcp_fetch(ctx)
+    chat.session_fetch(ctx)
     subprocess.run([sys.executable, str(HERE / "fake_writer.py"), str(ctx.notes_path), "badlink"],
                    check=True)
-    result = chat._mcp_finish(ctx)
+    result = chat.session_finish(ctx)
     assert result["state"] == "check_failed" and result["problems"]
     task = phase.open_task(ctx.task_root(), "benedek", "notes")
     assert task.data["llm_failures"] == 0 and task.data["needs_owner"] is None

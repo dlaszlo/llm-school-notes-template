@@ -81,7 +81,7 @@ def _owner_step(ctx, command: str) -> int:
     lock = ctx.lock()
     lock.acquire(command, on_wait=lambda h: print(f"várok a zárra ({h.get('kind')})…"))
     try:
-        answer = chat._mcp_fetch(ctx) if command == "fetch" else chat._mcp_finish(ctx)
+        answer = chat.session_fetch(ctx) if command == "fetch" else chat.session_finish(ctx)
     finally:
         lock.release()
     print(json.dumps(answer, ensure_ascii=False, indent=2))

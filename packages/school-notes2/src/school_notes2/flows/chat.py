@@ -7,11 +7,13 @@ cron with the interactive template. The LLM starts `fetch`/`finish` itself throu
 import sys
 
 from ..llm import launch
+from ..schemas import errors as schema_errors
 from ..state import phase
 from ..state.errors import NeedsOwner, SnError, Transient
+from ..state.files import read_json, write_json
 from . import clear, fetch as fetch_flow
 from . import finish as finish_flow
-from . import handlers, run as run_flow, setup, steps, writer
+from . import handlers, policy, run as run_flow, setup, steps, writer
 from .context import Ctx
 from .session import mcp
 
@@ -20,69 +22,87 @@ def chat(ctx: Ctx, harness_name: str | None, ask=input, say=print) -> int:
     lock = ctx.lock()
     lock.acquire("chat", on_wait=lambda h: say(f"A zárat {h.get('kind')} tartja "
                                                f"{h.get('since')} óta; várok… (Ctrl-C: kilépés)"))
+    task = None
     try:
         setup.ensure(ctx)
         task = phase.open_task(ctx.task_root(), ctx.name, "notes")
         if task is not None and not _settle(ctx, task, ask, say):
             return 0
-        task = phase.open_task(ctx.task_root(), ctx.name, "notes")
-        if task is None:
-            task = interactive_fetch(ctx)
+        task = phase.open_task(ctx.task_root(), ctx.name, "notes") or interactive_fetch(ctx)
         _launch(ctx, task, harness_name)
+        if task.get("question"):
+            _after_question_session(ctx, phase.load(task.dir))
         return 0
+    except Exception as exc:  # noqa: BLE001 - one error policy for every entry point (8)
+        policy.on_error(exc, task=task, student=ctx.name, step="chat", log=ctx.log,
+                        mailer=None, interactive=True)
+        say(f"Hiba: {exc}")
+        return 1
     finally:
         lock.release()
 
 
 def _settle(ctx: Ctx, task: phase.Task, ask, say) -> bool:
-    """A stopped or cron run: the owner decides here, outside the container (5.8)."""
+    """A stopped or cron run: the owner decides here, outside the container (5.8).
+
+    The stop is cleared only after the owner confirmed what happens next, so a declined
+    take-over leaves a conflict or a question with the owner, never with cron."""
     stop = task.data.get("needs_owner")
     if stop:
         say(f"A futás ({task.run_id}) áll: {stop['reason']}\nTeendő: {stop['todo']}")
         if task.get("conflict_files"):
             say("Ütköző fájlok: " + ", ".join(task.get("conflict_files")))
+        for q in task.get("question") or []:
+            say(f"Kérdés: {q.get('text')}")
         choice = ask("[f]olytatás, [e]ldobás vagy [k]ilépés? ").strip().lower()
         if choice.startswith("e"):
             clear.discard(ctx, task)
             return True
         if not choice.startswith("f"):
             return False
+    if task.get("question"):
+        # 5.3: the session answers the question for range k; the run stays a cron run.
         task.clear_needs_owner()
+        return True
     if task.mode == "cron":
         if not ask(f"Nyitott automatikus futás ({task.run_id}, {task.phase}). Átveszed? [i/n] "
                    ).strip().lower().startswith("i"):
             return False
         task.data["mode"] = "interactive"
-        task.save()
+    if stop:
+        task.clear_needs_owner()
+    task.save()
     return True
 
 
 def interactive_fetch(ctx: Ctx) -> phase.Task:
     """A run for the session: ready packages, or none (repairs and free editing, 5.2)."""
-    try:
-        drive = fetch_flow.drive_client(ctx)
-    except SnError as exc:
-        ctx.log.event("drive.client", "offline", message=str(exc)[:200])
-        drive = None
+    drive = _drive_or_none(ctx)
     task = fetch_flow.start(ctx, "interactive", drive, allow_image_only=True)
     run_flow.ctx_bind(ctx, task)
-    if task.phase == "downloading":
-        if drive is not None and task.get("candidates"):
-            fetch_flow.download(ctx, task, drive)
-            fetch_flow.move(ctx, task, drive)
-        else:
-            task.set_phase("moved", selected=[])
-    fetch_flow.prepare(ctx, task, new_subject_index=run_flow.new_subject)
+    fetch_flow.advance(ctx, task, lambda: drive)
     return task
+
+
+def _drive_or_none(ctx: Ctx):
+    try:
+        return fetch_flow.drive_client(ctx)
+    except SnError as exc:
+        ctx.log.event("drive.client", "offline", message=str(exc)[:200])
+        return None
 
 
 def _launch(ctx: Ctx, task: phase.Task, harness_name: str | None) -> None:
     role, harness = _role_for(ctx, harness_name)
-    k = task.get("writing_k", 1)
+    if task.phase in ("downloading", "downloaded", "moved"):
+        fetch_flow.advance(ctx, task, lambda: _drive_or_none(ctx))
+    n = len(task.get("ranges"))
+    k = min(task.get("writing_k", 1), n)
     if task.phase == "prepared":
         task.set_phase("writing", writing_k=k)
-    writer.write_inputs(ctx, task, min(k, len(task.get("ranges"))))
-    h = handlers.build(ctx, None, fetch=lambda: _mcp_fetch(ctx), finish=lambda: _mcp_finish(ctx))
+    writer.write_inputs(ctx, task, k)
+    h = handlers.build(ctx, None, fetch=lambda: session_fetch(ctx),
+                       finish=lambda: session_finish(ctx))
     print(f"Munkamappa: {ctx.notes_path}  (futás: {task.run_id})", file=sys.stderr)
     with mcp(ctx, task.dir, "interactive", h, lambda: _current_run(ctx)) as sessdir:
         launch.run_interactive(learner=ctx.name, run_id=task.run_id, role=role, harness=harness,
@@ -108,21 +128,46 @@ def _current_run(ctx: Ctx) -> str:
     return task.run_id if task else ""
 
 
-def _mcp_fetch(ctx: Ctx) -> dict:
-    """MCP `fetch` in a session: a new run on the same worktree (5.8)."""
+def _after_question_session(ctx: Ctx, task: phase.Task) -> None:
+    """5.3: the session's result.json replaces result-<k>; cron goes on with range k+1."""
+    if not save_session_result(ctx, task):
+        task.mark_needs_owner("the blocking question is still open",
+                              f"answer it in `school-notes chat {ctx.name}`", "needs_owner")
+
+
+def save_session_result(ctx: Ctx, task: phase.Task) -> bool:
+    """Store a valid `done` result.json of a question session as result-<k>."""
+    own = read_json(ctx.notes_path / ".school-notes" / "result.json")
+    if own is None or schema_errors("result", own) or own.get("status") != "done":
+        return False
+    k = min(task.get("writing_k", 1), len(task.get("ranges")))
+    write_json(task.dir / f"result-{k}.json", own)
+    task.update(writing_k=k + 1, question=None)
+    return True
+
+
+def session_fetch(ctx: Ctx) -> dict:
+    """MCP `fetch` in a session: continue an unfinished run, or start a new one (5.8)."""
     task = phase.open_task(ctx.task_root(), ctx.name, "notes")
     if task is None:
         task = interactive_fetch(ctx)
-        writer.write_inputs(ctx, task, 1)
+    elif task.phase in ("downloading", "downloaded", "moved"):
+        fetch_flow.advance(ctx, task, lambda: _drive_or_none(ctx))
+    writer.write_inputs(ctx, task, min(task.get("writing_k", 1), len(task.get("ranges"))))
     return {"run_id": task.run_id, "phase": task.phase, "pages": len(task.get("pages", [])),
             "open_review_items": len(task.get("open_review_items", []))}
 
 
-def _mcp_finish(ctx: Ctx) -> dict:
+def session_finish(ctx: Ctx) -> dict:
     """MCP `finish`: the same function as cron; problems go back to the session."""
     task = phase.open_task(ctx.task_root(), ctx.name, "notes")
     if task is None:
         raise NeedsOwner("there is no open run to finish", todo="call fetch first")
+    if task.get("question"):
+        if not save_session_result(ctx, task):
+            return {"state": "question_open", "message": "write a result.json with status done"}
+        if task.get("writing_k") <= len(task.get("ranges")):
+            return {"state": "saved", "message": "the remaining ranges continue in cron"}
     try:
         state = finish_flow.finish(ctx, task, notify_owner_items=lambda items: run_flow.owner_items(
             ctx, task, items))

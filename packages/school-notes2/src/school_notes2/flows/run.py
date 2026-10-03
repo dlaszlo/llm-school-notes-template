@@ -9,9 +9,8 @@ from ..llm import launch
 from ..log import TZ
 from ..notify import Notice
 from ..state import phase
-from ..state.errors import Prerequisite
+from ..state.errors import NeedsOwner, Prerequisite
 from ..state.phase import Task
-from ..wiki import machine
 from . import fetch as fetch_flow
 from . import finish as finish_flow
 from . import handlers, policy, prereq, publish, setup, steps, writer
@@ -94,27 +93,18 @@ def _new_task(ctx: Ctx) -> Task | None:
 
 def advance(ctx: Ctx, task: Task) -> None:
     """Drive a cron notes task from its recorded phase to `done` (8.2)."""
-    if task.phase in ("downloading", "downloaded"):
-        drive = fetch_flow.drive_client(ctx)
-        if task.phase == "downloading":
-            fetch_flow.download(ctx, task, drive)
-        fetch_flow.move(ctx, task, drive)
-    if task.phase == "moved":
-        fetch_flow.prepare(ctx, task, new_subject_index=new_subject)
+    fetch_flow.advance(ctx, task, lambda: fetch_flow.drive_client(ctx))
     if task.phase in ("prepared", "writing") and not task.get("skip_writer"):
-        writer.run_ranges(ctx, task, handlers.build(ctx, task.dir))
+        if writer.run_ranges(ctx, task, handlers.build(ctx, task.dir)) == "question":
+            raise NeedsOwner("the writer asked a blocking question",
+                             todo=f"answer it in `school-notes chat {ctx.name}`",
+                             details={"questions": task.get("question", [])})
     try:
         finish_flow.finish(ctx, task, notify_owner_items=lambda items: owner_items(ctx, task, items))
     except steps.CheckFailed as exc:
         steps.write_check_items(ctx, exc.items)
         task.set_phase("writing", writing_k=len(task.get("ranges")))
         raise
-
-
-def new_subject(repo, subject: str, drive_name: str) -> list[str]:
-    """5.9: the index skeleton of a subject seen for the first time."""
-    path = machine.create_subject(repo, subject, drive_name, f"{subject}-banner")
-    return [path] if path else []
 
 
 def owner_items(ctx: Ctx, task: Task, items: list[dict]) -> None:
