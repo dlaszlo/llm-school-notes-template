@@ -116,6 +116,8 @@ class JobStore:
             _detach_stdio()
             signal.signal(signal.SIGCHLD, signal.SIG_DFL)
             self.close_fds()
+            if (read_json(self.path(job["id"])) or {}).get("state") == "stopped":
+                os._exit(0)     # stop_all gave up waiting for the pid: never run late
             job.update(pid=os.getpid(), pid_start=_start_time(os.getpid()))
             write_json(self.path(job["id"]), job)
             result = fn()

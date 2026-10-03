@@ -6,6 +6,7 @@ child's environment, never on argv (plan 7.2).
 
 import importlib.util
 import json
+import re
 import subprocess
 import tempfile
 from functools import cache
@@ -77,11 +78,22 @@ def _job_of(args: list[str]) -> dict | None:
     return json.loads(Path(args[args.index("--job") + 1]).read_text(encoding="utf-8"))
 
 
+def is_job_asset(rel: str, job_id: str) -> bool:
+    """The job's own published image: wiki/assets/…/<id>.<ext> or <id>-r<n>.<ext>, exactly
+    (a prefix match would let job `x-a` overwrite `x-ab`)."""
+    stem = Path(rel).stem
+    return rel.startswith("wiki/assets/") and re.fullmatch(re.escape(job_id) + r"(-r\d+)?", stem) is not None
+
+
 def stage_inputs(worktree: Path, stage: Path, job: dict) -> dict[str, bytes]:
-    """Copy the job's target and sources from the worktree (safefs: no link is followed).
-    A missing file is left out, so learning_image.py reports it as stale."""
+    """Copy the job's target, sources and existing assets from the worktree (safefs: no link
+    is followed), so learning_image.py's own checks (stale source, existing destination)
+    see the real state. A missing file is left out."""
     staged = {}
-    for rel in dict.fromkeys([job["target"], *(s["path"] for s in job.get("sources", []))]):
+    assets = [rel for rel in safefs.walk_files(worktree, "wiki/assets")
+              if is_job_asset(rel, job["id"])]
+    for rel in dict.fromkeys([job["target"], *(s["path"] for s in job.get("sources", [])),
+                              *assets]):
         try:
             data = safefs.read_bytes(worktree, rel)
         except FileNotFoundError:
@@ -95,22 +107,24 @@ def stage_inputs(worktree: Path, stage: Path, job: dict) -> dict[str, bytes]:
 
 def copy_back(worktree: Path, stage: Path, job: dict, inputs: dict[str, bytes]) -> list[str]:
     """Copy learning_image.py's outputs into the worktree: only the job's receipt folder and
-    its published asset; an existing asset with other bytes is refused (as the tool does)."""
-    written = []
+    its published asset. Everything is validated first and written only then, so a refused
+    output never leaves half the receipts behind."""
     receipts = f"docs/evidence/media/{job['id']}/"
+    outputs = []
     for path in sorted(p for p in stage.rglob("*") if p.is_file() and not p.is_symlink()):
         rel = path.relative_to(stage).as_posix()
         data = path.read_bytes()
         if inputs.get(rel) == data:
             continue
-        asset = rel.startswith("wiki/assets/") and Path(rel).stem.startswith(job["id"])
+        asset = is_job_asset(rel, job["id"])
         if not (rel.startswith(receipts) or asset):
             raise ExecutorError(f"learning_image wrote an unexpected file: {rel}")
         if asset and safefs.is_file(worktree, rel) and safefs.read_bytes(worktree, rel) != data:
             raise ExecutorError("Destination exists with different bytes")
+        outputs.append((rel, data))
+    for rel, data in outputs:
         safefs.write_bytes(worktree, rel, data)
-        written.append(rel)
-    return written
+    return [rel for rel, _ in outputs]
 
 
 def ensure_ledger(settings: ImageSettings, target: str) -> None:

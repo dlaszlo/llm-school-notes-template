@@ -99,6 +99,10 @@ def g0_cleanup(task: Task, wt: Git, hooks: Hooks) -> None:
     if lock.exists():
         lock.unlink()   # the learner lock guarantees no other Git process runs here
     if not (gitdir / "rebase-merge").exists():
+        if task.get("rebase") == "conflict":
+            # Crashed right after `rebase --continue`: the rebase is done; record it.
+            task.update(rebase=None, conflict_files=[], regen_pending=True,
+                        base=repos.rev(wt, "refs/remotes/origin/main"))
         return
     if task.get("rebase") != "conflict":
         wt.run("rebase", "--abort")
@@ -114,14 +118,16 @@ def _continue_conflicted_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
             raise NeedsOwner(f"{path} still has conflict markers",
                              todo="resolve the markers in `school-notes chat`, then finish")
     _add(wt, hooks)
+    task.update(rebasing=True)
     wt.run("rebase", "--continue", timeout=LOCAL_TIMEOUT_S)
     upstream = repos.rev(wt, "refs/remotes/origin/main")
     if head(wt) == upstream:            # the owner kept the upstream version: nothing left
-        task.update(rebase=None, conflict_files=[], base=upstream, commit=upstream)
+        task.update(rebase=None, conflict_files=[], base=upstream, commit=upstream,
+                    rebasing=False)
         task.set_phase("pushed")
         return
     task.update(rebase=None, conflict_files=[], base=upstream, commit=head(wt),
-                regen_pending=True)
+                regen_pending=True, rebasing=False)
     _regenerate_and_amend(task, wt, hooks)
 
 

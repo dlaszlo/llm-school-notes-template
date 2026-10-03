@@ -148,3 +148,26 @@ def test_learning_image_works_on_a_staging_copy_only(tmp_path):
     (work / f"wiki/assets/banner/{JOB}.webp").unlink()
     assert copy_back(work, stage, {"id": JOB}, {}) == [f"{RECEIPTS}/receipt-1.json",
                                                       f"wiki/assets/banner/{JOB}.webp"]
+
+
+def test_asset_names_match_exactly():
+    from school_notes2.images.executor import is_job_asset
+    assert is_job_asset("wiki/assets/banner/benedek-x-a.webp", "benedek-x-a")
+    assert is_job_asset("wiki/assets/banner/benedek-x-a-r2.webp", "benedek-x-a")
+    assert not is_job_asset("wiki/assets/banner/benedek-x-ab.webp", "benedek-x-a")
+    assert not is_job_asset("docs/benedek-x-a.webp", "benedek-x-a")
+
+
+def test_refused_output_writes_nothing(tmp_path):
+    import pytest
+    from school_notes2.images.executor import ExecutorError, copy_back
+    worktree, stage = tmp_path / "wt", tmp_path / "stage"
+    (worktree / "wiki").mkdir(parents=True)
+    receipt = stage / "docs/evidence/media/benedek-x/receipt-1.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text("{}")
+    (stage / "wiki").mkdir()
+    (stage / "wiki/elsewhere.md").write_text("no")
+    with pytest.raises(ExecutorError):
+        copy_back(worktree, stage, {"id": "benedek-x"}, {})
+    assert not (worktree / "docs").exists()

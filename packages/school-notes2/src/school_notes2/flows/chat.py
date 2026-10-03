@@ -37,7 +37,8 @@ def chat(ctx: Ctx, harness_name: str | None, ask=input, say=print) -> int:
                 _after_question_session(ctx, phase.load(task.dir))
         return 0
     except Exception as exc:  # noqa: BLE001 - one error policy for every entry point (8)
-        policy.on_error(exc, task=task, student=ctx.name, step="chat", log=ctx.log,
+        fresh = phase.load(task.dir) if task is not None else None   # jobs may have written
+        policy.on_error(exc, task=fresh, student=ctx.name, step="chat", log=ctx.log,
                         mailer=None, interactive=True)
         say(f"Hiba: {exc}")
         return 1
@@ -180,6 +181,9 @@ def session_finish(ctx: Ctx) -> dict:
     if task is None:
         raise NeedsOwner("there is no open run to finish", todo="call fetch first")
     ctx.lock().note("finish")       # this detached job holds the inherited lock (7.8)
+    n = len(task.get("ranges"))
+    if task.mode == "cron" and not task.get("question") and task.get("writing_k", 1) <= n:
+        return {"state": "saved", "message": "the remaining ranges continue in cron"}
     if task.get("question"):
         if not save_session_result(ctx, task):
             return {"state": "question_open", "message": "write a result.json with status done"}
