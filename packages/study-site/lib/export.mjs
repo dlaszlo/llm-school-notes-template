@@ -34,7 +34,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
   for (const a of config.assets || []) {
     relativeFile(a.path);
     if (a.path.startsWith('wiki/assets/orai/')) throw new Error('Teacher-material copies cannot be exported; replace with an independently authored or licensed asset');
-    if (!a.path.startsWith('wiki/assets/') || !/\.(svg|webp|png|jpg|jpeg|gif)$/i.test(a.path)) throw new Error(`Unsupported asset: ${a.path}`);
+    if (!a.path.startsWith('wiki/assets/') || !/\.(svg|webp|png|jpg|jpeg|gif|mp4)$/i.test(a.path)) throw new Error(`Unsupported asset: ${a.path}`);
     if (!/^[a-f0-9]{64}$/.test(a.sha256)) throw new Error(`Asset hash required: ${a.path}`);
     if (isPublic && !['authored', 'generated', 'licensed', 'public-domain', 'standard'].includes(a.rights)) throw new Error(`Asset rights class required: ${a.path}`);
     assets.set(a.path, a);
@@ -147,6 +147,9 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       payload.collections.push(value);
     }
     await fs.writeFile(path.join(out, 'payload.json'), JSON.stringify(payload));
+    // Assets are saved as their reads finish; the receipt lists them in a fixed order.
+    const byKey = (a, b) => a.input < b.input ? -1 : a.input > b.input ? 1 : a.output < b.output ? -1 : a.output > b.output ? 1 : 0;
+    receipt.assets.sort(byKey);
     await fs.writeFile(path.join(out, 'receipt.private.json'), JSON.stringify(receipt, null, 2) + '\n');
     return { payload, receipt };
   } finally { await renderer.close(); }

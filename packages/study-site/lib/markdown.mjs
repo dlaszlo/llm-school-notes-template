@@ -138,8 +138,21 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
           // asset resolves first, or unchanged pages would differ between builds.
           const order = imageCount++;
           node.properties.loading = order ? 'lazy' : 'eager';
-          jobs.push((async () => {
-            node.properties.src = await resolveUrl(String(node.properties.src), true);
+          const source = String(node.properties.src);
+          if (/\.mp4$/i.test(source)) {
+            // An animation (owner, 2026-10-03): a playable video on screen, its same-named PNG
+            // poster as the static counterpart in print and PDF.
+            jobs.push((async () => {
+              const video = await resolveUrl(source, true);
+              const poster = await resolveUrl(source.replace(/\.mp4$/i, '.png'), true);
+              const alt = String(node.properties.alt || 'Animáció');
+              audit.images[order] = poster;
+              const player = el('video', { controls: true, preload: 'metadata', playsInline: true, poster, src: video, ariaLabel: alt, className: ['study-video-player'] }, [{ type: 'text', value: alt }]);
+              const still = el('img', { src: poster, alt, loading: 'eager', decoding: 'async', className: ['study-figure', 'study-video-poster'] });
+              Object.assign(node, el('span', { className: ['study-video'] }, [player, still]));
+            })());
+          } else jobs.push((async () => {
+            node.properties.src = await resolveUrl(source, true);
             node.properties.decoding = 'async';
             audit.images[order] = node.properties.src;
             node.properties.className = [node.properties.src.includes('/banner-') ? 'study-banner' : 'study-figure'];
@@ -191,6 +204,8 @@ export async function printSection(html, prefix) {
     });
     visit(tree, 'element', (node, index, parent) => {
       if (node.tagName === 'img') node.properties.loading = 'eager';
+      // Print and PDF show an animation's poster only.
+      if (node.tagName === 'video') { parent.children.splice(index, 1); return index; }
       if (node.tagName === 'p') {
         let hasImage = false; visit(node, 'element', child => { if (child.tagName === 'img') hasImage = true; });
         if (hasImage) node.properties.className = ['print-figure'];

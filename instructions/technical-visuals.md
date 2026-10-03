@@ -167,6 +167,9 @@ Check relevant constraints across the generated sequence numerically where possi
 
 Measure with a small representative case before committing to a large run. Record tool/version, hardware or VM resources, resolution, quality, thread count, number of frames and wall time; separate model construction, rendering and encoding where available. Repeat short cases and report their spread. Do not extrapolate a trivial scene into a guaranteed cost for a complex one. A VM comparison uses the same source revision and settings, then separately tests any proposed resource change.
 
+Make a POV-Ray animation (the scene's `clock` runs 0 to 1) with `python3 tools/visual_tools.py render povray <scene.pov> --frames 24 --fps 12 --output wiki/assets/<dir>`; it writes `figure.mp4` and its middle frame `figure.png`.
+Embed only the video, `![alt](../assets/<dir>/figure.mp4)`: the site plays it and print/PDF shows the `figure.png` poster.
+
 The [optional pilot](../examples/technical-visuals/README.md) provides checked example sources, measured limits and previews. It is not an automatic installation or a requirement to adopt those tools.
 
 ## Delivery and reproducibility
