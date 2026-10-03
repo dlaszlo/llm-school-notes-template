@@ -54,14 +54,15 @@ class JobStore:
         """Stop every running job: SIGTERM to its process group, SIGKILL after `timeout_s`.
         The cron run calls this when the writer's container has ended (nothing may keep
         working in the worktree while `finish` runs)."""
-        jobs = [j for j in self.all_running() if j.get("pid")]
+        jobs = [self._with_pid(j) for j in self.all_running()]
         for job in jobs:
-            _signal_group(job["pid"], signal.SIGTERM)
+            if job.get("pid"):
+                _signal_group(job["pid"], signal.SIGTERM)
         deadline = time.monotonic() + timeout_s
-        while time.monotonic() < deadline and any(_alive(j) for j in jobs):
+        while time.monotonic() < deadline and any(j.get("pid") and _alive(j) for j in jobs):
             time.sleep(0.2)
         for job in jobs:
-            if _alive(job):
+            if job.get("pid") and _alive(job):
                 _signal_group(job["pid"], signal.SIGKILL)
             fresh = read_json(self.path(job["id"])) or job
             if fresh["state"] == "running":
@@ -69,6 +70,14 @@ class JobStore:
                              error={"code": "stopped", "message": "stopped by the run"})
                 write_json(self.path(job["id"]), fresh)
         return [j["id"] for j in jobs]
+
+    def _with_pid(self, job: dict, wait_s: float = 5) -> dict:
+        """A job started a moment ago may not have recorded its pid yet: wait briefly."""
+        deadline = time.monotonic() + wait_s
+        while not job.get("pid") and time.monotonic() < deadline:
+            time.sleep(0.05)
+            job = read_json(self.path(job["id"])) or job
+        return job
 
     def start(self, tool: str, run_id: str, fn: Callable[[], dict]) -> str:
         """Start `fn` detached; return the job id at once."""

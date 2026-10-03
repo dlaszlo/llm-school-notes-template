@@ -298,3 +298,29 @@ def test_a_reused_pid_is_not_a_live_job(make, tmp_path):
 def test_image_accept_review_is_schema_checked(make):
     response = call(make(), "image_accept", {"plan_id": "ok", "review": {"observed": "x"}})
     assert not response["ok"] and response["error"]["code"] == "invalid_params"
+
+
+def test_finish_and_fetch_wait_while_a_check_writes(make):
+    """Verification review 3.1: the busy rule also holds the other way round."""
+    server = make(check=lambda: (time.sleep(3), {"ok": True})[1],
+                  finish=lambda: {"pushed": True}, fetch=lambda: {"run_id": "r"})
+    started = call(server, "check")
+    assert started["ok"]
+    for name in ("finish", "fetch"):
+        busy = call(server, name)
+        assert not busy["ok"] and busy["error"]["code"] == "busy"
+        assert busy["error"]["job_id"] == started["result"]["job_id"]
+
+
+def test_stop_all_handles_a_job_record_without_pid(make):
+    """Verification review 3.11: a job whose worker has not written its pid yet."""
+    from school_notes2.state.files import write_json
+    server = make()
+    server.jobs.folder.mkdir(parents=True, exist_ok=True)
+    write_json(server.jobs.path("check-0000"), {
+        "id": "check-0000", "tool": "check", "run_id": "r", "state": "running",
+        "started": "x", "created": time.time(), "pid": None, "pid_start": None})
+    began = time.monotonic()
+    assert server.jobs.stop_all(timeout_s=1) == ["check-0000"]
+    assert time.monotonic() - began < 10
+    assert server.jobs.get("check-0000")["state"] == "error"

@@ -51,6 +51,11 @@ for planted in /home/agent/.claude/settings.json /home/agent/.claude/hooks \
                /home/agent/.codex/config.toml; do
     [ ! -e "$planted" ] || fail "harness configuration survived the clean-up: $planted"
 done
+if [ -d /home/agent/.claude/projects ] && [ -n "$(find -P /home/agent/.claude/projects -mindepth 1 \
+        \( -name memory -o -name 'settings*.json' -o -name 'CLAUDE*.md' \
+        -o -name 'AGENTS*.md' \) -print -quit)" ]; then
+    fail "harness project memory or settings survived the clean-up"
+fi
 
 # 4. /run/sn holds only the MCP socket.
 if [ -d /run/sn ]; then

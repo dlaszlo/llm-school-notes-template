@@ -187,12 +187,17 @@ class McpServer:
         return self._start(name, args)
 
     def _refuse_while_busy(self, name: str) -> None:
-        """A running fetch/finish owns the worktree and phase.json. A repeated fetch/finish
-        gets the running job id (idempotent, 7.5); anything else is told to wait."""
+        """A running fetch/finish owns the worktree and phase.json: anything else is told to
+        wait (a repeated fetch/finish gets the running job id, 7.5). The other way round
+        too: while a check or image job still writes in the worktree, fetch/finish wait."""
         busy = self.jobs.running(STATE_CHANGING)
         if busy and name in WORKTREE_WRITERS:
             raise ToolError("busy", f"{busy['tool']} is running; wait for it first",
                             job_id=busy["id"], tool=busy["tool"])
+        writer = self.jobs.running(WORKTREE_WRITERS)
+        if writer and name in STATE_CHANGING:
+            raise ToolError("busy", f"{writer['tool']} is running; wait for it first",
+                            job_id=writer["id"], tool=writer["tool"])
 
     def _start(self, name: str, args: dict) -> dict:
         watch = STATE_CHANGING if name in STATE_CHANGING else (name,) if name == "check" else ()

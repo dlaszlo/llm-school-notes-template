@@ -87,3 +87,64 @@ def test_markers_behind_a_linked_folder_are_not_seen(make_settings, tmp_path):
     (outside / "x.md").write_text("<!-- image: stolen -->\n")
     os.symlink(outside, s.worktree / "wiki/evil")
     assert "stolen" not in plans.find_markers(s.worktree)
+
+
+JOB = "benedek-termeles-banner"
+RECEIPTS = f"docs/evidence/media/{JOB}"
+
+
+def test_round2_b1_links_in_the_receipt_folder_are_never_followed(make_settings, fake_api, log,
+                                                                  tmp_path):
+    """Verification review 2.1: learning_image.py writes job.json via job.json.tmp, prompt-N
+    and receipt-N into the receipt folder – planted links there must not reach the host."""
+    s = make_settings()
+    assert gen.generate(s, "termeles-banner", log=log, sleep=lambda x: None)["state"] == "generated"
+    folder = s.worktree / RECEIPTS
+    folder.mkdir(parents=True)
+    canaries = {name: tmp_path / f"canary-{name}" for name in
+                ("job.json.tmp", "prompt-1.txt", "receipt-1.json")}
+    for name, canary in canaries.items():
+        os.symlink(canary, folder / name)
+    answer = accept(s, log)
+    assert answer["state"] == "accepted", answer
+    assert not any(c.exists() for c in canaries.values())
+    assert not (folder / "prompt-1.txt").is_symlink()         # replaced, never followed
+    assert not (folder / "receipt-1.json").is_symlink()
+
+
+def test_round2_b1_linked_receipt_folder_is_refused(make_settings, fake_api, log, tmp_path):
+    s = make_settings()
+    gen.generate(s, "termeles-banner", log=log, sleep=lambda x: None)
+    outside = tmp_path / "receipts-outside"
+    outside.mkdir()
+    (s.worktree / "docs/evidence/media").mkdir(parents=True, exist_ok=True)
+    os.symlink(outside, s.worktree / RECEIPTS)
+    try:
+        answer = accept(s, log)
+    except UnsafePath:
+        answer = {"state": "error"}
+    assert answer["state"] != "accepted"
+    assert list(outside.iterdir()) == []
+
+
+def test_learning_image_works_on_a_staging_copy_only(tmp_path):
+    """copy_back takes only the job's receipt folder and its asset from the staging copy."""
+    from school_notes2.images.executor import ExecutorError, copy_back
+    work, stage = tmp_path / "work", tmp_path / "stage"
+    (work / "wiki").mkdir(parents=True)
+    (stage / "wiki").mkdir(parents=True)
+    (stage / "wiki/index.md").write_text("rewritten by the tool?\n")
+    with pytest.raises(ExecutorError, match="unexpected file"):
+        copy_back(work, stage, {"id": JOB}, {})
+    (stage / "wiki/index.md").unlink()
+    (stage / RECEIPTS).mkdir(parents=True)
+    (stage / f"{RECEIPTS}/receipt-1.json").write_text("{}")
+    (stage / "wiki/assets/banner").mkdir(parents=True)
+    (stage / f"wiki/assets/banner/{JOB}.webp").write_bytes(b"new")
+    (work / "wiki/assets/banner").mkdir(parents=True)
+    (work / f"wiki/assets/banner/{JOB}.webp").write_bytes(b"old")
+    with pytest.raises(ExecutorError, match="different bytes"):
+        copy_back(work, stage, {"id": JOB}, {})
+    (work / f"wiki/assets/banner/{JOB}.webp").unlink()
+    assert copy_back(work, stage, {"id": JOB}, {}) == [f"{RECEIPTS}/receipt-1.json",
+                                                      f"wiki/assets/banner/{JOB}.webp"]

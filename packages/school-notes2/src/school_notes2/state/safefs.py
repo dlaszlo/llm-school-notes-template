@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import stat
+import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
@@ -39,8 +40,13 @@ class _OpenHow(ctypes.Structure):
 
 
 _libc = ctypes.CDLL(None, use_errno=True)
-_libc.syscall.restype = ctypes.c_long
+_syscall = _libc.syscall
+_syscall.restype = ctypes.c_long
+_syscall.argtypes = [ctypes.c_long, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p,
+                     ctypes.c_size_t]
 _HAVE_OPENAT2 = True
+TMP_PREFIX = ".sn-tmp-"
+STALE_TMP_S = 600         # an older temp file of ours was left by a killed process
 
 
 def _parts(rel) -> list[str]:
@@ -64,8 +70,8 @@ def _openat2(dirfd: int, rel: str, flags: int, mode: int = 0) -> int:
     global _HAVE_OPENAT2
     if _HAVE_OPENAT2:
         how = _OpenHow(flags | os.O_CLOEXEC, mode, RESOLVE)
-        fd = _libc.syscall(SYS_OPENAT2, dirfd, rel.encode("utf-8"), ctypes.byref(how),
-                           ctypes.sizeof(how))
+        fd = _syscall(SYS_OPENAT2, dirfd, rel.encode("utf-8"), ctypes.byref(how),
+                      ctypes.sizeof(how))
         if fd >= 0:
             return fd
         err = ctypes.get_errno()
@@ -142,7 +148,7 @@ def _kind(root, rel) -> int | None:
             mode = os.fstat(fd).st_mode
     except (FileNotFoundError, NotADirectoryError):
         return None
-    if stat.S_ISLNK(mode):               # only reachable on the fallback path
+    if stat.S_ISLNK(mode):   # O_PATH|O_NOFOLLOW returns a trailing link itself (both paths)
         raise UnsafePath(f"{rel}: symlink", todo="remove the symlink from the worktree")
     return mode
 
@@ -173,25 +179,32 @@ def _open_dir(root, rel, create: bool) -> int:
         current = os.dup(rfd)
     try:
         for part in parts:
-            try:
-                nxt = _openat2(current, part, os.O_RDONLY | os.O_DIRECTORY)
-            except FileNotFoundError:
-                if not create:
-                    raise
-                try:
-                    os.mkdir(part, 0o755, dir_fd=current)
-                except FileExistsError:
-                    pass
-                nxt = _openat2(current, part, os.O_RDONLY | os.O_DIRECTORY)
-            except OSError as exc:
-                if exc.errno in UNSAFE_ERRNOS or exc.errno == errno.ENOTDIR:
-                    raise _unsafe(rel, exc) from None
-                raise
+            nxt = _open_component(current, part, rel, create)
             os.close(current)
             current = nxt
         return current
     except BaseException:
         os.close(current)
+        raise
+
+
+def _open_component(dirfd: int, part: str, rel, create: bool) -> int:
+    """One directory component below `dirfd`, created when missing and `create`; a link
+    (also one planted between mkdir and open) raises UnsafePath."""
+    try:
+        try:
+            return _openat2(dirfd, part, os.O_RDONLY | os.O_DIRECTORY)
+        except FileNotFoundError:
+            if not create:
+                raise
+            try:
+                os.mkdir(part, 0o755, dir_fd=dirfd)
+            except FileExistsError:
+                pass
+            return _openat2(dirfd, part, os.O_RDONLY | os.O_DIRECTORY)
+    except OSError as exc:
+        if exc.errno in UNSAFE_ERRNOS or exc.errno == errno.ENOTDIR:
+            raise _unsafe(rel, exc) from None
         raise
 
 
@@ -214,7 +227,8 @@ def makedirs(root, rel) -> None:
 def write_bytes(root, rel, data: bytes, mode: int = 0o644) -> None:
     """Atomic write; a symlink at the target is replaced, never followed."""
     with _parent(root, rel, create=True) as (pfd, name):
-        tmp = f".sn-tmp-{uuid.uuid4().hex}"
+        _sweep_stale_tmp(pfd)
+        tmp = f"{TMP_PREFIX}{uuid.uuid4().hex}"
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC,
                      0o600, dir_fd=pfd)
         try:
@@ -229,6 +243,21 @@ def write_bytes(root, rel, data: bytes, mode: int = 0o644) -> None:
             except FileNotFoundError:
                 pass
             raise
+
+
+def _sweep_stale_tmp(pfd: int) -> None:
+    """Remove our own temp files a killed process left (old ones only: a concurrent writer's
+    fresh temp file is not touched). A planted link of that name is removed, not followed."""
+    now = time.time()
+    for name in os.listdir(pfd):
+        if not name.startswith(TMP_PREFIX):
+            continue
+        try:
+            info = os.stat(name, dir_fd=pfd, follow_symlinks=False)
+            if now - info.st_mtime > STALE_TMP_S or stat.S_ISLNK(info.st_mode):
+                os.unlink(name, dir_fd=pfd)
+        except FileNotFoundError:
+            pass
 
 
 def write_text(root, rel, text: str, mode: int = 0o644) -> None:
