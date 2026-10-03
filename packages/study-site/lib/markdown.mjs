@@ -33,6 +33,9 @@ schema.attributes.details = ['open'];
 
 const el = (tagName, properties = {}, children = []) => ({ type: 'element', tagName, properties, children });
 const isElement = (n, tag) => n.type === 'element' && (!tag || n.tagName === tag);
+// An empty anchor with a plain lower-case id and nothing else (the wiki's section jump targets).
+const isJumpTarget = n => isElement(n, 'a') && !n.properties.href && !n.children.length
+  && /^(?:user-content-)?[a-z0-9][a-z0-9-]{0,80}$/.test(String(n.properties.id || ''));
 
 export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források' } = {}) {
   const { metadata, body, title } = splitMarkdown(source);
@@ -63,10 +66,18 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
     })
     .use(() => tree => {
       visit(tree, 'element', node => {
-        if (node.properties.id) sanitizedIds.set(node.properties.id, 'user-content-' + node.properties.id);
+        if (node.properties.id && !isJumpTarget(node)) sanitizedIds.set(node.properties.id, 'user-content-' + node.properties.id);
       });
     })
     .use(rehypeSanitize, schema)
+    .use(() => tree => {
+      // An empty `<a id="pdf-13-oldal"></a>` is a jump target that other pages link to
+      // (`page#pdf-13-oldal`); it keeps its plain id so those links resolve.
+      visit(tree, 'element', node => {
+        const id = String(node.properties.id || '');
+        if (isJumpTarget(node) && id.startsWith('user-content-')) node.properties.id = id.slice(13);
+      });
+    })
     .use(() => async tree => {
       const slugger = new GithubSlugger();
       let seenBody = false;
