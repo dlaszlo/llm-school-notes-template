@@ -4,6 +4,7 @@ The frontmatter (`reviewer`, `range`, `items`, `status`) is machine-only. The bo
 once from review.json and never rewritten; closures are appended as `## Végrehajtva (<run>)`.
 """
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +20,9 @@ DONE_HEADING = re.compile(r"^## Végrehajtva \((?P<run>[^)]+)\)$", re.M)
 DONE_LINE = re.compile(r"^\* (?P<item>R\d+) – (?P<word>javítva|nem ért egyet|nyitva|nem érintett)",
                        re.M)
 ITEM_NUM = re.compile(r"R(\d+)")
+# The items as they were before this run's section: lets a repeated finish of the same,
+# still uncommitted run replace its own section instead of skipping a corrected result.
+BEFORE = re.compile(r"^<!-- school-notes:before (?P<items>\{.*\}) -->$", re.M)
 
 
 class ClosureError(ValueError):
@@ -147,42 +151,62 @@ def open_counts(text: str) -> dict[str, int]:
     return counts
 
 
-def _done_section(run_id: str, entries: list[tuple[str, str, str]]) -> str:
-    lines = [f"## Végrehajtva ({run_id})", ""]
+def _done_section(run_id: str, entries: list[tuple[str, str, str]], before: dict) -> str:
+    lines = [f"## Végrehajtva ({run_id})", "",
+             f"<!-- school-notes:before {json.dumps(before, sort_keys=True)} -->", ""]
     for item, status, note in entries:
         word = WORDS[status]
         lines.append(f"* {item} – {word}: {_one_line(note)}" if note else f"* {item} – {word}")
     return "\n".join(lines) + "\n"
 
 
+def _without_own_section(body: str, items: dict, run_id: str) -> tuple[str, dict]:
+    """Drop this run's earlier section and restore the items it changed (a rerun)."""
+    heading = next((m for m in DONE_HEADING.finditer(body) if m.group("run") == run_id), None)
+    if heading is None:
+        return body, items
+    nxt = re.compile(r"^## ", re.M).search(body, heading.end())
+    end = nxt.start() if nxt else len(body)
+    section = body[heading.start():end]
+    before = BEFORE.search(section)
+    if before is None:
+        raise ClosureError(f"run {run_id} already closed items in this file without a "
+                           "recorded previous state; it cannot be applied twice")
+    restored = dict(items)
+    restored.update(json.loads(before.group("items")))
+    return (body[:heading.start()].rstrip("\n") + "\n" + body[end:]).rstrip("\n") + "\n", restored
+
+
 def _apply_one(path: Path, run_id: str, closures: dict, listed: list[str],
                owner_after: int) -> list[str]:
-    """Update one file; returns its newly-owner items. Idempotent per run id."""
+    """Update one file; returns its newly-owner items. Repeating it for the same run
+    replaces that run's section (the closures may have changed since)."""
     text = path.read_text(encoding="utf-8")
-    if any(m.group("run") == run_id for m in DONE_HEADING.finditer(text)):
-        return []
     page = fm.split(text)
-    items = dict(page.meta["items"])
+    body, items = _without_own_section(page.body, dict(page.meta["items"]), run_id)
     for item_id, c in closures.items():
         if item_id not in items:
             raise ClosureError(f"{path.name}: no item {item_id}")
         if items[item_id] not in (OPEN, OWNER):
             raise ClosureError(f"{path.name}: {item_id} is not open ({items[item_id]})")
+    touched = sorted(set(closures) | set(listed), key=_num)
+    before = {i: items[i] for i in touched if i in items}
     entries = []
-    for item_id in sorted(set(closures) | set(listed), key=_num):
+    for item_id in touched:
         c = closures.get(item_id)
         status = c["status"] if c else "untouched"
         entries.append((item_id, status, c.get("note", "") if c else ""))
         if status in (FIXED, DISAGREE):
             items[item_id] = status
-    body = page.body.rstrip("\n") + "\n\n" + _done_section(run_id, entries)
+    body = body.rstrip("\n") + "\n\n" + _done_section(run_id, entries, before)
     counts = open_counts(body)
     new_owner = [i for i, s in items.items() if s == OPEN and counts.get(i, 0) >= owner_after]
     for item_id in new_owner:
         items[item_id] = OWNER
     new_text = fm.set_keys(f"---\n{page.raw_meta}\n---\n{body}",
                            {"items": items, "status": compute_status(items)})
-    write_text(path, new_text, 0o644)
+    if new_text != text:
+        write_text(path, new_text, 0o644)
     return new_owner
 
 

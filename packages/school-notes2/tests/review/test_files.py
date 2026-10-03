@@ -52,9 +52,26 @@ def test_closure_updates_items_and_appends_section(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert meta(path)["items"] == {"R1": "fixed", "R2": "open"}
     assert fm.split(text).body.startswith(body_before.rstrip("\n"))
-    assert "## Végrehajtva (run-1)\n\n* R1 – javítva: kész\n* R2 – nem érintett\n" in text
-    files.apply_closure(tmp_path, "run-1", [], listed)  # finish rerun: no second section
+    assert "* R1 – javítva: kész\n* R2 – nem érintett\n" in text
+    files.apply_closure(tmp_path, "run-1",
+                        [{"file": rel, "item_id": "R1", "status": "fixed", "note": "kész"}],
+                        listed)                       # finish rerun, same result: unchanged
     assert path.read_text(encoding="utf-8") == text
+
+
+def test_rerun_of_the_same_run_replaces_its_section(tmp_path):
+    path, rel = _review(tmp_path)
+    listed = [{"file": rel, "item_id": "R1"}, {"file": rel, "item_id": "R2"}]
+    files.apply_closure(tmp_path, "run-1",
+                        [{"file": rel, "item_id": "R1", "status": "fixed"}], listed)
+    out = files.apply_closure(tmp_path, "run-1",       # corrected result after a failed check
+                              [{"file": rel, "item_id": "R2", "status": "disagree", "note": "n"}],
+                              listed)
+    text = path.read_text(encoding="utf-8")
+    assert meta(path)["items"] == {"R1": "open", "R2": "disagree"}
+    assert text.count("## Végrehajtva (run-1)") == 1
+    assert "* R1 – nem érintett" in text and "* R2 – nem ért egyet: n" in text
+    assert out.new_owner == []
 
 
 def test_all_closed_status_and_file_stays(tmp_path):

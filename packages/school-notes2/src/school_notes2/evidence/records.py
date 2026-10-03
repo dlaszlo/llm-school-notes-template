@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from ..state.files import write_text
 
 PAGES_DIR = PurePosixPath("docs/evidence/pages")
+IMAGE_ROOTS = ("sources/", "wiki/assets/")      # only committed images are evidence (4.8)
 
 
 class RecordError(ValueError):
@@ -67,6 +68,8 @@ def _resolve(repo: Path, image, pages_by_seq: dict[int, dict]) -> tuple[str, str
     target = (repo / rel).resolve()
     if pure.is_absolute() or ".." in pure.parts or not target.is_relative_to(repo.resolve()):
         raise RecordError(f"{rel}: image outside the repository")
+    if not rel.startswith(IMAGE_ROOTS):
+        raise RecordError(f"{rel}: evidence images must be under {' or '.join(IMAGE_ROOTS)}")
     if not target.is_file():
         raise RecordError(f"{rel}: image does not exist")
     return rel, _sha256(target), source
@@ -94,24 +97,39 @@ def _section(repo: Path, entries: list[Entry], heading: str,
 
 
 def append(repo: Path, entries: list[Entry], *, run_id: str, checker: str, at: str,
-           fetch_pages: list[dict] | None = None) -> list[str]:
-    """Append one section per page for this run; returns the written repo paths.
+           fetch_pages: list[dict] | None = None, kind: str = "checks") -> list[str]:
+    """Write this run's section per page; returns the written repo paths.
 
-    Idempotent: a page that already has this run's section is left alone (finish reruns).
-    """
+    A section is keyed by run, checker and `kind` (`checks`, `review`, or `image:<id>` for
+    one accepted image). A repeated call for the same key REPLACES that section: until the
+    run is committed its section is the tool's own draft, and a corrected result must win
+    (finish reruns after a failed check). Sections of other runs are never touched."""
     pages_by_seq = {p["seq"]: p for p in fetch_pages or []}
     by_page: dict[str, list[Entry]] = {}
     for e in entries:
         by_page.setdefault(e.page, []).append(e)
     written = []
+    marker = f"– {run_id} – {checker} – {kind}"
     for page, group in sorted(by_page.items()):
         rel = record_path(page)
         path = repo / rel
-        marker = f"– {run_id} – {checker}"
         old = path.read_text(encoding="utf-8") if path.exists() else f"# Bizonyítékrekord: {page}\n"
-        if any(line.startswith("## ") and line.endswith(marker) for line in old.splitlines()):
-            continue
         section = _section(repo, group, f"## {at} {marker}", pages_by_seq)
-        write_text(path, old.rstrip("\n") + "\n\n" + section, 0o644)
+        new = _put_section(old, marker, section)
+        if new != old:
+            write_text(path, new, 0o644)
         written.append(rel.as_posix())
     return written
+
+
+def _put_section(text: str, marker: str, section: str) -> str:
+    """Replace the section whose heading ends with `marker`, or append it."""
+    lines = text.rstrip("\n").split("\n")
+    start = next((i for i, ln in enumerate(lines) if ln.startswith("## ") and ln.endswith(marker)),
+                 None)
+    if start is None:
+        return "\n".join(lines) + "\n\n" + section
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    head = "\n".join(lines[:start]).rstrip("\n")
+    tail = "\n".join(lines[end:])
+    return head + "\n\n" + section + ("\n" + tail + "\n" if tail else "")

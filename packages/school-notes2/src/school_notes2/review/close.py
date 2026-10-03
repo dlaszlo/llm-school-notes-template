@@ -114,6 +114,7 @@ def close(task: phase.Task, repo: Git, wt: Git, ident: Identity, t: Timeouts = T
         written = [report.relative_to(worktree).as_posix(),
                    index.update(worktree).relative_to(worktree).as_posix()]
         written += records.append(worktree, records.from_reviewer(review.get("figures", [])),
+                                  kind="review",
                                   run_id=task.run_id, checker=ident.reviewer, at=ident.at,
                                   fetch_pages=fetch_pages)
         return written

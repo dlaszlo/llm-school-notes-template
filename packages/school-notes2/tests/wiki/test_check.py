@@ -22,7 +22,7 @@ def test_link_rules(repo):
     found = messages(check.check_files(repo, [rel]))
     assert len(found) == 5
     assert any("absolute" in m for m in found) and any("leaves" in m for m in found)
-    assert any("source image" in m for m in found) and any("directory" in m for m in found)
+    assert any("reference image" in m for m in found) and any("directory" in m for m in found)
     assert any("does not exist" in m for m in found)
 
 
