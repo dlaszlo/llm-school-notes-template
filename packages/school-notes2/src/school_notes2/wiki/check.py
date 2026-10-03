@@ -120,6 +120,11 @@ def check_links(repo: Path, rel: str, text: str) -> list[dict]:
                                             "link it instead"))
         elif target.endswith("/") or (repo / resolved).is_dir():
             out.append(item(rel, link.line, f"link to a directory {target!r}; link its index.md"))
+        elif not (repo / resolved).is_file() and resolved.startswith(("sources/", "references/")):
+            # Citation-only targets (4.10): the site turns them into quotes, and v1 sources
+            # live in the archive repository (B16) – the writer cannot fix such a link.
+            out.append(item(rel, link.line, f"cited source is not in this repository: "
+                                            f"{target!r}", "warning"))
         elif not (repo / resolved).is_file():
             out.append(item(rel, link.line, f"link target does not exist: {target!r}"))
     return out

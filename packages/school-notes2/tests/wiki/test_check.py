@@ -91,3 +91,14 @@ def test_result_checks(repo):
     assert any("[3]" in m for m in found) and any("[9]" in m for m in found)
     assert any("not new" in m for m in found) and any("nincs.md" in m for m in found)
     assert any("page number 7" in m for m in found)
+
+
+def test_missing_cited_source_is_only_a_warning(repo):
+    from school_notes2.wiki import check
+    (repo / "wiki/proba/regi.md").write_text(
+        "---\ntype: topic\ntitle: Régi\ndescription: R.\nchapter: alapok\norder: 30\n---\n\n"
+        "Forrás: [fotó](../../sources/2026-09-01-archiv/01.jpg)\n", encoding="utf-8")
+    items = check.check_files(repo, ["wiki/proba/regi.md"])
+    cited = [i for i in items if "not in this repository" in i["message"]]
+    assert cited and cited[0]["severity"] == "warning"
+    assert not [i for i in check.errors(items) if "sources" in i["message"]]
