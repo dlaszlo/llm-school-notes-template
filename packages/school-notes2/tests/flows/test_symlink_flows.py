@@ -39,3 +39,20 @@ def test_writer_check_reports_an_image_without_rights(world):
     found = handlers.check(ctx, task)
     assert any(p["file"] == "wiki/assets/proba/abra.svg" and "render.json" in p["message"]
                for p in found["problems"]), found
+
+
+def test_generated_index_is_recorded_before_the_public_step_can_stop(world, monkeypatch):
+    """A refused image stops finish after the indexes were written: they stay the tool's own."""
+    from school_notes2.flows import steps
+    from school_notes2.wiki import generate, public
+    ctx, origin, drive, package = world
+    chat.session_fetch(ctx)
+    task = phase.open_task(ctx.task_root(), "benedek", "notes")
+    monkeypatch.setattr(generate, "write_indexes", lambda repo: ["wiki/index.md"])
+
+    def refuse(*a, **k):
+        raise public.PublicError(["wiki/assets/x.svg"])
+    monkeypatch.setattr(public, "write", refuse)
+    with pytest.raises(steps.CheckFailed):
+        steps.generate_all(ctx, task)
+    assert "wiki/index.md" in phase.load(task.dir).get("tool_parts")

@@ -169,6 +169,9 @@ def generate_all(ctx: Ctx, task: Task) -> None:
     """Step 6: indexes, public.json and the review index."""
     repo = ctx.notes_path
     indexes = generate.write_indexes(repo)
+    # Recorded at once: if a later step stops the run, the next check must still know that
+    # these generated blocks are the tool's own writes.
+    _record_writes(task, repo, whole=[], parts=indexes)
     try:
         public.write(repo, public.either(public.render_rights(repo),
                                          public.media_receipt_rights(repo)))
