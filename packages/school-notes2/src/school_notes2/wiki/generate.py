@@ -75,7 +75,7 @@ def chapters_block(subject: Subject) -> str:
     return "\n<br />\n\n".join(sections)
 
 
-PARTIAL_DATE = re.compile(r"^\d{4}-\d{2}-[0-9?]{2}")
+PARTIAL_DATE = re.compile(r"^\d{4}-\d{2}-(?:\d\?|\?\d|\?\?)")
 
 
 def lesson_date(lesson: dict) -> str:

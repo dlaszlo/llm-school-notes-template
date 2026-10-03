@@ -50,3 +50,9 @@ def test_lesson_anchor_survives_migration_and_generation():
                              "[Hőterjedés](hoterjedes.md) |")
     assert file == "2026-09-29-x-jegyzet.md" and lesson["anchor"] == "pdf-13-oldal"
     assert lesson["topics"] == ["hoterjedes.md"]
+
+
+def test_a_full_date_in_the_note_keeps_the_question_mark_form():
+    from school_notes2.wiki.generate import lesson_date
+    assert lesson_date({"date_note": "2026-09-11 után, legkésőbb 2026-09-25"}) == \
+        "? (2026-09-11 után, legkésőbb 2026-09-25)"
