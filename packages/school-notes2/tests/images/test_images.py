@@ -202,3 +202,10 @@ def test_school_year_ledger_key():
     from school_notes2.images.settings import school_year
     assert school_year(date(2026, 9, 1)) == "school-year-2026-2027"
     assert school_year(date(2027, 6, 30)) == "school-year-2026-2027"
+
+
+def test_refusal_before_any_request_is_not_retried(make_settings, fake_api, log):
+    s = make_settings(max_total_usd=Decimal("0.01"))      # below one reservation: refused
+    slept = []
+    result = gen.generate(s, "termeles-banner", log=log, sleep=slept.append)
+    assert result["state"] == "error" and slept == [] and fake_api.requests == []

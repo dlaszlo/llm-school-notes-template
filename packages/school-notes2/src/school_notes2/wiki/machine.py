@@ -9,6 +9,7 @@ import json
 import posixpath
 from pathlib import Path
 
+from ..sources.duplicates import original_key
 from . import frontmatter, generate, markers
 
 LESSON_KEYS = ("type", "grade", "sources", "source_file", "content_sha256", "original_sha256",
@@ -27,9 +28,8 @@ def _folder(path: str) -> str:
 
 
 def _original(page: dict) -> str:
-    """original_sha256 value: the uploaded file's hash; a PDF page adds its page number."""
-    sha = page.get("original_sha256", "")
-    return f"{sha}#page={page['page']}" if page.get("page") else sha
+    """original_sha256 value in the one format the duplicate check reads (4.2)."""
+    return original_key(page.get("original_sha256", ""), page.get("page"))
 
 
 def source_entries(note_file: str, used: list[dict], folders: list[str]) -> list[dict]:
@@ -43,27 +43,57 @@ def source_entries(note_file: str, used: list[dict], folders: list[str]) -> list
     return entries
 
 
-def lesson_values(note_file: str, seqs: list[int], fetch: dict, grade, by: str, at: str) -> dict:
-    """The machine keys of one lesson-notes page, from the pages it was written from."""
+def lesson_values(note_file: str, seqs: list[int], fetch: dict, grade, by: str, at: str,
+                  old: dict | None = None) -> dict:
+    """The machine keys of one lesson-notes page, from the pages it was written from.
+
+    `old` is the page's current frontmatter: a page extended by a later run keeps the
+    hashes, folders and Drive folders of its earlier pages (union), so duplicates of the
+    earlier pages are still recognised."""
     pages = {p["seq"]: p for p in fetch["pages"]}
     used = [pages[s] for s in sorted(set(seqs)) if s in pages]
-    folders = list(dict.fromkeys(_folder(p["path"]) for p in used))
+    old = old or {}
+    content = _full_paths(old, "content_sha256") | {p["path"]: p["sha256"] for p in used}
+    original = _full_paths(old, "original_sha256") | {p["path"]: _original(p) for p in used}
+    folders = list(dict.fromkeys(_old_folders(old) + [_folder(p["path"]) for p in used]))
     base = folders[0] if len(folders) == 1 else posixpath.commonpath(folders)
-
-    def key(p):  # file names relative to the shared source folder
-        return posixpath.relpath(p["path"], base)
-
-    drive = list(dict.fromkeys(p["package"] for p in used))
-    sources = source_entries(note_file, used, folders)
+    drive = list(dict.fromkeys(_as_list(old.get("drive_folder")) + [p["package"] for p in used]))
     source_file = [f.removeprefix("sources/") + "/" for f in folders]
     return {
-        "type": "lesson-notes", "grade": grade, "sources": sources,
-        "source_file": source_file[0] if len(source_file) == 1 else source_file,
-        "content_sha256": {key(p): p["sha256"] for p in used},
-        "original_sha256": {key(p): _original(p) for p in used},
-        "drive_folder": drive[0] if len(drive) == 1 else drive,
+        "type": "lesson-notes", "grade": grade,
+        "sources": source_entries(note_file, used, list(dict.fromkeys(_folder(p["path"])
+                                                                       for p in used))),
+        "source_file": _one_or_list(source_file),
+        "content_sha256": {posixpath.relpath(k, base): v for k, v in sorted(content.items())},
+        "original_sha256": {posixpath.relpath(k, base): v for k, v in sorted(original.items())},
+        "drive_folder": _one_or_list(drive),
         "generated": {"by": by, "at": at},
     }
+
+
+def _as_list(value) -> list:
+    if value is None or value == "":
+        return []
+    return [str(v) for v in value] if isinstance(value, list) else [str(value)]
+
+
+def _one_or_list(values: list):
+    return values[0] if len(values) == 1 else values
+
+
+def _old_folders(old: dict) -> list[str]:
+    """The earlier source folders, repo-relative (`sources/...`), from `source_file`."""
+    return [("sources/" + f).rstrip("/") for f in _as_list(old.get("source_file"))]
+
+
+def _full_paths(old: dict, key: str) -> dict[str, str]:
+    """An earlier hash map with repo-relative keys (its keys are relative to source_file)."""
+    value = old.get(key)
+    folders = _old_folders(old)
+    if not isinstance(value, dict) or not folders:
+        return {}
+    base = folders[0] if len(folders) == 1 else posixpath.commonpath(folders)
+    return {posixpath.normpath(posixpath.join(base, str(k))): str(v) for k, v in value.items()}
 
 
 def merge_sources(old: list | None, new: list) -> list:
@@ -79,9 +109,10 @@ def write_lesson_notes(repo: Path, notes: list[dict], fetch: dict, grade, by: st
     for note in notes:
         path = repo / note["file"]
         text = path.read_text(encoding="utf-8")
-        values = lesson_values(note["file"], note["pages"], fetch, grade, by, at)
-        values["sources"] = merge_sources(frontmatter.split(text).meta.get("sources"),
-                                          values["sources"])
+        meta = frontmatter.split(text).meta
+        values = lesson_values(note["file"], note["pages"], fetch, grade, by, at,
+                               old=meta if meta.get("type") == "lesson-notes" else None)
+        values["sources"] = merge_sources(meta.get("sources"), values["sources"])
         new = frontmatter.set_keys(text, values)
         if new != text:
             path.write_text(new, encoding="utf-8")

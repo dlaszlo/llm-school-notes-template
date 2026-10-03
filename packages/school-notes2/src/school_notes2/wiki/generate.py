@@ -51,7 +51,13 @@ def load_subject(repo: Path, slug: str) -> Subject:
 
 def chapter_pages(subject: Subject, chapter_id: str) -> list[SubjectPage]:
     inside = [p for p in subject.pages if p.meta.get("chapter") == chapter_id]
-    return sorted(inside, key=lambda p: (p.meta.get("order", 0), p.file))
+    return sorted(inside, key=lambda p: (_order(p.meta), p.file))
+
+
+def _order(meta: dict) -> int:
+    """A missing or non-integer `order` sorts last; the check reports it on topic pages."""
+    order = meta.get("order", 0)
+    return order if isinstance(order, int) and not isinstance(order, bool) else 10**9
 
 
 def list_line(page: SubjectPage) -> str:

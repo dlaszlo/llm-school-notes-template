@@ -39,9 +39,36 @@ def test_writer_checks_resolve_seq_and_are_idempotent(tmp_path):
     assert text.startswith("# Bizonyítékrekord: wiki/gazdasag/szukosseg.md\n\n## 2026-10-03")
     assert f"`sources/gazdasag/ora-1/p0001.jpg` (sha256 `{digest}`)" in text
     assert "Forrás: Óra 1 / füzet.pdf, 2. oldal" in text and "Megjegyzés: pótolva" in text
-    assert records.append(tmp_path, records.from_writer(checks), **kw) == []
+    records.append(tmp_path, records.from_writer(checks), **kw)          # same run again
+    assert (tmp_path / written[0]).read_text(encoding="utf-8") == text
     records.append(tmp_path, records.from_writer(checks[:1]), **{**kw, "run_id": "run-2"})
     assert (tmp_path / written[0]).read_text(encoding="utf-8").startswith(text)
+
+
+def test_rerun_replaces_only_its_own_kind(tmp_path):
+    setup(tmp_path)
+    page = "wiki/gazdasag/szukosseg.md"
+    kw = dict(run_id="run-1", checker="astra/high", at="T", fetch_pages=PAGES)
+    image = [{"page": page, "image": "wiki/assets/abra.svg", "locator": "kép",
+              "observed": "Kép.", "decision": "confirmed"}]
+    records.append(tmp_path, records.from_writer(image), kind="image:abra", **kw)
+    first = [{"page": page, "image": 1, "locator": "1", "observed": "Első.", "decision": "changed"}]
+    records.append(tmp_path, records.from_writer(first), **kw)
+    second = [{**first[0], "observed": "Javított."}]
+    out = records.append(tmp_path, records.from_writer(second), **kw)
+    text = (tmp_path / out[0]).read_text(encoding="utf-8")
+    assert "Javított." in text and "Első." not in text and "Kép." in text
+    assert text.count("– run-1 – astra/high – checks") == 1
+
+
+def test_only_committed_image_locations(tmp_path):
+    setup(tmp_path)
+    bad = [{"page": "wiki/gazdasag/szukosseg.md", "image": ".school-notes/images/x.png",
+            "locator": "x", "observed": "o", "decision": "confirmed"}]
+    (tmp_path / ".school-notes/images").mkdir(parents=True)
+    (tmp_path / ".school-notes/images/x.png").write_bytes(b"x")
+    with pytest.raises(records.RecordError):
+        records.append(tmp_path, records.from_writer(bad), run_id="r", checker="c", at="T")
 
 
 def test_reviewer_figures(tmp_path):

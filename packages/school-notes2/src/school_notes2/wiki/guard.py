@@ -60,6 +60,10 @@ def machine_parts(text: str) -> str:
 
 
 def _allowed(path: str, g: GuardInput) -> bool:
+    """Writable places; dotfiles (`.gitattributes`, `.gitignore`, …) never, because they
+    change how Git merges, archives or hides the writer's other files."""
+    if any(part.startswith(".") for part in path.split("/")):
+        return False
     prefixes = ALWAYS + (INTERACTIVE if g.interactive else ())
     return path.startswith(prefixes) or path in g.conflict_files
 
@@ -77,6 +81,8 @@ def _file_kind(path: Path) -> str | None:
 def check_change(change: Change, g: GuardInput) -> list[Violation]:
     path = change.path
     if change.status == "deleted":
+        if path in g.conflict_files:
+            return []    # a delete/modify conflict the owner settled by deleting
         if path in g.tool_files:
             return [Violation(path, "a file the tool wrote was deleted", True)]
         return [Violation(path, "deleting or renaming a file that existed before the run", False)]
@@ -84,6 +90,8 @@ def check_change(change: Change, g: GuardInput) -> list[Violation]:
     kind = _file_kind(full)
     if kind:
         return [Violation(path, f"{kind} in the worktree", True)]
+    if path in g.conflict_files:
+        return []        # 6.7: the owner resolved this file in the session, whatever it holds
     data = full.read_bytes()
     if path in g.tool_files:
         if _sha(data) != g.tool_files[path]:

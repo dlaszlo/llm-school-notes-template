@@ -59,10 +59,18 @@ def _push(repo: Git, r: str, m: str, timeout: float) -> None:
 
 
 def remote_matches(repo: Git, r: str, m: str, timeout: float) -> bool:
+    """Did our atomic push arrive? The marker is exactly M, and main is R or (someone pushed
+    on top of it meanwhile) a descendant of R – then the report is in, never push it twice."""
     out = repo.out("ls-remote", "origin", "refs/heads/main", "refs/heads/claude-reviewed",
                    timeout=timeout)
     refs = {name: sha for sha, name in (line.split("\t") for line in out.splitlines() if line)}
-    return refs.get("refs/heads/main") == r and refs.get("refs/heads/claude-reviewed") == m
+    main = refs.get("refs/heads/main")
+    if refs.get("refs/heads/claude-reviewed") != m or main is None:
+        return False
+    if main == r:
+        return True
+    fetch(repo, timeout * 10)
+    return repo.ok("merge-base", "--is-ancestor", r, MAIN_REF)
 
 
 def _round(task: phase.Task, repo: Git, wt: Git, write: Callable[[Path], list[str]],
@@ -114,6 +122,7 @@ def close(task: phase.Task, repo: Git, wt: Git, ident: Identity, t: Timeouts = T
         written = [report.relative_to(worktree).as_posix(),
                    index.update(worktree).relative_to(worktree).as_posix()]
         written += records.append(worktree, records.from_reviewer(review.get("figures", [])),
+                                  kind="review",
                                   run_id=task.run_id, checker=ident.reviewer, at=ident.at,
                                   fetch_pages=fetch_pages)
         return written

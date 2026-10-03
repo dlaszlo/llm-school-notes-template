@@ -16,7 +16,8 @@ from ..git.run import Git, with_retries
 from ..schemas import validate
 from ..state import phase
 from ..state.errors import NeedsOwner, Transient
-from ..state.files import write_bytes, write_json, write_text
+from ..sources.order import natural_key
+from ..state.files import read_json, write_bytes, write_json, write_text
 from ..wiki import markers
 
 DIFF_PATHS = ("wiki", "docs/review", "docs/evidence/pages")
@@ -95,7 +96,7 @@ def build_patch(repo: Git, a: str, b: str) -> str:
 
 
 def images(repo: Git, a: str, b: str) -> list[dict]:
-    """New source images and new/changed figures, in path order (p0001 < p0002)."""
+    """New source images and new/changed figures, in natural path order (4.3)."""
     found = []
     for status, path in changed(repo, a, b, ("sources", "wiki/assets")):
         suffix = PurePosixPath(path).suffix.lower()
@@ -104,7 +105,7 @@ def images(repo: Git, a: str, b: str) -> list[dict]:
         if path.startswith("sources/") and status != "A":
             continue
         found.append({"path": path, "kind": "source" if path.startswith("sources/") else "figure"})
-    return found
+    return sorted(found, key=lambda img: natural_key(img["path"]))     # 4.3: 2 before 10
 
 
 def select(repo: Git, *, max_images: int, max_diff_kb: int, max_commits: int | None,
@@ -177,11 +178,34 @@ def resume_prepared(task: phase.Task, repo: Git, wt: Git, rasterize: Rasterize) 
     task.update(input_ready=True)
 
 
-def record_review(task: phase.Task, review: dict) -> None:
-    """A valid review.json closes the LLM part; from here on no LLM call is needed."""
+def record_review(task: phase.Task, review: dict, worktree: Path | None = None) -> None:
+    """A valid review.json closes the LLM part; from here on no LLM call is needed.
+
+    Figures that name no existing wiki page or no reviewed image cannot become evidence:
+    they are dropped (listed in the task as `dropped_figures`) instead of failing the close
+    every night. The image may be the input name (`images/003-x.png`) or a repo path."""
     validate("review", review)
+    kept, dropped = _valid_figures(task, review.get("figures") or [], worktree)
+    review = {**review, "figures": kept}
     write_json(task.dir / "review.json", review)
-    task.set_phase("reviewed")
+    task.set_phase("reviewed", dropped_figures=dropped)
+
+
+def _valid_figures(task: phase.Task, figures: list[dict], worktree: Path | None):
+    listing = read_json(task.dir / "in" / "images.json", []) or []
+    by_input = {img["file"]: img["path"] for img in listing}
+    reviewed = {img["path"] for img in listing}
+    kept, dropped = [], []
+    for fig in figures:
+        path = by_input.get(fig["file"], fig["file"])
+        page = fig["page"]
+        page_ok = (page.startswith("wiki/") and page.endswith(".md") and ".." not in page
+                   and (worktree is None or (worktree / page).is_file()))
+        if page_ok and path in reviewed:
+            kept.append({**fig, "file": path})
+        else:
+            dropped.append({"file": fig["file"], "page": page})
+    return kept, dropped
 
 
 def record_timeout(task: phase.Task) -> None:

@@ -115,10 +115,17 @@ def description_block(page: str, asset: str, sha256: str, job: dict, review: dic
     base = os.path.dirname(page)
     rel_asset = os.path.relpath(asset, base)
     alt = job["plan"]["visible_text"][0].replace("]", "")
-    observed = " ".join(review["description"].split())
+    observed = comment_safe(" ".join(review["description"].split()))
     return (f"![{alt}]({rel_asset})\n\n<!-- image-description\nasset: {rel_asset}\n"
             f"sha256: {sha256}\nobserved: {observed}\n"
             f"evidence: {os.path.relpath(receipt, base)}\n-->")
+
+
+def comment_safe(text: str) -> str:
+    """No `--` inside an HTML comment: `-->` would end it and show the rest on the site."""
+    while "--" in text:
+        text = text.replace("--", "- -")
+    return text
 
 
 def evidence_entry(job, attempt, answer, review, receipt_dir) -> dict:

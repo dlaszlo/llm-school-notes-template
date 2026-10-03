@@ -3,7 +3,7 @@
 import json
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -44,6 +44,12 @@ class ImageSettings:
     @property
     def request_id(self) -> str:
         return school_year(self.today())
+
+    def previous_year(self) -> "ImageSettings":
+        """The same settings on the previous school year's ledger."""
+        start = int(self.request_id.split("-")[2])
+        day = date(start - 1, 9, 1)
+        return replace(self, today=lambda: day)
 
     @property
     def state_dir(self) -> Path:

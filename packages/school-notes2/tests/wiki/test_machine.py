@@ -16,7 +16,7 @@ def test_lesson_values_from_pages():
     assert v["type"] == "lesson-notes" and v["grade"] == 9
     assert v["source_file"] == "proba/ora-1/"
     assert v["content_sha256"] == {"1.jpg": "1" * 64, "p0002.jpg": "2" * 64}
-    assert v["original_sha256"]["p0002.jpg"] == SHA + "#page=2"
+    assert v["original_sha256"]["p0002.jpg"] == SHA + "#p2"
     assert v["sources"] == [{"id": "ora-1", "resource": "../../sources/proba/ora-1/1.jpg", "title": "Óra 1"}]
     assert v["drive_folder"] == "Óra 1" and v["generated"] == {"by": "codex", "at": "T"}
 

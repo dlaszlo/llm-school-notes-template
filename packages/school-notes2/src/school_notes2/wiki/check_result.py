@@ -1,8 +1,11 @@
 """result.json checks of plan 4.5 (part of `check`), on the merged result of a run."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .check import item
+
+# A check's image must be a committed file: a source page or a wiki asset (4.5, 4.8).
+IMAGE_ROOTS = ("sources/", "wiki/assets/")
 
 RESULT = ".school-notes/result.json"
 
@@ -14,7 +17,7 @@ def check_result(repo: Path, result: dict, fetch: dict, open_items: set[tuple[st
     `whole_run`: coverage of every page of the run (finish, merged results); False checks
     only the pages of fetch.json's `range` (the writer's MCP check of one range)."""
     out = []
-    out += check_coverage(result, fetch, whole_run)
+    out += check_coverage(repo, result, fetch, whole_run)
     new = {p["subject"] for p in fetch["packages"] if p.get("new_subject")}
     for s in result.get("new_subjects") or []:
         if s["subject"] not in new:
@@ -31,7 +34,7 @@ def check_result(repo: Path, result: dict, fetch: dict, open_items: set[tuple[st
     return out
 
 
-def check_coverage(result: dict, fetch: dict, whole_run: bool = True) -> list[dict]:
+def check_coverage(repo: Path, result: dict, fetch: dict, whole_run: bool = True) -> list[dict]:
     """The notes must cover every non-duplicate page (of the run, or of the range)."""
     wanted = {p["seq"] for p in fetch["pages"] if not p.get("duplicate_of")}
     if not whole_run:
@@ -42,6 +45,8 @@ def check_coverage(result: dict, fetch: dict, whole_run: bool = True) -> list[di
     out = []
     for note in result.get("notes") or []:
         covered |= set(note["pages"])
+        if not (repo / note["file"]).is_file():
+            out.append(item(RESULT, None, f"notes: {note['file']} does not exist"))
         unknown = sorted(set(note["pages"]) - known)
         if unknown:
             out.append(item(note["file"], None, f"notes.pages: unknown page numbers {unknown}"))
@@ -61,6 +66,14 @@ def check_checks(repo: Path, result: dict, fetch: dict) -> list[dict]:
         if isinstance(image, int) or str(image).isdigit():
             if int(image) not in seqs:
                 out.append(item(RESULT, None, f"checks[{n}]: page number {image} is not in this run"))
-        elif not (repo / str(image)).is_file() or str(image).startswith(("/", "../")):
-            out.append(item(RESULT, None, f"checks[{n}]: image {image!r} is not a file in the repository"))
+        elif not committed_image(repo, str(image)):
+            out.append(item(RESULT, None, f"checks[{n}]: image {image!r} must be an existing file "
+                                          f"under {' or '.join(IMAGE_ROOTS)}"))
     return out
+
+
+def committed_image(repo: Path, rel: str) -> bool:
+    """A repo-relative file under sources/ or wiki/assets/, without `..`."""
+    pure = PurePosixPath(rel)
+    return (not pure.is_absolute() and ".." not in pure.parts and rel.startswith(IMAGE_ROOTS)
+            and (repo / rel).is_file())

@@ -23,10 +23,11 @@ RightsLookup = Callable[[str], tuple[str, str] | None]
 class PublicError(ValueError):
     """Assets with no known rights class: the `check` stops (plan 4.10, B10)."""
 
-    def __init__(self, paths: list[str]):
-        super().__init__("new images with no render.json and no image-ledger record: "
-                         + ", ".join(paths))
+    def __init__(self, paths: list[str],
+                 reason: str = "new images with no render.json and no image-ledger record"):
+        super().__init__(f"{reason}: " + ", ".join(paths))
         self.paths = paths
+        self.reason = reason
 
 
 def page_order(repo: Path) -> list[str]:
@@ -123,6 +124,9 @@ def build(repo: Path, rights: RightsLookup, existing: dict | None = None) -> dic
     unknown = [rel for rel, entry in assets.items() if entry is None]
     if unknown:
         raise PublicError(unknown)
+    copies = source_copies(repo, [rel for rel in assets if rel not in known])
+    if copies:
+        raise PublicError(copies, "a copy of a source photo may not be published as an image")
     value["assets"] = list(assets.values())
     value["collections"] = collections(repo)
     value["citationOnlyLinks"] = sorted(citations)
@@ -147,6 +151,23 @@ def write(repo: Path, rights: RightsLookup) -> bool:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return True
+
+
+def source_copies(repo: Path, new_assets: list[str]) -> list[str]:
+    """New assets that are byte copies of a stored source page (its content_sha256)."""
+    if not new_assets:
+        return []
+    from ..sources.duplicates import known_hashes      # sources imports wiki: import late
+    sources = set(known_hashes(repo).content)
+    return [rel for rel in new_assets if sha256(repo / rel) in sources]
+
+
+def media_receipt_rights(repo: Path) -> RightsLookup:
+    """A generated image: its receipt folder docs/evidence/media/<file stem>/ exists (B10)."""
+    def lookup(rel: str):
+        receipt = f"docs/evidence/media/{Path(rel).stem}"
+        return ("generated", receipt) if (repo / receipt).is_dir() else None
+    return lookup
 
 
 def render_rights(repo: Path) -> RightsLookup:

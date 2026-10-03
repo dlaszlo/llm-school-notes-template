@@ -9,10 +9,8 @@ from dataclasses import dataclass
 
 import yaml
 
-FENCE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+FENCE = re.compile(r"\A---\n(?:(.*?)\n)?---\n", re.S)     # also an empty `---\n---\n`
 TOP_KEY = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):")
-MACHINE_KEYS = ("type", "grade", "sources", "source_file", "content_sha256", "original_sha256",
-                "drive_folder", "generated")
 
 
 @dataclass
@@ -27,7 +25,7 @@ def split(text: str) -> Page:
     match = FENCE.match(text)
     if not match:
         return Page({}, "", text, False)
-    raw = match.group(1)
+    raw = match.group(1) or ""
     meta = yaml.safe_load(raw) or {}
     if not isinstance(meta, dict):
         raise ValueError("frontmatter is not a mapping")
@@ -78,7 +76,7 @@ def set_keys(text: str, values: dict, remove: tuple[str, ...] = ()) -> str:
         else:
             kept.append(chunk)
     kept += [dump_value(k, v) for k, v in values.items() if k not in seen]
-    raw = "\n".join(c for c in kept if c != "" or kept)
+    raw = "\n".join(kept)
     return f"---\n{raw}\n---\n" + page.body
 
 

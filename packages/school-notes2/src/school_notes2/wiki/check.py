@@ -14,6 +14,7 @@ from .pages import CODE_FENCE, links, resolve, sha256
 
 SIZE_WARN = 40 * 1024
 TYPES_WITH_CHAPTER = ("topic", "chapter-summary")
+LESSON_SUFFIX = "-jegyzet.md"
 KNOWN_TYPES = ("topic", "chapter-summary", "lesson-notes", "review", "source-summary",
                "concept", "entity", "question")
 # The release's last gate (check-public.py) and this check share one pattern file, so the
@@ -55,20 +56,26 @@ def line_of(text: str, pos: int) -> int:
     return text.count("\n", 0, pos) + 1
 
 
-def check_text(rel: str, text: str) -> list[dict]:
-    """Content-independent rules: conflict markers, block markers, secrets, size, formulas."""
+def check_secrets(rel: str, text: str) -> list[dict]:
+    """Conflict markers, secrets and machine paths: every file the writer may change."""
     out = []
     for m in CONFLICT.finditer(text):
         out.append(item(rel, line_of(text, m.start()), "unresolved conflict marker"))
-    try:
-        markers.check(text)
-    except markers.MarkerError as exc:
-        out.append(item(rel, None, str(exc)))
     for pattern in SECRET_PATTERNS:
         m = re.search(pattern, text, re.I)
         if m:
             out.append(item(rel, line_of(text, m.start()),
                             f"forbidden secret or machine-path pattern {pattern!r}"))
+    return out
+
+
+def check_text(rel: str, text: str) -> list[dict]:
+    """Wiki-page rules: the above plus block markers, size, formulas, punctuation."""
+    out = check_secrets(rel, text)
+    try:
+        markers.check(text)
+    except markers.MarkerError as exc:
+        out.append(item(rel, None, str(exc)))
     if len(text.encode()) > SIZE_WARN:
         out.append(item(rel, None, "page is over 40 KB; consider splitting it", "warning"))
     out += check_formulas(rel, text)
@@ -108,8 +115,9 @@ def check_links(repo: Path, rel: str, text: str) -> list[dict]:
         resolved = resolve(rel, target)
         if resolved is None:
             out.append(item(rel, link.line, f"link leaves the repository: {target!r}"))
-        elif link.image and resolved.startswith("sources/"):
-            out.append(item(rel, link.line, "a source image may not be embedded; link it instead"))
+        elif link.image and resolved.startswith(("sources/", "references/")):
+            out.append(item(rel, link.line, "a source or reference image may not be embedded; "
+                                            "link it instead"))
         elif target.endswith("/") or (repo / resolved).is_dir():
             out.append(item(rel, link.line, f"link to a directory {target!r}; link its index.md"))
         elif not (repo / resolved).is_file():
@@ -134,11 +142,15 @@ def check_meta(repo: Path, rel: str, meta: dict) -> list[dict]:
         return []
     if rel.count("/") < 2:
         return []        # top-level info pages (a-projektrol.md) are free-form
-    out = [item(rel, None, f"frontmatter {key!r} missing") for key in ("type", "title", "description")
+    # A lesson-notes page gets `type: lesson-notes` from the tool (machine key, 4.9), so the
+    # writer cannot and need not write it.
+    lesson_page = name.endswith(LESSON_SUFFIX)
+    required = ("title", "description") if lesson_page else ("type", "title", "description")
+    out = [item(rel, None, f"frontmatter {key!r} missing") for key in required
            if not isinstance(meta.get(key), str) or not meta.get(key).strip()]
     if not FILE_NAME.match(name):
         out.append(item(rel, None, "file names are accent-free lowercase kebab-case"))
-    kind = meta.get("type")
+    kind = meta.get("type") or ("lesson-notes" if lesson_page else None)
     if kind and kind not in KNOWN_TYPES:
         out.append(item(rel, None, f"unknown page type {kind!r}", "warning"))
     for tag in meta.get("tags") or []:
@@ -220,11 +232,20 @@ def check_renders(repo: Path) -> list[dict]:
 
 
 def check_files(repo: Path, paths: list[str]) -> list[dict]:
-    """Check the given repo-relative markdown files (the run's changes) and every render.json."""
+    """Check the run's changed markdown files and every render.json.
+
+    Only files the writer may change are judged: wiki pages get every rule, `references/`
+    only the secret and machine-path patterns. Tool-written files (docs/review,
+    docs/evidence, sources/) are never reported to the writer, who could not fix them."""
     out = []
     for rel in sorted(set(paths)):
         path = repo / rel
         if not rel.endswith(".md") or not path.is_file():
+            continue
+        if rel.startswith("references/"):
+            out += check_secrets(rel, path.read_text(encoding="utf-8", errors="replace"))
+            continue
+        if not rel.startswith("wiki/") or rel.startswith("wiki/assets/"):
             continue
         autofix(path)
         text = path.read_text(encoding="utf-8")
@@ -234,8 +255,7 @@ def check_files(repo: Path, paths: list[str]) -> list[dict]:
         except Exception as exc:
             out.append(item(rel, 1, f"frontmatter is not valid YAML: {exc}"))
             continue
-        if rel.startswith("wiki/"):
-            out += check_meta(repo, rel, page.meta)
+        out += check_meta(repo, rel, page.meta)
         out += check_links(repo, rel, text)
     return out + check_renders(repo)
 
