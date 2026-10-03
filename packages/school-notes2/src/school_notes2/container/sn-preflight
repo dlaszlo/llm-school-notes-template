@@ -5,8 +5,9 @@ set -u
 
 fail() { echo "sn-preflight: $*" >&2; exit 210; }
 
-# 1. Only the expected mounts (Podman's own /proc, /sys and /dev mounts are allowed).
-allowed_mounts=" / /work /home/agent /run/sn /in /out /tmp /etc/hosts /etc/hostname /etc/resolv.conf /run/.containerenv "
+# 1. Only the expected mounts (Podman's own /proc, /sys and /dev mounts are allowed;
+#    /run/podman-init is the read-only catatonit binary that `--init` binds in).
+allowed_mounts=" / /work /home/agent /run/sn /in /out /tmp /etc/hosts /etc/hostname /etc/resolv.conf /run/.containerenv /run/podman-init "
 while read -r target; do
     case "$target" in
         /proc|/proc/*|/sys|/sys/*|/dev|/dev/*) continue ;;
