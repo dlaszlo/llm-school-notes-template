@@ -68,17 +68,17 @@ def check(ctx: Ctx, task) -> dict:
 def accept(ctx: Ctx, task, plan_id: str, review: dict) -> dict:
     role, _ = ctx.cfg.role("writer")
     verifier = f"{role.model}/{role.effort}"
+    evidence: list[str] = []
 
     def append_evidence(page: str, entry: dict) -> None:
-        records.append(ctx.notes_path, records.from_writer([entry]), run_id=task.run_id,
-                       checker=verifier, at=now_iso())
+        record = records.Entry(page=page, image=entry["image"], locator=entry["entry_id"],
+                               observed=entry["observed"], decision=entry["decision"],
+                               note=entry.get("description", ""), checks=entry.get("checks"))
+        evidence.extend(records.append(ctx.notes_path, [record], run_id=task.run_id,
+                                       checker=f"{verifier} (kép)", at=now_iso()))
 
     answer = image_accept.accept(ctx.image_settings(), plan_id, review, verifier=verifier,
                                  append_evidence=append_evidence, log=ctx.log)
-    if answer.get("tool_writes"):
-        writes = dict(task.get("tool_writes", {}))
-        writes.update({w["path"]: w["sha256"] for w in answer["tool_writes"]})
-        task.update(tool_writes=writes)
+    written = [w["path"] for w in answer.get("tool_writes", [])] + evidence
+    steps.record_tool_files(task, ctx.notes_path, written)
     return answer
-
-

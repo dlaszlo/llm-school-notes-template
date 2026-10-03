@@ -28,6 +28,7 @@ from ..state import phase
 from ..state.errors import Transient
 from ..state.files import write_json
 from ..state.phase import Task
+from . import steps
 from .context import Ctx
 
 
@@ -112,9 +113,10 @@ def prepare(ctx: Ctx, task: Task, *, new_subject_index) -> None:
     settings = ctx.image_settings()
     found = image_pending.scan(settings)
     image_plans.restore(settings, [i["plan_id"] for i in found["pending"]])
-    writes = {p: _sha(ctx.notes_path / p) for p in written if (ctx.notes_path / p).is_file()}
     fresh = [p for p in pages if not p["duplicate_of"]]
-    task.set_phase("prepared", base=base, packages=packages, pages=pages, tool_writes=writes,
+    task.update(tool_writes={}, tool_parts={})
+    steps.record_tool_files(task, ctx.notes_path, written)
+    task.set_phase("prepared", base=base, packages=packages, pages=pages,
                    ranges=split_ranges(len(pages), ctx.cfg.sources.pages_per_call) or [[0, 0]],
                    open_review_items=review_files.open_items(ctx.notes_path, task.mode),
                    pending_images=found["pending"],

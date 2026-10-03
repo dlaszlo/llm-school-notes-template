@@ -147,6 +147,19 @@ def write_check_items(ctx: Ctx, items: list[dict]) -> None:
     write_json(ctx.notes_path / workbranch.WORKDIR / "check.json", items, mode=0o644)
 
 
+def is_llm_writable(rel: str) -> bool:
+    """wiki/ pages may be edited by the writer after the tool wrote them, so the guard checks
+    only their machine parts; everything else the tool writes is pinned as a whole file."""
+    return rel.startswith("wiki/") and not rel.startswith("wiki/assets/")
+
+
+def record_tool_files(task: Task, repo: Path, written: list[str]) -> None:
+    """Record the tool's own writes for the path guard (5.4/1)."""
+    whole = [r for r in written if not is_llm_writable(r)]
+    parts = [r for r in written if is_llm_writable(r)]
+    _record_writes(task, repo, whole=whole, parts=parts)
+
+
 def _record_writes(task: Task, repo: Path, *, whole: list[str], parts: list[str]) -> None:
     files = dict(task.get("tool_writes", {}))
     for rel in whole:
@@ -154,9 +167,8 @@ def _record_writes(task: Task, repo: Path, *, whole: list[str], parts: list[str]
             files[rel] = hashlib.sha256((repo / rel).read_bytes()).hexdigest()
     tool_parts = dict(task.get("tool_parts", {}))
     for rel in parts:
-        if (repo / rel).is_file() and rel not in files:
-            text = (repo / rel).read_text(encoding="utf-8")
-            tool_parts[rel] = guard.parts_hash(text)
+        if (repo / rel).is_file():
+            tool_parts[rel] = guard.parts_hash((repo / rel).read_text(encoding="utf-8"))
     task.update(tool_writes=files, tool_parts=tool_parts)
 
 
