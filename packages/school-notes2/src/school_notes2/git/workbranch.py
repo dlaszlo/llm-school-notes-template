@@ -22,6 +22,12 @@ def start(wt: Git, run_id: str, base: str, interactive: bool) -> None:
     current = wt.out("symbolic-ref", "--quiet", "--short", "HEAD", check=False).strip()
     if current == branch and wt.out("merge-base", "HEAD", base).strip() == base:
         return
+    if not interactive:
+        # Cron started from a clean worktree (5.1/1): anything here now is an interrupted
+        # preparation of this run, so it is reset rather than reported as stray edits.
+        wt.run("switch", "--discard-changes", "-C", branch, base, timeout=600)
+        wt.run("clean", "-fdq", "--", ".", timeout=600)
+        return
     try:
         wt.run("switch", "-C", branch, base, timeout=600)
     except GitFailed as exc:
@@ -29,11 +35,6 @@ def start(wt: Git, run_id: str, base: str, interactive: bool) -> None:
         raise NeedsOwner("uncommitted edits in the worktree clash with origin/main",
                          todo="decide in `school-notes chat` which version to keep",
                          details={"files": files}) from None
-    if not interactive:
-        status = wt.out("status", "--porcelain=v1", "-z", "--untracked-files=all")
-        if status:
-            raise NeedsOwner("the notes worktree had uncommitted changes outside any run",
-                             todo="take them over in `school-notes chat` or discard them")
 
 
 def reset_workdir(worktree: Path) -> Path:

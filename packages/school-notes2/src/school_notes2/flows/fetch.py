@@ -108,7 +108,6 @@ def prepare(ctx: Ctx, task: Task, *, new_subject_index) -> None:
     base = _base(ctx, task, wt)
     workbranch.start(wt, task.run_id, base, interactive=task.mode == "interactive")
     workbranch.reset_workdir(ctx.notes_path)
-    wt.run("clean", "-fdq", "--", "sources")         # leftovers of an interrupted preparation
     packages, pages, written = _place_all(ctx, task, new_subject_index)
     settings = ctx.image_settings()
     found = image_pending.scan(settings)
