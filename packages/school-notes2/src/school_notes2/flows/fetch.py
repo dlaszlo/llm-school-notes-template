@@ -154,7 +154,7 @@ def _place_all(ctx: Ctx, task: Task, new_subject_index):
     packages, pages, written, seq = [], [], [], 1
     for item in task.get("selected", []):
         pkg = item["package"]
-        subject, is_new = subject_key(pkg["subject_name"], repo / "tools" / "subjects.json")
+        subject, is_new = subject_key(pkg["subject_name"], repo)
         if is_new:
             written += new_subject_index(repo, subject, pkg["subject_name"])
         placed = place_package(repo, Downloaded(

@@ -5,6 +5,8 @@ import re
 import unicodedata
 from pathlib import Path
 
+from ..state import safefs
+
 
 def slug(text: str) -> str:
     """Accents removed, lowercase, every other run of characters becomes one dash."""
@@ -12,10 +14,11 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-") or "csomag"
 
 
-def unique_dir(parent: Path, name: str) -> Path:
-    """`parent/name`, or `name-2`, `name-3` … when that folder already exists."""
+def unique_dir(parent: Path, name: str, repo: Path | None = None) -> Path:
+    """`parent/name`, or `name-2`, `name-3` … when that folder already exists.
+    With `repo`, the test never follows a symlink inside it (7.6)."""
     candidate, n = parent / name, 1
-    while candidate.exists():
+    while (safefs.exists(repo, safefs.rel_of(repo, candidate)) if repo else candidate.exists()):
         n += 1
         candidate = parent / f"{name}-{n}"
     return candidate
@@ -31,11 +34,11 @@ def unique_name(taken: set[str], name: str) -> str:
     return candidate
 
 
-def subject_key(drive_name: str, subjects_json: Path) -> tuple[str, bool]:
+def subject_key(drive_name: str, repo: Path) -> tuple[str, bool]:
     """(wiki subject folder, is_new). Known subjects match tools/subjects.json `name`."""
     subjects = {}
-    if subjects_json.is_file():
-        subjects = json.loads(subjects_json.read_text(encoding="utf-8")).get("subjects", {})
+    if safefs.is_file(repo, "tools/subjects.json"):
+        subjects = json.loads(safefs.read_text(repo, "tools/subjects.json")).get("subjects", {})
     wanted = _norm(drive_name)
     for key, entry in subjects.items():
         if _norm(entry.get("name", "")) == wanted:

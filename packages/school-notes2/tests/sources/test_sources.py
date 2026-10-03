@@ -58,6 +58,7 @@ def test_natural_order_with_subfolders():
 
 def test_photo_is_downscaled_upright_and_clean(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     placed = place_package(repo, package([photo(tmp_path / "dl" / "IMG 1.JPG")]), 1, Known())
     stored = repo / placed.pages[0]["path"]
     assert placed.pages[0]["path"] == "sources/matek/ora-1/img-1.jpg"
@@ -69,6 +70,7 @@ def test_photo_is_downscaled_upright_and_clean(tmp_path):
 
 def test_small_photo_is_not_enlarged(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     placed = place_package(repo, package([photo(tmp_path / "s.jpg", (800, 600), exif=False)]),
                            1, Known())
     with Image.open(repo / placed.pages[0]["path"]) as im:
@@ -77,6 +79,7 @@ def test_small_photo_is_not_enlarged(tmp_path):
 
 def test_pdf_becomes_numbered_pages_without_the_pdf(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     placed = place_package(repo, package([pdf(tmp_path / "fuzet.pdf", 24)]), 5, Known())
     names = sorted(p.name for p in (repo / "sources/matek/ora-1").iterdir())
     assert names == [f"p{i:04d}.jpg" for i in range(1, 25)]
@@ -89,6 +92,7 @@ def test_pdf_becomes_numbered_pages_without_the_pdf(tmp_path):
 
 def test_mixed_package_order_and_names(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     files = [photo(tmp_path / "10.jpg", (100, 80), exif=False),
              pdf(tmp_path / "3.pdf", 2),
              photo(tmp_path / "2.jpg", (100, 80), color=(1, 2, 3), exif=False)]
@@ -100,6 +104,7 @@ def test_mixed_package_order_and_names(tmp_path):
 
 def test_duplicates_by_content_and_by_original(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     known = Known()
     first = place_package(repo, package([photo(tmp_path / "1.jpg", (300, 200), exif=False)]), 1, known)
     again = place_package(repo, package([photo(tmp_path / "x" / "1.jpg", (300, 200), exif=False)],
@@ -132,6 +137,7 @@ def test_known_hashes_on_the_real_wiki(tmp_path):
 
 def test_preconverted_package_is_one_item(tmp_path):
     repo, src = tmp_path / "repo", tmp_path / "dl"
+    repo.mkdir()
     src.mkdir()
     (src / "document.md").write_text("# Dia\n")
     (src / "dia.pptx").write_bytes(b"PK-pptx")
@@ -149,6 +155,7 @@ def test_preconverted_package_is_one_item(tmp_path):
 
 def test_fetch_entries_validate(tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
     placed = place_package(repo, package([photo(tmp_path / "1.jpg", (100, 80), exif=False)]), 1, Known())
     validate("fetch", {"student": "benedek", "run_id": "r1", "mode": "cron",
                        "packages": [placed.package], "pages": placed.pages,
@@ -187,10 +194,11 @@ def test_naming(tmp_path):
     assert slug("Szeptember 30. – óra") == "szeptember-30-ora"
     (tmp_path / "ora").mkdir()
     assert unique_dir(tmp_path, "ora").name == "ora-2"
-    subjects = tmp_path / "subjects.json"
-    subjects.write_text('{"subjects": {"gazdasag": {"name": "Gazdasági és jogi alapismeretek"}}}')
-    assert subject_key("gazdasági és jogi  alapismeretek", subjects) == ("gazdasag", False)
-    assert subject_key("Fizika", subjects) == ("fizika", True)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools/subjects.json").write_text(
+        '{"subjects": {"gazdasag": {"name": "Gazdasági és jogi alapismeretek"}}}')
+    assert subject_key("gazdasági és jogi  alapismeretek", tmp_path) == ("gazdasag", False)
+    assert subject_key("Fizika", tmp_path) == ("fizika", True)
 
 
 def test_prepare_photo_cli_keeps_working(tmp_path):

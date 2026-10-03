@@ -2,11 +2,11 @@
 (plan 4.2, 4.4). Hashing, naming, copying and duplicate detection are the tool's work (3.5)."""
 
 import hashlib
-import shutil
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..state import safefs
 from .duplicates import Known, original_key
 from .naming import slug, unique_dir, unique_name
 from .order import ordered
@@ -49,7 +49,7 @@ def place_package(repo: Path, pkg: Downloaded, start_seq: int, known: Known,
 
     The target folder must not exist yet (a repeated preparation starts from a clean worktree).
     """
-    folder = unique_dir(repo / "sources" / pkg.subject, slug(pkg.drive_folder))
+    folder = unique_dir(repo / "sources" / pkg.subject, slug(pkg.drive_folder), repo)
     entry = {"drive_folder": pkg.drive_folder, "subject": pkg.subject, "role": pkg.role,
              "new_subject": pkg.new_subject, "preconverted": pkg.preconverted, "files": []}
     if pkg.description:
@@ -60,8 +60,9 @@ def place_package(repo: Path, pkg: Downloaded, start_seq: int, known: Known,
         _place_document(repo, folder, pkg, files, start_seq, known, placed)
     else:
         _place_pages(repo, folder, pkg, files, start_seq, known, settings, placed)
-    if folder.is_dir() and not any(folder.iterdir()):
-        folder.rmdir()      # every page was a duplicate
+    rel = safefs.rel_of(repo, folder)
+    if safefs.is_dir(repo, rel) and not safefs.listdir(repo, rel):
+        safefs.rmtree(repo, rel)      # every page was a duplicate
     return placed
 
 
@@ -89,17 +90,18 @@ def _place_pages(repo, folder, pkg, files, seq, known, settings, placed) -> None
 
 
 def _one_page(repo, folder, pkg, record, page_no, image, name, seq, known, settings, placed):
-    target = folder / name
-    content = prepare_image(image, target, settings.max_side_px, settings.jpeg_quality,
-                            settings.tools_dir)
-    path = target.relative_to(repo).as_posix()
-    original = original_key(record["sha256"], page_no)
-    earlier = known.match(original, content)
-    if earlier:
-        target.unlink()     # duplicates are not stored again (4.2)
-    else:
-        known.add(original, content, path)
-        placed.written.append(path)
+    path = safefs.rel_of(repo, folder / name)
+    with tempfile.TemporaryDirectory() as tmp:
+        # Prepared on the host, then placed without following any link in the tree (7.6).
+        prepared = Path(tmp) / name
+        content = prepare_image(image, prepared, settings.max_side_px, settings.jpeg_quality,
+                                settings.tools_dir)
+        original = original_key(record["sha256"], page_no)
+        earlier = known.match(original, content)
+        if not earlier:             # duplicates are not stored again (4.2)
+            safefs.copy_in(prepared, repo, path)
+            known.add(original, content, path)
+            placed.written.append(path)
     placed.pages.append({"seq": seq, "package": pkg.drive_folder, "file": record["rel"],
                          "page": page_no, "path": path, "sha256": content,
                          "original_sha256": record["sha256"], "duplicate_of": earlier})
@@ -108,18 +110,17 @@ def _one_page(repo, folder, pkg, record, page_no, image, name, seq, known, setti
 def _place_document(repo, folder, pkg, files, seq, known, placed) -> None:
     """A doc-extract package is copied unchanged and is one list item (4.2)."""
     for rel in ordered(files):
-        target = folder / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(files[rel]["path"], target)
-        placed.written.append(target.relative_to(repo).as_posix())
+        target = safefs.rel_of(repo, folder / rel)
+        safefs.copy_in(Path(files[rel]["path"]), repo, target)
+        placed.written.append(target)
     doc = folder / "document.md"
-    content = hashlib.sha256(doc.read_bytes()).hexdigest()
+    content = hashlib.sha256(safefs.read_bytes(repo, safefs.rel_of(repo, doc))).hexdigest()
     originals = [r for r in ordered(files) if r.lower().endswith(ORIGINALS)]
     source_rel = originals[0] if originals else "document.md"
     original = files[source_rel]["sha256"]
     earlier = known.match(original, content)
     if earlier:
-        shutil.rmtree(folder)       # the same document was taken before (4.2)
+        safefs.rmtree(repo, safefs.rel_of(repo, folder))   # the same document was taken (4.2)
         placed.written.clear()
     else:
         known.add(original, content, doc.relative_to(repo).as_posix())

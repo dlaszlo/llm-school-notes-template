@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..state.files import write_text
+from ..state import safefs
 from ..wiki import frontmatter as fm
 
 REVIEW_DIR = Path("docs/review")
@@ -43,9 +43,22 @@ def next_path(repo: Path, date: str) -> Path:
     """`<date>-review.md`, then `-2`, `-3` for further reviews on the same day."""
     base = repo / REVIEW_DIR
     candidate, n = base / f"{date}-review.md", 2
-    while candidate.exists():
+    while safefs.exists(repo, _rel(repo, candidate)):
         candidate, n = base / f"{date}-review-{n}.md", n + 1
     return candidate
+
+
+def _rel(repo: Path, path: Path) -> str:
+    return safefs.rel_of(repo, path)
+
+
+def _read(repo: Path, path: Path) -> str:
+    """Review files live in the worktree: never read through a planted symlink (7.6)."""
+    return safefs.read_text(repo, _rel(repo, path))
+
+
+def _write(repo: Path, path: Path, text: str) -> None:
+    safefs.write_text(repo, _rel(repo, path), text)
 
 
 def _location(finding: dict) -> str:
@@ -92,8 +105,8 @@ def write_review(repo: Path, date: str, review: dict, reviewer: str, frm: str, t
         raise ValueError("review.json: duplicate finding ids")
     path = next_path(repo, date)
     items = {i: OPEN for i in sorted(ids, key=_num)}
-    write_text(path, _with_frontmatter(render_body(date, review, frm, to), reviewer, frm, to,
-                                       items), 0o644)
+    _write(repo, path, _with_frontmatter(render_body(date, review, frm, to), reviewer, frm, to,
+                                         items))
     return path
 
 
@@ -104,7 +117,7 @@ def write_timeout_report(repo: Path, date: str, commit: str, parent: str, review
     body = (f"# Review – {date}\n\nNem átnézve: időtúllépés. A `{commit}` commit két egymást "
             f"követő éjszakán is kifutott a review időkorlátjából; a tulajdonos eldobta "
             f"(futás: {run_id}).\n")
-    write_text(path, _with_frontmatter(body, reviewer, parent, commit, {}), 0o644)
+    _write(repo, path, _with_frontmatter(body, reviewer, parent, commit, {}))
     return path
 
 
@@ -112,10 +125,10 @@ def _num(item_id: str) -> int:
     return int(ITEM_NUM.fullmatch(item_id).group(1))
 
 
-def read_items(path: Path) -> dict | None:
+def read_items(repo: Path, path: Path) -> dict | None:
     """The `items` map of a v2 review file; None for files without it (v1 files, index)."""
     try:
-        meta = fm.split(path.read_text(encoding="utf-8")).meta
+        meta = fm.split(_read(repo, path)).meta
     except (ValueError, OSError):
         return None
     items = meta.get("items")
@@ -123,10 +136,8 @@ def read_items(path: Path) -> dict | None:
 
 
 def review_files(repo: Path) -> list[Path]:
-    base = repo / REVIEW_DIR
-    if not base.is_dir():
-        return []
-    return sorted(p for p in base.rglob("*.md") if p.name != "index.md")
+    return [repo / rel for rel in safefs.glob(repo, REVIEW_DIR, f"{REVIEW_DIR}/**/*.md")
+            if not rel.endswith("/index.md")]
 
 
 def open_items(repo: Path, mode: str) -> list[dict]:
@@ -134,7 +145,7 @@ def open_items(repo: Path, mode: str) -> list[dict]:
     wanted = (OPEN,) if mode == "cron" else (OPEN, OWNER)
     found = []
     for path in review_files(repo):
-        items = read_items(path) or {}
+        items = read_items(repo, path) or {}
         rel = path.relative_to(repo).as_posix()
         found += [{"file": rel, "item_id": i} for i in sorted(items, key=_num)
                   if items[i] in wanted]
@@ -177,11 +188,11 @@ def _without_own_section(body: str, items: dict, run_id: str) -> tuple[str, dict
     return (body[:heading.start()].rstrip("\n") + "\n" + body[end:]).rstrip("\n") + "\n", restored
 
 
-def _apply_one(path: Path, run_id: str, closures: dict, listed: list[str],
+def _apply_one(repo: Path, path: Path, run_id: str, closures: dict, listed: list[str],
                owner_after: int) -> list[str]:
     """Update one file; returns its newly-owner items. Repeating it for the same run
     replaces that run's section (the closures may have changed since)."""
-    text = path.read_text(encoding="utf-8")
+    text = _read(repo, path)
     page = fm.split(text)
     body, items = _without_own_section(page.body, dict(page.meta["items"]), run_id)
     for item_id, c in closures.items():
@@ -206,7 +217,7 @@ def _apply_one(path: Path, run_id: str, closures: dict, listed: list[str],
     new_text = fm.set_keys(f"---\n{page.raw_meta}\n---\n{body}",
                            {"items": items, "status": compute_status(items)})
     if new_text != text:
-        write_text(path, new_text, 0o644)
+        _write(repo, path, new_text)
     return new_owner
 
 
@@ -222,9 +233,10 @@ def apply_closure(repo: Path, run_id: str, closures: list[dict], listed: list[di
     outcome = ClosureOutcome()
     for rel in sorted(set(by_file) | set(listed_by_file)):
         path = repo / rel
-        if not rel.startswith("docs/review/") or not path.is_file() or read_items(path) is None:
+        if not rel.startswith("docs/review/") or not safefs.is_file(repo, rel) \
+                or read_items(repo, path) is None:
             raise ClosureError(f"{rel}: not a review file with items")
-        owners = _apply_one(path, run_id, by_file.get(rel, {}), listed_by_file.get(rel, []),
+        owners = _apply_one(repo, path, run_id, by_file.get(rel, {}), listed_by_file.get(rel, []),
                             owner_after)
         outcome.written.append(rel)
         outcome.new_owner += [{"file": rel, "item_id": i} for i in owners]

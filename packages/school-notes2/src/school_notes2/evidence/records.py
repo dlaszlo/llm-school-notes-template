@@ -9,7 +9,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from ..state.files import write_text
+from ..state import safefs
 
 PAGES_DIR = PurePosixPath("docs/evidence/pages")
 IMAGE_ROOTS = ("sources/", "wiki/assets/")      # only committed images are evidence (4.8)
@@ -49,8 +49,8 @@ def from_reviewer(figures: list[dict]) -> list[Entry]:
                   f.get("description", ""), f.get("checks")) for f in figures]
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _sha256(repo: Path, rel: str) -> str:
+    return hashlib.sha256(safefs.read_bytes(repo, rel)).hexdigest()
 
 
 def _resolve(repo: Path, image, pages_by_seq: dict[int, dict]) -> tuple[str, str, str]:
@@ -65,14 +65,13 @@ def _resolve(repo: Path, image, pages_by_seq: dict[int, dict]) -> tuple[str, str
     else:
         rel, source = str(image), ""
     pure = PurePosixPath(rel)
-    target = (repo / rel).resolve()
-    if pure.is_absolute() or ".." in pure.parts or not target.is_relative_to(repo.resolve()):
+    if pure.is_absolute() or ".." in pure.parts:
         raise RecordError(f"{rel}: image outside the repository")
     if not rel.startswith(IMAGE_ROOTS):
         raise RecordError(f"{rel}: evidence images must be under {' or '.join(IMAGE_ROOTS)}")
-    if not target.is_file():
+    if not safefs.is_file(repo, rel):
         raise RecordError(f"{rel}: image does not exist")
-    return rel, _sha256(target), source
+    return rel, _sha256(repo, rel), source
 
 
 def _one_line(text: str) -> str:
@@ -112,12 +111,12 @@ def append(repo: Path, entries: list[Entry], *, run_id: str, checker: str, at: s
     marker = f"– {run_id} – {checker} – {kind}"
     for page, group in sorted(by_page.items()):
         rel = record_path(page)
-        path = repo / rel
-        old = path.read_text(encoding="utf-8") if path.exists() else f"# Bizonyítékrekord: {page}\n"
+        old = safefs.read_text(repo, rel) if safefs.exists(repo, rel) \
+            else f"# Bizonyítékrekord: {page}\n"
         section = _section(repo, group, f"## {at} {marker}", pages_by_seq)
         new = _put_section(old, marker, section)
         if new != old:
-            write_text(path, new, 0o644)
+            safefs.write_text(repo, rel, new)
         written.append(rel.as_posix())
     return written
 

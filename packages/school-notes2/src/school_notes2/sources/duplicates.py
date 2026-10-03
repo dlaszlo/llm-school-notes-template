@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from ..state import safefs
 from ..wiki import frontmatter
 
 HASH = re.compile(r"^[0-9a-f]{64}(#p[0-9]+)?$")
@@ -37,12 +38,11 @@ class Known:
 
 def known_hashes(repo: Path) -> Known:
     known = Known()
-    for page in sorted((repo / "wiki").rglob("*.md")):
+    for where in safefs.glob(repo, "wiki", "wiki/**/*.md"):
         try:
-            meta = frontmatter.split(page.read_text(encoding="utf-8")).meta
+            meta = frontmatter.split(safefs.read_text(repo, where)).meta
         except (ValueError, UnicodeDecodeError, yaml.YAMLError):  # broken pages: the check's job
             continue
-        where = page.relative_to(repo).as_posix()
         for value in _hashes(meta.get("content_sha256")):
             known.content.setdefault(value, where)
         for value in _hashes(meta.get("original_sha256")):
