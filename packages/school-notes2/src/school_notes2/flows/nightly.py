@@ -88,8 +88,9 @@ def _prerequisites(ctx: Ctx) -> None:
     prereq.disk(ctx.cfg.root, ctx.cfg.limits.min_free_gb)
     prereq.podman()
     role, harness = ctx.cfg.role("reviewer")
-    if not launch.login_ok(learner=ctx.name, run_id="", harness=harness, image=ctx.image_tag(),
-                           log=ctx.log):
+    if not launch.login_ok(learner=ctx.name, run_id="", role="reviewer", harness=harness,
+                           image=ctx.image_tag(), log=ctx.log,
+                           allowed_domains=ctx.cfg.provider_domains):
         raise Prerequisite(f"the {harness.name} login in the container expired",
                            todo=f"log in once: `school-notes login {ctx.name} reviewer`")
 
@@ -107,7 +108,8 @@ def _review(ctx: Ctx, task: phase.Task) -> None:
         image=ctx.image_tag(),
         mounts=launch.Mounts(work=ctx.cfg.worktree(ctx.name, "review"), work_readonly=True,
                              in_dir=task.dir / "in", out_dir=out),
-        output_host=out / "review.json", schema="review", task_dir=task.dir)
+        output_host=out / "review.json", schema="review", task_dir=task.dir,
+        allowed_domains=ctx.cfg.provider_domains)
     try:
         outcome = launch.run_headless(run, log=ctx.log,
                                       snapshot=lambda: launch.tree_fingerprint(out))

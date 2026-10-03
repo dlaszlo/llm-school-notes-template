@@ -28,6 +28,9 @@ def _parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", required=True)
     for name in ("run", "nightly", "setup", "fetch", "finish"):
         sub.add_parser(name).add_argument("learner")
+    login = sub.add_parser("login")
+    login.add_argument("learner")
+    login.add_argument("role", choices=("writer", "reviewer"))
     chat = sub.add_parser("chat")
     chat.add_argument("learner")
     chat.add_argument("harness", nargs="?", choices=("codex", "claude"))
@@ -74,6 +77,8 @@ def _dispatch(ctx, args) -> int:
         return _owner_step(ctx, args.command)
     if args.command == "mcp":
         return _mcp(ctx, args)
+    if args.command == "login":
+        return _login(ctx, args.role)
     raise SystemExit(f"unknown command {args.command}")
 
 
@@ -88,6 +93,15 @@ def _owner_step(ctx, command: str) -> int:
         lock.release()
     print(json.dumps(answer, ensure_ascii=False, indent=2))
     return 0
+
+
+def _login(ctx, role_name: str) -> int:
+    """The owner's one-off harness login on the role's home volume (7.4, 10.4)."""
+    from .llm import launch
+    role, harness = ctx.cfg.role(role_name)
+    return launch.run_login(learner=ctx.name, role=role_name, harness=harness,
+                            image=ctx.image_tag(), log=ctx.log,
+                            allowed_domains=ctx.cfg.provider_domains + ctx.cfg.login_domains)
 
 
 def _mcp(ctx, args) -> int:

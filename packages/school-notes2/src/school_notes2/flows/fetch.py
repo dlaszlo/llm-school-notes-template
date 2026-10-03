@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..drive import inventory
+from ..drive.client import FileChanged
 from ..drive.download import download_package
 from ..drive.inventory import DriveFile, Package
 from ..drive.move import move_to_processed
@@ -65,12 +66,23 @@ def download(ctx: Ctx, task: Task, drive) -> None:
     shutil.rmtree(target, ignore_errors=True)      # a repeated download starts clean (8.2)
     records: dict[str, list[dict]] = {}
 
+    changed: list[Package] = []
+
     def page_count(pkg: Package) -> int:
-        records[pkg.id] = download_package(drive, pkg, target / pkg.id)
+        try:
+            records[pkg.id] = download_package(drive, pkg, target / pkg.id,
+                                               ctx.cfg.timeouts.download_package_s)
+        except FileChanged as exc:
+            # 4.1: a package that changed after the listing just waits on Drive.
+            ctx.log.event("drive.download", "changed", target=pkg.label, message=str(exc)[:200])
+            changed.append(pkg)
+            shutil.rmtree(target / pkg.id, ignore_errors=True)
+            return 0
         return _pages(pkg, records[pkg.id])
 
     candidates = [_unpack(p) for p in task.get("candidates", [])]
     selected, dropped = select_batch(candidates, page_count, ctx.cfg.sources.pages_per_call)
+    selected = [(pkg, n) for pkg, n in selected if pkg not in changed]
     for pkg in dropped:
         shutil.rmtree(target / pkg.id, ignore_errors=True)
     task.set_phase("downloaded", selected=[

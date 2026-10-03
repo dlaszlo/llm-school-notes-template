@@ -76,10 +76,11 @@ def _prerequisites(ctx: Ctx, task: Task | None) -> None:
     prereq.disk(ctx.cfg.root, ctx.cfg.limits.min_free_gb)
     prereq.podman()
     role, harness = ctx.cfg.role("writer")
-    if not launch.login_ok(learner=ctx.name, run_id=task.run_id if task else "", harness=harness,
-                           image=ctx.image_tag(), log=ctx.log):
+    if not launch.login_ok(learner=ctx.name, run_id=task.run_id if task else "", role="writer",
+                           harness=harness, image=ctx.image_tag(), log=ctx.log,
+                           allowed_domains=ctx.cfg.provider_domains):
         raise Prerequisite(f"the {harness.name} login in the container expired",
-                           todo=f"log in once in `school-notes chat {ctx.name}`")
+                           todo=f"log in once: `school-notes login {ctx.name} writer`")
 
 
 def _new_task(ctx: Ctx) -> Task | None:

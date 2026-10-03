@@ -3,6 +3,7 @@
 
 from ..git import workbranch
 from ..llm import launch
+from ..mcp.jobs import JobStore
 from ..schemas import validate
 from ..state.errors import BadWork
 from ..state.files import read_json, write_json
@@ -54,9 +55,14 @@ def _call(ctx: Ctx, task: Task, k: int, role, harness, handlers) -> dict:
             harness=harness, image=ctx.image_tag(),
             mounts=launch.Mounts(work=ctx.notes_path, sessdir=sessdir),
             output_host=ctx.notes_path / workbranch.WORKDIR / "result.json",
-            schema="result", task_dir=task.dir, label=str(k))
-        outcome = launch.run_headless(run, log=ctx.log,
-                                      snapshot=lambda: launch.tree_fingerprint(ctx.notes_path))
+            schema="result", task_dir=task.dir, label=str(k),
+            allowed_domains=ctx.cfg.provider_domains)
+        try:
+            outcome = launch.run_headless(
+                run, log=ctx.log, snapshot=lambda: launch.tree_fingerprint(ctx.notes_path))
+        finally:
+            # A job the writer left behind (check, image) must not run beside finish.
+            JobStore(task.dir / "jobs", ctx.log).stop_all(30)
     return outcome.output
 
 
