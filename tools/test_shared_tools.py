@@ -6,7 +6,6 @@ import sys
 import tempfile
 import unittest
 
-import banner
 import book_index
 import check_shared
 
@@ -33,15 +32,6 @@ class SharedToolsTest(unittest.TestCase):
             (root / 'shared-files.json').write_text(json.dumps({'version': 'test', 'files': ['../private']}))
             with self.assertRaises(ValueError):
                 check_shared.read_manifest(root)
-
-    def test_banner_preserves_configured_text_and_currency(self):
-        subject = {'name': 'Gazdaság', 'dark': '#123456', 'light': '#abcdef', 'icon': 'coins', 'mark': 'Ft', 'doodles': ['Ft', 'arány', 'százalék']}
-        result = banner.banner_svg('Kereslet & kínálat', subject, 'jegyzet', 'Fejléc')
-        self.assertIn('Fejléc: Kereslet &amp; kínálat (Gazdaság)', result)
-        self.assertIn('Gazdaság · jegyzet', result)
-        self.assertIn('>Ft</text>', result)
-        self.assertNotIn('>$</text>', result)
-        self.assertNotIn('>£</text>', result)
 
     def test_offset_formats_remain_supported(self):
         for text, expected in [('printed-page offset: 4', 4), ('one less', 1), ('eggyel kisebb', 1)]:
