@@ -24,3 +24,18 @@ def test_linked_workdir_receives_nothing(world, tmp_path):
     with pytest.raises(NeedsOwner):
         handlers.check(ctx, task)
     assert list(canary.iterdir()) == []
+
+
+def test_writer_check_reports_an_image_without_rights(world):
+    """The writer's own check reports what finish's public.json step would refuse."""
+    ctx, origin, drive, package = world
+    chat.session_fetch(ctx)
+    task = phase.open_task(ctx.task_root(), "benedek", "notes")
+    (ctx.notes_path / "wiki/assets/proba").mkdir(parents=True)
+    (ctx.notes_path / "wiki/assets/proba/abra.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>\n')
+    index = ctx.notes_path / "wiki/index.md"
+    index.write_text(index.read_text() + "\n![Ábra](assets/proba/abra.svg)\n")
+    found = handlers.check(ctx, task)
+    assert any(p["file"] == "wiki/assets/proba/abra.svg" and "render.json" in p["message"]
+               for p in found["problems"]), found

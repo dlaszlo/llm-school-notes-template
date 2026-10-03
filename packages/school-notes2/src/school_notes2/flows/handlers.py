@@ -11,6 +11,7 @@ from ..state import phase
 from ..state.errors import NeedsOwner
 from ..state import safefs
 from ..wiki import check as wiki_check
+from ..wiki import public
 from ..wiki.check_result import check_result
 from . import fetch as fetch_flow
 from . import status as status_flow
@@ -60,9 +61,20 @@ def check(ctx: Ctx, task) -> dict:
             problems += check_result(ctx.notes_path, result, fetch, listed,
                                      ctx.cfg.limits.review_closures_per_run, whole_run=False)
     problems += wiki_check.check_files(ctx.notes_path, steps.changed_paths(ctx, task))
+    problems += public_problems(ctx.notes_path)
     steps.write_check_items(ctx, problems)
     errors = wiki_check.errors(problems)
     return {"ok": not errors, "errors": len(errors), "problems": problems[:50]}
+
+
+def public_problems(repo) -> list[dict]:
+    """What finish's public.json step would refuse (a new image with no rights record, a copy
+    of a source photo), reported now, so the writer fixes it in the same call."""
+    try:
+        public.build(repo, public.either(public.render_rights(repo), public.media_receipt_rights(repo)))
+    except public.PublicError as exc:
+        return [wiki_check.item(p, None, exc.reason) for p in exc.paths]
+    return []
 
 
 def accept(ctx: Ctx, task, plan_id: str, review: dict) -> dict:
