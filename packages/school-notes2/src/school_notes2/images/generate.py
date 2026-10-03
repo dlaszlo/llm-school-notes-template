@@ -76,6 +76,7 @@ def _attempts(settings, job, job_path, repair_note, log, sleep) -> dict:
     files = {"repair.txt": repair_note} if repair_note else None
     args = ["--job", str(job_path)] + (["--repair", "{tmp}/repair.txt"] if repair_note else [])
     for delay in (*RETRY_DELAYS, None):
+        before = _attempt_count(settings, job["id"])
         try:
             answer = call(settings, "generate", args, job["target"], with_key=True, files=files)
             return _success(settings, job["id"], answer)
@@ -83,6 +84,10 @@ def _attempts(settings, job, job_path, repair_note, log, sleep) -> dict:
             return {"state": "unknown", "message": "the call timed out after sending; "
                                                    "generation waits until it is settled"}
         except ExecutorError as exc:
+            if _attempt_count(settings, job["id"]) == before:
+                # Refused before any request (cap, missing repair base, …): not an attempt,
+                # so neither an earlier attempt's failure nor a retry applies.
+                return {"state": "error", "message": str(exc)}
             last = _last_attempt(settings, job["id"])
             failure = last.get("failure") if last and last["state"] == "failed" else None
             if failure in RETRYABLE and delay is not None and _blocked(settings, job["id"]) is None:
@@ -105,6 +110,11 @@ def _success(settings: ImageSettings, job_id: str, answer: dict) -> dict:
     return {"state": "generated", "number": answer["number"], "sha256": answer["sha256"],
             "cost_usd": answer.get("cost_usd"),
             "attempts_left": settings.max_attempts - attempts_used(entry)}
+
+
+def _attempt_count(settings: ImageSettings, job_id: str) -> int:
+    entry = settings.ledger()["jobs"].get(job_id)
+    return len(entry["attempts"]) if entry else 0
 
 
 def _last_attempt(settings: ImageSettings, job_id: str) -> dict | None:
@@ -131,7 +141,16 @@ def _preview(settings: ImageSettings, job: dict, result: dict) -> dict:
 
 
 def settle_unknown(settings: ImageSettings, *, log: Log, max_age_hours: float = 24) -> list[dict]:
-    """Settle unknown-outcome calls older than 24 hours; the caller e-mails the result."""
+    """Settle unknown-outcome calls older than 24 hours, in this and the previous school
+    year's ledger (a call left open over the summer must not block forever); the caller
+    e-mails the result."""
+    settled = []
+    for ledger_settings in (settings.previous_year(), settings):
+        settled += _settle_one(ledger_settings, log=log, max_age_hours=max_age_hours)
+    return settled
+
+
+def _settle_one(settings: ImageSettings, *, log: Log, max_age_hours: float) -> list[dict]:
     if not (settings.state_dir / "ledger.json").is_file():
         return []
     with images_lock(settings.lock_path, settings.lock_timeout_s):

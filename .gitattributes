@@ -1,1 +1,12 @@
 * text=auto eol=lf
+
+# Images and PDFs are binary: no line-ending conversion, no textual merge (plan 4.12).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+
+# Append-only files: two runs appending at once keep both entries instead of conflicting.
+wiki/log.md merge=union
+docs/evidence/pages/** merge=union
