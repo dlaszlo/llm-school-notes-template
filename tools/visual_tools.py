@@ -21,6 +21,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS = {'dot': 'dot', 'java': 'java', 'plantuml_jar': None,
             'povray': 'povray', 'freecad': 'freecadcmd', 'freecad_app_run': None}
+SYSTEM_PLANTUML = '/usr/share/plantuml/plantuml.jar'
 ENGINES = ('python', 'graphviz', 'plantuml', 'povray', 'freecad')
 SUFFIXES = {'python': '.py', 'graphviz': '.dot', 'plantuml': '.puml',
             'povray': '.pov', 'freecad': '.py'}
@@ -42,6 +43,8 @@ def load_config(path=None):
     if not isinstance(data, dict) or set(data) - set(DEFAULTS):
         raise ValueError('Configuration must contain only documented runtime path keys')
     result = DEFAULTS | data
+    if not result['plantuml_jar'] and Path(SYSTEM_PLANTUML).is_file():
+        result['plantuml_jar'] = SYSTEM_PLANTUML   # the Debian package's jar (container image)
     for key, value in result.items():
         if value is not None and (not isinstance(value, str) or not value.strip()):
             raise ValueError(f'{key} must be a path/name string or null')

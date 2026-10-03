@@ -125,8 +125,9 @@ def image_notices(ctx: Ctx) -> None:
     waiting = found["exhausted"] or image_plans.find_markers(ctx.notes_path)
     if not found["budget_left"] and waiting:
         ctx.mailer.send(Notice(ctx.name, "image_budget", "", "images", "image",
-                               "the daily image budget is used up; markers stay invisible",
-                               "nothing to do; generation continues tomorrow"))
+                               "the daily or monthly image budget is used up; markers stay "
+                               "invisible", "nothing to do; generation continues when the budget "
+                               "allows (daily 1 USD, monthly 10 USD)"))
     for item in found["exhausted"]:
         ctx.mailer.send_once(Notice(ctx.name, f"image_exhausted:{item['plan_id']}", "", "images",
                                     "image", f"image {item['plan_id']} ({item['page']}) failed "

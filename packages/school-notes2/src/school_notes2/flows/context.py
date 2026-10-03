@@ -68,6 +68,7 @@ class Ctx:
             max_total_usd=Decimal(str(limits.image_year_total_usd)),
             learner_max_usd=Decimal(str(limits.image_year_learner_usd)),
             daily_usd=Decimal(str(limits.image_daily_usd)),
+            monthly_usd=Decimal(str(limits.image_monthly_usd)),
             reservation_usd=Decimal(str(limits.image_reservation_usd)),
             timeout_s=self.cfg.timeouts.image_generate_s)
 

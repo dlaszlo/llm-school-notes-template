@@ -108,8 +108,11 @@ def _one_page(repo, folder, pkg, record, page_no, image, name, seq, known, setti
 
 
 def _place_document(repo, folder, pkg, files, seq, known, placed) -> None:
-    """A doc-extract package is copied unchanged and is one list item (4.2)."""
+    """A doc-extract package is one list item (4.2): its extracted files are copied; the
+    original pptx/docx/pdf is only hashed (original_sha256) and stays on Drive."""
     for rel in ordered(files):
+        if rel.lower().endswith(ORIGINALS):
+            continue        # the original pptx/docx/pdf stays on Drive (owner, 2026-10-03)
         target = safefs.rel_of(repo, folder / rel)
         safefs.copy_in(Path(files[rel]["path"]), repo, target)
         placed.written.append(target)

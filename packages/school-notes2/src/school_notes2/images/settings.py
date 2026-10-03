@@ -34,6 +34,7 @@ class ImageSettings:
     max_total_usd: Decimal    # school-year safety cap over both learners
     learner_max_usd: Decimal  # school-year safety cap per learner
     daily_usd: Decimal = Decimal("1")
+    monthly_usd: Decimal = Decimal("10")
     reservation_usd: Decimal = Decimal("0.05")
     max_attempts: int = 3
     timeout_s: int = 600

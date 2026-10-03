@@ -58,7 +58,8 @@ def _blocked(settings: ImageSettings, job_id: str) -> dict | None:
         return None
     if entry and attempts_used(entry) >= settings.max_attempts:
         return {"state": "exhausted", "message": "all attempts used; only interactive work"}
-    if not budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd):
+    if not budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd,
+                       settings.monthly_usd):
         return {"state": "budget-exhausted", "message": "today's image budget is used up"}
     return None
 

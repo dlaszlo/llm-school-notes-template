@@ -19,7 +19,8 @@ from .settings import ImageSettings
 def scan(settings: ImageSettings) -> dict:
     ledger = settings.ledger()
     waiting = bool(unknown_calls(ledger))
-    has_budget = budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd)
+    has_budget = budget_left(ledger, settings.today(), settings.daily_usd, settings.reservation_usd,
+                       settings.monthly_usd)
     result = {"pending": [], "accepted_not_inserted": [], "exhausted": [], "missing_plan": [],
               "waiting_unknown": waiting, "budget_left": has_budget}
     for plan_id, pages in sorted(plans.find_markers(settings.worktree).items()):

@@ -11,12 +11,13 @@ ARG CLAUDE_CODE_VERSION=2.1.288
 ARG CODEX_VERSION=0.160.0
 ARG AGENT_UID=1000
 ARG AGENT_GID=1000
-ARG WITH_FREECAD=0
+ARG WITH_FREECAD=1
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates curl dnsutils iptables socat ripgrep util-linux procps \
       librsvg2-bin graphviz python3 python3-venv \
+      default-jre-headless plantuml povray ffmpeg \
  && if [ "$WITH_FREECAD" = "1" ]; then apt-get install -y --no-install-recommends freecad; fi \
  && rm -rf /var/lib/apt/lists/*
 

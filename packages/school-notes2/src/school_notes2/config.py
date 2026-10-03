@@ -75,8 +75,9 @@ class Limits:
     review_max_images: int = 30
     review_max_diff_kb: int = 300
     image_daily_usd: float = 1.0
+    image_monthly_usd: float = 10.0      # owner, 2026-10-03
     image_reservation_usd: float = 0.05
-    image_year_total_usd: float = 180.0     # safety cap: the daily budget over a school year
+    image_year_total_usd: float = 120.0     # safety cap: twelve monthly caps
     image_year_learner_usd: float = 120.0
     min_free_gb: float = 5.0
     chat_lock_alert_h: float = 12.0

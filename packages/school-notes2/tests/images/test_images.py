@@ -209,3 +209,15 @@ def test_refusal_before_any_request_is_not_retried(make_settings, fake_api, log)
     slept = []
     result = gen.generate(s, "termeles-banner", log=log, sleep=slept.append)
     assert result["state"] == "error" and slept == [] and fake_api.requests == []
+
+
+def test_monthly_cap_stops_generation_before_the_daily_budget():
+    from datetime import date
+    from decimal import Decimal
+    from school_notes2.images.budget import budget_left
+    ledger = {"jobs": {"j": {"id": "j", "learner": "b", "attempts": [
+        {"number": n, "state": "done", "cost_usd": "0.9", "started_at": f"2026-10-{n:02d}T10:00:00+02:00"}
+        for n in range(1, 13)]}}}
+    assert budget_left(ledger, date(2026, 10, 20), Decimal("1"), Decimal("0.05"))          # no cap
+    assert not budget_left(ledger, date(2026, 10, 20), Decimal("1"), Decimal("0.05"), Decimal("10"))
+    assert budget_left(ledger, date(2026, 11, 1), Decimal("1"), Decimal("0.05"), Decimal("10"))
