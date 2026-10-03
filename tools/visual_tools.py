@@ -20,7 +20,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS = {'dot': 'dot', 'java': 'java', 'plantuml_jar': None,
-            'povray': 'povray', 'freecad': 'freecadcmd', 'freecad_app_run': None}
+            'povray': 'povray', 'freecad': 'freecadcmd', 'freecad_app_run': None,
+            'ffmpeg': 'ffmpeg'}
 SYSTEM_PLANTUML = '/usr/share/plantuml/plantuml.jar'
 ENGINES = ('python', 'graphviz', 'plantuml', 'povray', 'freecad')
 SUFFIXES = {'python': '.py', 'graphviz': '.dot', 'plantuml': '.puml',
@@ -79,6 +80,7 @@ def availability(config):
             'engines': {'python': True, 'graphviz': bool(paths['dot']),
                         'plantuml': bool(paths['java'] and jar),
                         'povray': bool(paths['povray']),
+                        'povray_animation': bool(paths['povray'] and paths['ffmpeg']),
                         'freecad': bool(paths['freecad_app_run'] or paths['freecad'])},
             'plotting_packages_present': bool(pkg['matplotlib'] and pkg['numpy']),
             'note': 'Availability is not diagram support or content validation; PlantUML families may also need Graphviz.'}
@@ -115,11 +117,34 @@ def check_output(path):
         if len(head) != 24 or head[:8] != b'\x89PNG\r\n\x1a\n' or head[12:16] != b'IHDR':
             raise ValueError('Output is not a PNG with an IHDR header')
         info['dimensions'] = list(struct.unpack('>II', head[16:24]))
+    elif path.suffix.lower() == '.mp4':
+        with path.open('rb') as f:
+            if f.read(12)[4:8] != b'ftyp':
+                raise ValueError('Output is not an MP4 file')
     elif path.suffix.lower() == '.pdf':
         with path.open('rb') as f:
             if f.read(5) != b'%PDF-':
                 raise ValueError('Output is not a PDF')
     return info
+
+
+VOLATILE_PNG_CHUNKS = (b'tIME', b'tEXt', b'zTXt', b'iTXt')
+
+
+def strip_png_metadata(path):
+    """Drop POV-Ray's render date and other text/time chunks: the same scene must give the
+    same bytes on every run (owner, 2026-10-03)."""
+    data = path.read_bytes()
+    if data[:8] != b'\x89PNG\r\n\x1a\n':
+        return
+    out, i = [data[:8]], 8
+    while i + 8 <= len(data):
+        length = struct.unpack('>I', data[i:i + 4])[0]
+        chunk = data[i:i + 12 + length]
+        if chunk[4:8] not in VOLATILE_PNG_CHUNKS:
+            out.append(chunk)
+        i += 12 + length
+    path.write_bytes(b''.join(out))
 
 
 def relative_file(value):
@@ -149,6 +174,8 @@ def render(args, config):
     state = availability(config)
     if not state['engines'][args.engine]:
         raise ValueError(f'{args.engine} is unavailable; run status and follow the installation guide')
+    if args.frames:
+        return render_animation(args, source, extra, out, state)
     outputs = [relative_file(p) for p in args.expect]
     if not outputs:
         outputs = [Path('figure.png' if args.engine == 'povray' else 'figure.svg')]
@@ -202,6 +229,9 @@ def render(args, config):
         (out / 'stderr.log').write_bytes(stderr)
         if args.engine == 'plantuml' and code == 0:
             target.write_bytes(stdout)
+        elif args.engine == 'povray' and code == 0 and target.is_file():
+            (out / 'stdout.log').write_bytes(stdout)
+            strip_png_metadata(target)
         else:
             (out / 'stdout.log').write_bytes(stdout)
         record.update(exit_code=code, seconds=seconds)
@@ -217,6 +247,63 @@ def render(args, config):
         record.update(state='failed', error=str(exc))
         raise
     finally:
+        receipt.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\n')
+    return {'state': record['state'], 'receipt': str(receipt), 'outputs': list(record['outputs'])}
+
+
+def render_animation(args, source, extra, out, state):
+    """POV-Ray frames (clock 0..1) → figure.mp4 (H.264, bit-exact flags) plus figure.png, the
+    middle frame, as the static counterpart for print. The frames are deleted afterwards."""
+    if args.engine != 'povray' or args.expect:
+        raise ValueError('Animation is a POV-Ray render with the fixed outputs figure.mp4 and figure.png')
+    if not state['engines']['povray_animation']:
+        raise ValueError('POV-Ray animation needs povray and ffmpeg; run status')
+    paths = state['paths']
+    frames = out / 'frames'
+    frames.mkdir(parents=True)
+    env = os.environ.copy()
+    env.update(VISUAL_OUTPUT_DIR=str(out))
+    povray = [paths['povray'], '+I' + str(source), '+O' + str(frames / 'f.png'), '+FN', '-D',
+              '+W' + str(args.width), '+H' + str(args.height), '+Q9', '+A0.1', '+WT' + str(args.threads),
+              '+KFI1', '+KFF' + str(args.frames), '+KI0.0', '+KF1.0']
+    record = {'state': 'running', 'engine': 'povray', 'animation': {'frames': args.frames, 'fps': args.fps},
+              'command': povray, 'source': str(source.relative_to(ROOT)), 'source_sha256': digest(source),
+              'additional_inputs': {str(p): digest(p) for p in extra}, 'driver_sha256': digest(__file__),
+              'python_packages': state['python_packages'],
+              'runtime_executable_sha256': digest(povray[0]), 'ffmpeg_sha256': digest(paths['ffmpeg']),
+              'outputs': {}, 'visual_review': 'not-performed', 'subject_review': 'not-performed'}
+    receipt = out / 'render.json'
+    try:
+        code, stdout, stderr, seconds = run_process(povray, out, env, args.timeout)
+        (out / 'stdout.log').write_bytes(stdout)
+        (out / 'stderr.log').write_bytes(stderr)
+        if code:
+            raise ValueError(f'POV-Ray exited {code}; inspect {out}/stderr.log')
+        rendered = sorted(frames.glob('f*.png'))
+        if len(rendered) != args.frames:
+            raise ValueError(f'POV-Ray produced {len(rendered)} of {args.frames} frames')
+        for n, frame in enumerate(rendered, start=1):
+            frame.rename(frames / f'frame{n:04d}.png')
+        encode = [paths['ffmpeg'], '-hide_banner', '-loglevel', 'error', '-y', '-framerate', str(args.fps),
+                  '-i', str(frames / 'frame%04d.png'), '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                  '-threads', '1', '-fflags', '+bitexact', '-flags:v', '+bitexact', '-map_metadata', '-1',
+                  '-movflags', '+faststart', str(out / 'figure.mp4')]
+        record['encode_command'] = encode
+        code, _, err, more = run_process(encode, out, env, args.timeout)
+        if code:
+            (out / 'stderr.log').write_bytes(stderr + err)
+            raise ValueError(f'FFmpeg exited {code}; inspect {out}/stderr.log')
+        shutil.copyfile(frames / f'frame{(args.frames + 1) // 2:04d}.png', out / 'figure.png')
+        strip_png_metadata(out / 'figure.png')
+        record.update(exit_code=0, seconds=seconds + more)
+        for name in ('figure.mp4', 'figure.png'):
+            record['outputs'][name] = check_output(out / name)
+        record['state'] = 'rendered-awaiting-review'
+    except (OSError, ValueError) as exc:
+        record.update(state='failed', error=str(exc))
+        raise
+    finally:
+        shutil.rmtree(frames, ignore_errors=True)
         receipt.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\n')
     return {'state': record['state'], 'receipt': str(receipt), 'outputs': list(record['outputs'])}
 
@@ -245,6 +332,9 @@ def main():
     rp.add_argument('--width', type=bounded_int(64, 8192), default=1200)
     rp.add_argument('--height', type=bounded_int(64, 8192), default=800)
     rp.add_argument('--threads', type=bounded_int(1, 64), default=2)
+    rp.add_argument('--frames', type=bounded_int(2, 240), default=None,
+                    help='POV-Ray animation: number of frames (clock 0..1) → figure.mp4 + figure.png')
+    rp.add_argument('--fps', type=bounded_int(1, 60), default=12)
     args = ap.parse_args()
     try:
         cfg = load_config(args.config)

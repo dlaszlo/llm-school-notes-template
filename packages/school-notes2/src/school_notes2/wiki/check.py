@@ -128,6 +128,29 @@ def check_links(repo: Path, rel: str, text: str) -> list[dict]:
                                             f"{target!r}", "warning"))
         elif not safefs.is_file(repo, resolved):
             out.append(item(rel, link.line, f"link target does not exist: {target!r}"))
+        elif link.image and resolved.lower().endswith(".mp4"):
+            out += check_animation(repo, rel, link.line, resolved)
+    return out
+
+
+def check_animation(repo: Path, rel: str, line: int, video: str) -> list[dict]:
+    """An animation is a tool render under wiki/assets/ (render.json lists it) with its
+    same-named .png poster, the static counterpart used in print (owner, 2026-10-03)."""
+    if not video.startswith("wiki/assets/"):
+        return [item(rel, line, "an animation must be a rendered file under wiki/assets/")]
+    poster = video[:-4] + ".png"
+    folder, name = video.rsplit("/", 1)
+    out = []
+    if not safefs.is_file(repo, poster):
+        out.append(item(rel, line, f"the animation needs its poster image {poster.rsplit('/', 1)[1]!r}"))
+    receipt = f"{folder}/render.json"
+    try:
+        outputs = json.loads(safefs.read_text(repo, receipt)).get("outputs") or {}
+    except (FileNotFoundError, ValueError):
+        outputs = {}
+    if name not in outputs:
+        out.append(item(rel, line, "the animation is not a tool render (no render.json entry); "
+                                   "render it with `visual_tools.py render povray --frames`"))
     return out
 
 

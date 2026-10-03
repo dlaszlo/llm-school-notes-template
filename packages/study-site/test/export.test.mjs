@@ -228,3 +228,27 @@ test('rendering is deterministic when assets resolve in a different order', asyn
   assert.match(first.html, /src="\/m\/a\.svg"[^>]*loading="eager"/);
   assert.deepEqual(first.audit.images, ['/m/a.svg', '/m/b.svg', '/m/c.svg']);
 });
+test('an animation exports its mp4 and its PNG poster as two media files', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'study-anim-'));
+  try {
+    const repo = path.join(tmp, 'repo');
+    await fs.cp(fixture, repo, { recursive: true });
+    await fs.mkdir(path.join(repo, 'wiki/assets/inga'), { recursive: true });
+    const video = Buffer.from('\0\0\0\x18ftypisom-not-a-real-video');
+    const poster = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64');
+    await fs.writeFile(path.join(repo, 'wiki/assets/inga/figure.mp4'), video);
+    await fs.writeFile(path.join(repo, 'wiki/assets/inga/figure.png'), poster);
+    await fs.writeFile(path.join(repo, 'wiki/anim.md'), '# Inga\n\n![Az inga mozgása](assets/inga/figure.mp4)\n');
+    const config = await settings();
+    config.pages.push({ path: 'wiki/anim.md', sha256: sha256(await fs.readFile(path.join(repo, 'wiki/anim.md'))) });
+    config.assets.push({ path: 'wiki/assets/inga/figure.mp4', sha256: sha256(video) }, { path: 'wiki/assets/inga/figure.png', sha256: sha256(poster) });
+    config.collections[0].pages.push('wiki/anim.md');
+    const { payload, receipt } = await exportSite({ repo, config, output: path.join(tmp, 'build') });
+    const html = payload.pages.find(p => p.html.includes('study-video')).html;
+    assert.match(html, new RegExp(`<video [^>]*poster="/pelda/media/${sha256(poster)}\\.png" src="/pelda/media/${sha256(video)}\\.mp4"`));
+    const inputs = receipt.assets.map(a => a.input);
+    assert.deepEqual(inputs, [...inputs].sort());
+    assert.ok(inputs.includes('wiki/assets/inga/figure.mp4') && inputs.includes('wiki/assets/inga/figure.png'));
+    assert.deepEqual(await fs.readFile(path.join(tmp, 'build/public/media', `${sha256(video)}.mp4`)), video);
+  } finally { await fs.rm(tmp, { recursive: true, force: true }); }
+});

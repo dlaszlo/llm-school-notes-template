@@ -97,3 +97,66 @@ class VisualExecutionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+PNG = bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082')
+
+
+class AnimationTests(unittest.TestCase):
+    """POV-Ray animation → figure.mp4 + figure.png (owner, 2026-10-03)."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        base = Path(self.temp.name)
+        self.repo = base / 'repo'
+        (self.repo / 'tools').mkdir(parents=True)
+        shutil.copyfile(Path(__file__).with_name('visual_tools.py'), self.repo / 'tools/visual_tools.py')
+        self.source = self.repo / 'scene.pov'
+        self.source.write_text('camera { location <0,1,-3> look_at 0 }\nlight_source { <2,4,-3> rgb 1 }\n'
+                               'sphere { <clock*2-1,0,0>, 0.5 pigment { rgb <1,0.4,0> } }\n')
+        self.out = base / 'anim'
+        self.base = base
+
+    def fakes(self):
+        povray = self.base / 'povray'
+        povray.write_text('#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n'
+                          'a = sys.argv[1:]\nout = Path(next(x[2:] for x in a if x.startswith("+O")))\n'
+                          'n = int(next(x[4:] for x in a if x.startswith("+KFF")))\n'
+                          f'png = bytes.fromhex("{PNG.hex()}")\n'
+                          'for i in range(1, n + 1):\n    (out.parent / f"f{i:02d}.png").write_bytes(png)\n')
+        ffmpeg = self.base / 'ffmpeg'
+        ffmpeg.write_text('#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n'
+                          'Path(sys.argv[-1]).write_bytes(b"\\x00\\x00\\x00\\x18ftypisom" + b"\\x00" * 16)\n')
+        for f in (povray, ffmpeg):
+            f.chmod(0o755)
+        config = self.base / 'visual.json'
+        config.write_text(json.dumps({'povray': str(povray), 'ffmpeg': str(ffmpeg)}))
+        return config
+
+    def run_cli(self, config, *extra):
+        cmd = [sys.executable, str(self.repo / 'tools/visual_tools.py'), *(['--config', str(config)] if config else []),
+               'render', 'povray', str(self.source), '--output', str(self.out), *map(str, extra)]
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+
+    def test_frames_become_mp4_and_poster_and_are_deleted(self):
+        result = self.run_cli(self.fakes(), '--frames', 5, '--fps', 10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        record = json.loads((self.out / 'render.json').read_text())
+        self.assertEqual(sorted(record['outputs']), ['figure.mp4', 'figure.png'])
+        self.assertEqual(record['animation'], {'frames': 5, 'fps': 10})
+        self.assertFalse((self.out / 'frames').exists())
+
+    def test_expect_is_refused_for_an_animation(self):
+        result = self.run_cli(self.fakes(), '--frames', 3, '--expect', 'x.mp4')
+        self.assertNotEqual(result.returncode, 0)
+
+    @unittest.skipUnless(shutil.which('povray') and shutil.which('ffmpeg'), 'povray/ffmpeg not installed')
+    def test_real_tiny_animation_is_byte_stable(self):
+        hashes = []
+        for n in range(2):
+            self.out = self.base / f'real{n}'
+            result = self.run_cli(None, '--frames', 4, '--width', 96, '--height', 64, '--threads', 1)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            hashes.append(json.loads((self.out / 'render.json').read_text())['outputs'])
+        self.assertEqual(hashes[0], hashes[1])

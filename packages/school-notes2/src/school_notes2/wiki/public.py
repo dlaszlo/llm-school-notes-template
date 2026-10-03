@@ -93,6 +93,8 @@ def linked_targets(repo: Path, pages: list[str]) -> tuple[set[str], set[str]]:
                 citations.add(target)
             elif target.startswith("wiki/") and target.lower().endswith(IMAGE_EXT):
                 images.add(target)
+            elif target.startswith("wiki/") and target.lower().endswith(".mp4"):
+                images.update((target, target[:-4] + ".png"))   # animation and its poster
     return images, citations
 
 
