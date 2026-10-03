@@ -28,6 +28,8 @@ def finish(ctx: Ctx, task: Task, *, notify_owner_items) -> str:
         task.set_phase("finishing")
         start = steps.llm_snapshot(ctx, task)
         prepared = steps.content_steps(ctx, task)
+        task.data["llm_failures"] = 0       # the work passed the check: a success (8.1)
+        task.save()
         notify_owner_items(prepared.new_owner)
         if prepared.question:
             raise NeedsOwner("the writer asked a blocking question",

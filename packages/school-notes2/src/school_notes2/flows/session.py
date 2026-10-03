@@ -23,10 +23,17 @@ def secret_values(ctx: Ctx) -> tuple[str, ...]:
     return tuple(v for v in values if v)
 
 
+def session_dir(ctx: Ctx) -> Path:
+    """A short private folder: a unix socket path may not exceed 108 bytes, so it lives in
+    the user's runtime directory (tmpfs, 0700) rather than below the task folder."""
+    runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+    return Path(runtime) / f"school-notes-{ctx.name}"
+
+
 @contextlib.contextmanager
 def mcp(ctx: Ctx, task_dir: Path, mode: str, handlers: Handlers, run_id):
     """Yield the session folder while the server answers on <folder>/mcp.sock."""
-    sessdir = task_dir / "sess"
+    sessdir = session_dir(ctx)
     shutil.rmtree(sessdir, ignore_errors=True)
     sessdir.mkdir(mode=0o700)
     os.chmod(sessdir, 0o700)

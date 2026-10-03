@@ -170,20 +170,30 @@ def _drive_names(task: Task) -> dict[str, str]:
 
 
 def llm_snapshot(ctx: Ctx, task: Task) -> dict:
-    """Hashes of the run's changed files without the tool's parts (5.4/9 race guard)."""
+    """The writer's own changes, as hashes without the tool's parts (5.4/9 race guard).
+
+    A file whose LLM-written part equals the base is left out, so the tool's own writes
+    (machine keys, generated blocks, whole tool files) never look like an edit."""
+    wt = ctx.worktree("notes")
+    base = task.get("base")
     out = {}
-    for c in workbranch.changed_files(ctx.worktree("notes"), task.get("base")):
-        path = ctx.notes_path / c["path"]
-        if c["path"] in task.get("tool_writes", {}):
+    for c in workbranch.changed_files(wt, base):
+        rel = c["path"]
+        if rel in task.get("tool_writes", {}):
             continue
-        if not path.is_file():
-            out[c["path"]] = None
+        path = ctx.notes_path / rel
+        now = _llm_hash(rel, path.read_bytes()) if path.is_file() else None
+        old = wt.run("show", f"{base}:{rel}", check=False)
+        if old.returncode == 0 and now == _llm_hash(rel, old.stdout):
             continue
-        data = path.read_bytes()
-        if c["path"].endswith(".md"):
-            data = _llm_part(data.decode("utf-8", "replace")).encode("utf-8")
-        out[c["path"]] = hashlib.sha256(data).hexdigest()
+        out[rel] = now
     return out
+
+
+def _llm_hash(rel: str, data: bytes) -> str:
+    if rel.endswith(".md"):
+        data = _llm_part(data.decode("utf-8", "replace")).encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
 
 
 def _llm_part(text: str) -> str:

@@ -38,8 +38,6 @@ def run_ranges(ctx: Ctx, task: Task, handlers) -> str:
         write_inputs(ctx, task, k)
         result = _call(ctx, task, k, role, harness, handlers)
         write_json(task.dir / f"result-{k}.json", result)
-        task.data["llm_failures"] = 0
-        task.save()
         if result["status"] == "question":
             task.update(question=result.get("questions", []))
             return "question"
