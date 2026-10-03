@@ -20,3 +20,31 @@ test('an mp4 image becomes a video with its PNG poster; print keeps only the pos
   assert.doesNotMatch(printed, /<video/);
   assert.match(printed, /<img src="assets\/inga\/figure.png"[^>]*study-video-poster/);
 });
+
+test('public view: private photo lists, private footnotes and the grade prefix are left out', async () => {
+  const { renderMarkdown } = await import('../lib/markdown.mjs');
+  const resolveUrl = async h => /(^|\/)(sources|references)\//.test(h) ? { citationOnly: true } : h;
+  const source = [
+    '---', 'title: Matematika', '---', '# 📘 9. évfolyam: Halmazok', '', 'A [4. füzetfotón](../../sources/a/04.jpg) X áll.[^fuzet] Lásd még.[^web]', '',
+    '# Fotók', '', '* [1. fotó](../../sources/a/01.jpg) - Venn-diagram', '* [2. fotó](../../sources/a/02.jpg) - szita', '',
+    '<br />', '', '# Kérdések', '', 'Egy kérdés.', '',
+    '[^fuzet]: Füzet, 4. fotó, [eredeti](../../sources/a/04.jpg).',
+    '[^web]: OpenStax: [Sets](https://openstax.org/sets); [mentett másolat](../../references/b/README.md).', '',
+  ].join('\n');
+  const out = await renderMarkdown(source, { resolveUrl, publicView: true });
+  assert.match(out.html, /📘 Halmazok/);
+  assert.doesNotMatch(out.html, /évfolyam|Fotók|1\. fotó|Venn|Füzet, 4\. fotó|nem nyilvános|sources\/|references\//);
+  assert.match(out.html, /A 4\. füzetfotón X áll\. Lásd még\./);
+  assert.match(out.html, /href="https:\/\/openstax\.org\/sets"/);
+  assert.match(out.html, /mentett másolat/);
+  assert.equal((out.html.match(/data-footnote-ref/g) || []).length, 1);
+  assert.deepEqual(out.headings.map(h => h.text), ['📘 Halmazok', 'Kérdések']);
+  assert.equal(out.title, 'Matematika');
+  assert.equal((await renderMarkdown('---\ntitle: "📘 9. évfolyam: Halmazok"\n---\nSzöveg.\n', { resolveUrl, publicView: true })).title, '📘 Halmazok');
+  assert.equal((await renderMarkdown(source, { resolveUrl, publicView: true })).html, out.html);
+  // The private preview keeps everything.
+  const preview = await renderMarkdown(source, { resolveUrl: async h => h });
+  assert.match(preview.html, /9\. évfolyam: Halmazok/);
+  assert.match(preview.html, /1\. fotó/);
+  assert.equal((preview.html.match(/data-footnote-ref/g) || []).length, 2);
+});

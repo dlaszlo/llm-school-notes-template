@@ -23,7 +23,7 @@ def test_root_block_and_label(repo):
     text = generate.root_index(repo)
     assert markers.read(text, "subjects") == "* 🧪 [Próba](proba/index.md) - A próba tantárgy témakörei.\n"
     assert generate.subject_label(repo, "proba") == "🧪 Próba"
-    assert generate.subject_sentence("Irodalom") == "Az irodalom tantárgy témakörei és jegyzetei, évfolyamonként."
+    assert generate.subject_sentence("Irodalom") == "Az irodalom tantárgy témakörei és jegyzetei."
 
 
 def test_write_indexes_is_idempotent(repo):

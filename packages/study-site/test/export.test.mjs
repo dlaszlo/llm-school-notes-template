@@ -182,13 +182,13 @@ test('content license is opt-in and changes invalidate PDF keys', async () => {
   } finally { await fs.rm(tmp,{recursive:true,force:true}); }
 });
 
-test('public export is the wiki 1:1: every page type and section, minus private files', async () => {
+test('public export: every page type and section; private files, links and citations left out', async () => {
   const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'study-public-'));
   try {
     const repo=path.join(tmp,'repo');await fs.cp(fixture,repo,{recursive:true});
     const page='wiki/tema.md';
     await fs.writeFile(path.join(repo,page),'---\ntype: lesson-notes\ntitle: Órai jegyzet\nprivate: PRIVATE_METADATA\n---\n# Órai jegyzet\n\nMegmarad.[^b]\n\n<sub>🗓️ Óra: 2026-09-25 · 🔖 Tankönyv: 12. oldal</sub>\n\n[Fotó](../sources/fuzet/p0001.jpg) és [könyv](../references/konyv/document.md)\n\n# Nyitott kérdések\n\nEgy bizonytalan szó.\n\n[^b]: Füzet, 01.jpg.\n\n<!-- PRIVATE_COMMENT -->\n');
-    const config=await settings();Object.assign(config,{mode:'public',site:'https://example.org',citationOnlyLinks:['sources/fuzet/p0001.jpg','references/konyv/document.md']});
+    const config=await settings();Object.assign(config,{mode:'public',site:'https://example.org',sourceNote:'A jegyzet Minta füzetbe írt jegyzetei alapján készült.',citationOnlyLinks:['sources/fuzet/p0001.jpg','references/konyv/document.md']});
     config.pages[1].sha256=sha256(await fs.readFile(path.join(repo,page)));
     config.assets=config.assets.map(a=>({...a,rights:'authored'}));
     config.collections[0].pdf=true;
@@ -196,8 +196,10 @@ test('public export is the wiki 1:1: every page type and section, minus private 
     const {payload}=await run('good',config,{lastUpdated:{[page]:'2026-10-03T10:00:00+02:00'}});
     const visible=JSON.stringify([...payload.pages,...payload.collections.map(c=>c.chapters)]);
     assert.doesNotMatch(visible,/PRIVATE_|sources\/fuzet|references\/konyv/);
-    for (const kept of [/Nyitott kérdések/,/Egy bizonytalan szó/,/Óra: 2026-09-25/,/Tankönyv: 12/,/Füzet, 01\.jpg/]) assert.match(visible,kept);
-    assert.equal((payload.pages[1].html.match(/nem nyilvános forrás/g)||[]).length,2);
+    for (const kept of [/Nyitott kérdések/,/Egy bizonytalan szó/,/Óra: 2026-09-25/,/Tankönyv: 12/,/Megmarad\./,/Fotó és könyv/]) assert.match(visible,kept);
+    // The notebook footnote cites a private source: left out with its reference.
+    assert.doesNotMatch(visible,/Füzet, 01\.jpg|nem nyilvános forrás|footnote/);
+    assert.equal(payload.sourceNote,'A jegyzet Minta füzetbe írt jegyzetei alapján készült.');
     assert.equal(payload.pages[1].lastUpdated,'2026-10-03T10:00:00+02:00');assert.equal(payload.pages[1].path,page);
     assert.equal(payload.pages[0].lastUpdated,undefined);
     await assert.rejects(run('rights',{...config,assets:[{...config.assets[0],rights:undefined}]}),/rights class/);

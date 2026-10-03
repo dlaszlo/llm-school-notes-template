@@ -103,7 +103,7 @@ PNG = bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001
 
 
 class AnimationTests(unittest.TestCase):
-    """POV-Ray animation → figure.mp4 + figure.png (owner, 2026-10-03)."""
+    """POV-Ray animation → figure.mp4 + figure.png."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

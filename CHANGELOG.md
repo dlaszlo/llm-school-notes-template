@@ -2,6 +2,10 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.16.2 - 2026-10-03
+
+- The public site leaves out what a reader could not open: links into `sources/` and `references/` (a list item that starts with one is dropped, a link in running text keeps its words), every footnote without a public web link, and the grade prefix of chapter titles. One small line under every page says what the notes are based on (`sourceNote` in `publication/public.json`). The private wiki keeps every link and citation; nothing to change in an existing wiki.
+
 ## 1.16.1 - 2026-10-03
 
 - Every visual engine is available in a run: Python/matplotlib, Graphviz, PlantUML, POV-Ray (also animations: MP4 with a static poster) and FreeCAD; choose the engine that best supports the figure.

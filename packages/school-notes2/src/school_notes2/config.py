@@ -75,7 +75,7 @@ class Limits:
     review_max_images: int = 30
     review_max_diff_kb: int = 300
     image_daily_usd: float = 1.0
-    image_monthly_usd: float = 10.0      # owner, 2026-10-03
+    image_monthly_usd: float = 10.0
     image_reservation_usd: float = 0.05
     image_year_total_usd: float = 120.0     # safety cap: twelve monthly caps
     image_year_learner_usd: float = 120.0
@@ -171,7 +171,7 @@ def _role(name: str, t: dict, harnesses: dict) -> Role:
     if t["harness"] not in harnesses:
         raise ConfigError(f"[roles.{name}] unknown harness {t['harness']!r}")
     if t["effort"] not in ("low", "medium", "high"):
-        raise ConfigError(f"[roles.{name}] effort must be at most high (owner rule)")
+        raise ConfigError(f"[roles.{name}] effort must be at most high")
     return Role(harness=t["harness"], model=t["model"], effort=t["effort"],
                 timeout_s=int(t["timeout_s"]), nested_sandbox=bool(t.get("nested_sandbox", False)))
 

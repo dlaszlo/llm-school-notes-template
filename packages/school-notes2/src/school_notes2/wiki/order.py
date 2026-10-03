@@ -1,4 +1,4 @@
-"""Stable order of what the writer keeps in frontmatter (owner, 2026-10-03): a cron run may add
+"""Stable order of what the writer keeps in frontmatter: a cron run may add
 items, but the relative order of existing ones may not change between runs. Deliberate
 re-ordering happens only in an interactive session, under the owner's direction."""
 

@@ -402,7 +402,7 @@ def reconcile(config, job_path):
 
 
 def settle_unknown(config, max_age_hours=SETTLE_AFTER_HOURS, at=None):
-    """Settle unknown-outcome attempts older than max_age_hours (owner decision, plan 4.6).
+    """Settle unknown-outcome attempts older than max_age_hours (plan 4.6).
 
     A saved response is reconciled as usual. Without one, the reserved amount is booked
     as spent and the attempt as failed ('lost'); it still counts toward max_attempts.

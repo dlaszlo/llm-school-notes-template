@@ -37,12 +37,99 @@ const isElement = (n, tag) => n.type === 'element' && (!tag || n.tagName === tag
 const isJumpTarget = n => isElement(n, 'a') && !n.properties.href && !n.children.length
   && /^(?:user-content-)?[a-z0-9][a-z0-9-]{0,80}$/.test(String(n.properties.id || ''));
 
-export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források' } = {}) {
-  const { metadata, body, title } = splitMarkdown(source);
+// The public view leaves out what a reader cannot open: a footnote with no public web link
+// cites the notebook, teacher material or a textbook, all private. A chapter title's grade
+// prefix ("9. évfolyam: ") is dropped too: one repository holds one school year.
+const WEB_URL = /^https?:\/\//i;
+const GRADE_PREFIX = /^(\P{L}*?)\d{1,2}\. évfolyam: /u;
+export const withoutGrade = text => text.replace(GRADE_PREFIX, '$1');
+const hasWebLink = n => (n.type === 'link' && WEB_URL.test(n.url)) || (n.children || []).some(hasWebLink);
+
+function publicMarkdown(tree) {
+  const dropped = new Set();
+  visit(tree, 'footnoteDefinition', (node, index, parent) => {
+    if (hasWebLink(node)) return;
+    dropped.add(node.identifier);
+    parent.children.splice(index, 1);
+    return index;
+  });
+  visit(tree, 'footnoteReference', (node, index, parent) => {
+    if (!dropped.has(node.identifier)) return;
+    parent.children.splice(index, 1);
+    return index;
+  });
+  visit(tree, 'heading', node => {
+    const first = node.children[0];
+    if (first?.type === 'text') first.value = withoutGrade(first.value);
+  });
+}
+
+const blank = n => (n.type === 'text' && !n.value.trim()) || isElement(n, 'br')
+  || (isElement(n, 'p') && n.properties.className?.includes('study-spacer'));
+const isPrivateMark = n => isElement(n, 'span') && n.properties.dataPrivateLink !== undefined;
+const isHeading = n => isElement(n) && /^h[1-6]$/.test(n.tagName);
+
+function emptyHeadings(tree) {
+  // A heading with nothing but spacing before the next heading of the same or higher rank.
+  const found = new Set();
+  visit(tree, (node) => {
+    const kids = node.children || [];
+    kids.forEach((h, i) => {
+      if (!isHeading(h)) return;
+      const level = Number(h.tagName[1]);
+      for (let j = i + 1; j < kids.length; j++) {
+        if (isHeading(kids[j]) && Number(kids[j].tagName[1]) <= level) break;
+        if (!blank(kids[j])) return;
+      }
+      found.add(h);
+    });
+  });
+  return found;
+}
+
+// Private links in the public view: a list item that starts with one (a photo list of a
+// lesson page) is left out, then an emptied list and a section heading it emptied; a link in
+// running text keeps its words as plain text, so the sentence stays whole.
+function tidyPrivateLinks(tree) {
+  const before = emptyHeadings(tree);
+  const leadsWithPrivate = li => {
+    let kids = li.children.filter(c => !blank(c));
+    if (isElement(kids[0], 'p')) kids = kids[0].children.filter(c => !blank(c));
+    return kids.length > 0 && isPrivateMark(kids[0]);
+  };
+  visit(tree, 'element', (node, index, parent) => {
+    if (!isElement(node, 'li') || !leadsWithPrivate(node)) return;
+    parent.children.splice(index, 1);
+    return index;
+  });
+  visit(tree, 'element', (node, index, parent) => {
+    if (!['ul', 'ol'].includes(node.tagName) || node.children.some(c => isElement(c, 'li'))) return;
+    parent.children.splice(index, 1);
+    return index;
+  });
+  for (const h of emptyHeadings(tree)) {
+    if (before.has(h)) continue;
+    visit(tree, (node) => {
+      const i = (node.children || []).indexOf(h);
+      if (i >= 0) node.children.splice(i, 1);
+    });
+  }
+  visit(tree, 'element', (node, index, parent) => {
+    if (!isPrivateMark(node)) return;
+    parent.children.splice(index, 1, ...node.children);
+    return index;
+  });
+}
+
+export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források', publicView = false } = {}) {
+  const split = splitMarkdown(source);
+  const { metadata, body } = split;
+  const title = publicView ? withoutGrade(split.title) : split.title;
   const headings = [];
   const sanitizedIds = new Map();
   const audit = { title, formulas: [], mermaid: [], labels: [], links: [], images: [] };
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
+    .use(() => tree => { if (publicView) publicMarkdown(tree); })
     .use(remarkRehype, { allowDangerousHtml: true, footnoteLabel })
     .use(rehypeRaw)
     .use(() => tree => {
@@ -127,7 +214,7 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
             let href = String(node.properties.href);
             if (href.startsWith('#') && sanitizedIds.has(href.slice(1))) href = '#' + sanitizedIds.get(href.slice(1));
             const resolved = await resolveUrl(href, false);
-            if (resolved.citationOnly) { node.tagName='span'; node.properties={}; node.children.push({type:'text',value:' (nem nyilvános forrás)'}); return; }
+            if (resolved.citationOnly) { node.tagName = 'span'; node.properties = { dataPrivateLink: '' }; return; }
             node.properties.href = typeof resolved === 'string' ? resolved : resolved.url;
             if (resolved.private) { node.children.push({ type: 'text', value: ' (privát forrás)' }); }
             audit.links.push(node.properties.href);
@@ -140,8 +227,8 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
           node.properties.loading = order ? 'lazy' : 'eager';
           const source = String(node.properties.src);
           if (/\.mp4$/i.test(source)) {
-            // An animation (owner, 2026-10-03): a playable video on screen, its same-named PNG
-            // poster as the static counterpart in print and PDF.
+            // An animation: a playable video on screen, its same-named PNG poster as the
+            // static counterpart in print and PDF.
             jobs.push((async () => {
               const video = await resolveUrl(source, true);
               const poster = await resolveUrl(source.replace(/\.mp4$/i, '.png'), true);
@@ -168,6 +255,10 @@ export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '',
         }
       });
       await Promise.all(jobs);
+      tidyPrivateLinks(tree);
+      const kept = new Set();
+      visit(tree, 'element', node => { if (isHeading(node)) kept.add(node.properties.id); });
+      headings.splice(0, headings.length, ...headings.filter(h => kept.has(h.slug)));
     })
     .use(() => tree => {
       audit.formulas=[];

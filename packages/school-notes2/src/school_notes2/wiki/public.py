@@ -1,7 +1,7 @@
 """publication/public.json, the public site's only release list (plan 4.10).
 
-The public site is a 1:1 image of the wiki: every page, no filtering, no edits.
-Files under sources/ and references/ never ship; links to them become citations.
+The public site shows every wiki page. Files under sources/ and references/ never ship; the
+renderer leaves out the links and citations pointing to them (study-site lib/markdown.mjs).
 """
 
 import json
@@ -12,7 +12,8 @@ from . import generate
 from ..state import safefs
 from .pages import is_file, links, read_text, resolve, sha256, wiki_pages
 
-FIXED = ("version", "mode", "title", "base", "branding", "feedbackRepository", "license", "site")
+FIXED = ("version", "mode", "title", "base", "branding", "feedbackRepository", "license", "site",
+         "sourceNote")
 PRIVATE_PREFIXES = ("sources/", "references/")
 SUBJECT_SUFFIX = " — tanulási jegyzet"
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".avif")

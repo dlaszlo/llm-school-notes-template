@@ -133,7 +133,7 @@ VOLATILE_PNG_CHUNKS = (b'tIME', b'tEXt', b'zTXt', b'iTXt')
 
 def strip_png_metadata(path):
     """Drop POV-Ray's render date and other text/time chunks: the same scene must give the
-    same bytes on every run (owner, 2026-10-03)."""
+    same bytes on every run."""
     data = path.read_bytes()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
         return

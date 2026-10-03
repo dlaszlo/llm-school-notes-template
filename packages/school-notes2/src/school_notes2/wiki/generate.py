@@ -115,7 +115,7 @@ def notebook_position(meta: dict) -> tuple:
 def lesson_sort_key(page: SubjectPage, index: int, lesson: dict) -> tuple:
     # Undated lessons sort by the latest date their range allows (the wiki's own rule); a tie
     # is settled by where the page's material starts in the notebook, then by the file name –
-    # always the same order, taken from the content (owner, 2026-10-03).
+    # always the same order, taken from the content.
     dates = ISO.findall(str(lesson.get("date") or "")) or ISO.findall(lesson.get("date_note") or "")
     return (max(dates) if dates else "", page.file[:10], notebook_position(page.meta),
             page.file, index)
@@ -196,7 +196,7 @@ def load_subjects_json(repo: Path) -> dict:
 
 def subject_sentence(name: str) -> str:
     article = "Az" if name[:1].lower() in "aáeéiíoóöőuúüű" else "A"
-    return f"{article} {name.lower()} tantárgy témakörei és jegyzetei, évfolyamonként."
+    return f"{article} {name.lower()} tantárgy témakörei és jegyzetei."
 
 
 def subject_label(repo: Path, slug: str) -> str:

@@ -77,7 +77,7 @@ def guard_step(ctx: Ctx, task: Task) -> None:
 
 
 def order_step(ctx: Ctx, task: Task) -> list[dict]:
-    """Cron runs keep the order of existing chapters, lessons, topics and pages (owner rule);
+    """Cron runs keep the order of existing chapters, lessons, topics and pages;
     an interactive session may re-order on purpose."""
     if task.mode == "interactive":
         return []

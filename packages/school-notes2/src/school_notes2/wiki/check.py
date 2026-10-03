@@ -20,7 +20,7 @@ KNOWN_TYPES = ("topic", "chapter-summary", "lesson-notes", "review", "source-sum
                "concept", "entity", "question")
 # The release's last gate (check-public.py) and this check share one pattern file, so the
 # check tells the writer everything the gate would stop (5.4/5). Secrets and machine paths
-# only (4.10): footnotes naming photos ship 1:1 now.
+# only (4.10): footnotes naming photos stay in the wiki; the public view leaves them out.
 PATTERNS_FILE = Path(__file__).resolve().parents[4] / "study-site" / "public-patterns.json"
 
 
@@ -135,7 +135,7 @@ def check_links(repo: Path, rel: str, text: str) -> list[dict]:
 
 def check_animation(repo: Path, rel: str, line: int, video: str) -> list[dict]:
     """An animation is a tool render under wiki/assets/ (render.json lists it) with its
-    same-named .png poster, the static counterpart used in print (owner, 2026-10-03)."""
+    same-named .png poster, the static counterpart used in print."""
     if not video.startswith("wiki/assets/"):
         return [item(rel, line, "an animation must be a rendered file under wiki/assets/")]
     poster = video[:-4] + ".png"

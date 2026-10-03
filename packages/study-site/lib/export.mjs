@@ -12,7 +12,8 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
   try { await fs.lstat(out); throw new Error('Output already exists; choose a new build directory'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   if (!['private-preview', 'public'].includes(config.mode)) throw new Error('Explicit export mode required');
   const isPublic = config.mode === 'public';
-  // The public site is the wiki 1:1 (plan D83): no per-page review, filtering or edits.
+  // The public site shows every wiki page: no per-page review, filtering or hand edits; the
+  // renderer leaves out only what points to private files (lib/markdown.mjs).
   if (isPublic && !/^https:\/\/[^/]+$/.test(config.site || '')) throw new Error('Public site origin required');
   const base = normalizeBase(config.base);
   if (!Array.isArray(config.pages) || !config.pages.length) throw new Error('Explicit ordered page allowlist required');
@@ -49,6 +50,11 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
     const codes = { 'CC BY 4.0': 'by', 'CC BY-SA 4.0': 'by-sa', 'CC BY-NC-SA 4.0': 'by-nc-sa' };
     if (!Object.hasOwn(codes, id) || typeof attribution !== 'string' || !attribution.trim() || attribution.length > 120) throw new Error('Explicit supported license and attribution required');
     payload.license = { id, attribution, url: 'https://creativecommons.org/licenses/' + codes[id] + '/4.0/' };
+  }
+  if (config.sourceNote !== undefined) {
+    // One short line under every public page and in every PDF: what the notes are based on.
+    if (typeof config.sourceNote !== 'string' || !config.sourceNote.trim() || config.sourceNote.length > 300) throw new Error('Invalid source note');
+    if (isPublic) payload.sourceNote = config.sourceNote.trim();
   }
   const receipt = { mode: config.mode, configSha256: sha256(JSON.stringify(config)), pages: [], assets: [], privateLinks: [] };
   const cache = new Map();
@@ -106,6 +112,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       try {
         rendered = await renderMarkdown(raw.toString(), {
           resolveUrl,
+          publicView: isPublic,
           mermaid: async code => {
             const key = 'mermaid:' + sha256(code);
             if (!cache.has(key)) cache.set(key, (async () => saveAsset(key, await renderer.render(code, 'm' + sha256(code).slice(0, 16)), '.svg'))());
@@ -141,7 +148,7 @@ export async function exportSite({ repo, config, output, browserPath, printEngin
       const value = { id: collection.id, title: collection.title, group: collection.group || '', chapters, routes: collection.pages.map(file => pageMap.get(file).route), inputs };
       if (collection.pdf === true) {
         if (!printEngine) throw new Error('PDF collection needs a verified print renderer');
-        const key = sha256(JSON.stringify({mode:config.mode,printEngine,base,title:value.title,chapters,inputs,license:payload.license}));
+        const key = sha256(JSON.stringify({mode:config.mode,printEngine,base,title:value.title,chapters,inputs,license:payload.license,sourceNote:payload.sourceNote}));
         value.pdf = { key, filename:collection.id+'-'+key.slice(0,12)+'.pdf' };
       }
       payload.collections.push(value);

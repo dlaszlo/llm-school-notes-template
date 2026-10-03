@@ -112,7 +112,7 @@ def _place_document(repo, folder, pkg, files, seq, known, placed) -> None:
     original pptx/docx/pdf is only hashed (original_sha256) and stays on Drive."""
     for rel in ordered(files):
         if rel.lower().endswith(ORIGINALS):
-            continue        # the original pptx/docx/pdf stays on Drive (owner, 2026-10-03)
+            continue        # the original pptx/docx/pdf stays on Drive
         target = safefs.rel_of(repo, folder / rel)
         safefs.copy_in(Path(files[rel]["path"]), repo, target)
         placed.written.append(target)

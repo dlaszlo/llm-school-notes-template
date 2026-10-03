@@ -1,4 +1,4 @@
-"""Daily and monthly budget and the shared image lock (plan 4.6; monthly cap: owner, 2026-10-03).
+"""Daily and monthly budget and the shared image lock (plan 4.6).
 
 learning_image.py knows only school-year caps and has a non-waiting lock; the daily
 1 USD budget and the blocking lock for two learners live here.
@@ -55,7 +55,7 @@ def spent_in_month(ledger: dict, day: date) -> Decimal:
 
 def budget_left(ledger: dict, day: date, daily: Decimal, reservation: Decimal,
                 monthly: Decimal | None = None) -> bool:
-    """True when the next reservation fits into today's budget and (owner, 2026-10-03) into
+    """True when the next reservation fits into today's budget and into
     the month's cap."""
     if spent_on(ledger, day) + reservation > daily:
         return False

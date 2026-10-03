@@ -13,9 +13,9 @@
       "heading": "Wiki structure",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "91416c932747a9e5a95b2c27ba7babf2ac8229afd251016b069bc5c142cb0b98",
-      "migrated_sha256": "17d7d09c4b9fea65faaf9767e10efcd543aec4bd7b8810fe16450a483ac48fe8",
+      "migrated_sha256": "7d68cfa238cfaf6a5c6b648bb6b89b7871b02c878b68309c9af9dc0eaa1a6d00",
       "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
-      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git); 1.16.2: the public view leaves out links and citations of private files and the grade prefix"
     },
     {
       "heading": "Principles",
@@ -80,9 +80,9 @@
       "heading": "Sources",
       "destination": "instructions/sources-and-evidence.md",
       "source_sha256": "666eba81e2908049ac684ac9238acd1008b77d14afc370bec536d9045bb5c503",
-      "migrated_sha256": "938b90051df6c61b2f482efbf2e5962cb219a7c0216937885283d24f79985a24",
+      "migrated_sha256": "19db32837a56a4ca018c7525caeb7c0fbffd34563a87402ff634c2350e85d7dc",
       "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
-      "updated_in": "1.16.1: original teaching files stay on Drive (owner, 2026-10-03)"
+      "updated_in": "1.16.1: original teaching files stay on Drive; 1.16.2: the public view leaves out links and citations of private files"
     },
     {
       "heading": "References",

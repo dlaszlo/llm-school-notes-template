@@ -19,6 +19,7 @@ const { collection, payload } = Astro.props;
       {collection.chapters.some(c => c.answers) && <section class="print-answers"><h2>Önellenőrzés — válaszok és magyarázatok</h2>
         {collection.chapters.filter(c => c.answers).map(chapter => <section>{collection.chapters.length > 1 && <h2>{chapter.title}</h2>}<div class="study-content" set:html={chapter.answers} /></section>)}
       </section>}
+      {payload.sourceNote && <p class="study-source-note">{payload.sourceNote}</p>}
       {payload.license && <section class="print-license">
         <h2>Felhasználás</h2>
         <p>A dokumentum saját, szerzői joggal védett tartalma – az eltérően jelölt részek kivételével – <a href={payload.license.url}>{payload.license.id}</a> licenc alatt használható. Névmegjelölés: {payload.license.attribution}; tüntesd fel a dokumentum címét, eredeti elérhetőségét és az esetleges módosítást.</p>
