@@ -5,13 +5,17 @@
 #   kept:    ~/.claude/.credentials.json, ~/.claude.json (without MCP servers and hooks),
 #            ~/.codex/auth.json, session history
 #   removed: settings, instructions, hooks, agents, commands, skills, plugins, output
-#            styles, MCP configuration, shell and tool start-up files
+#            styles, MCP configuration, shell and tool start-up files, and the per-project
+#            memory and settings of both harnesses (Claude Code: ~/.claude/projects/*/memory/,
+#            settings*.json, CLAUDE*.md under ~/.claude/projects; Codex: ~/.codex/memories/,
+#            ~/.codex/memory*, AGENTS*.md anywhere under ~/.codex) – a prompt-injected run
+#            could otherwise leave lasting instructions for the next run
 set -u
 home=/home/agent
 [ -d "$home" ] || exit 0
 
 # A symlinked config directory is removed as a link; rm never follows links.
-for dir in .claude .codex .config .local .npm; do
+for dir in .claude .codex .config .local .npm .claude/projects .codex/memories; do
     [ -L "$home/$dir" ] && rm -f "$home/$dir"
 done
 rm -rf -- \
@@ -24,6 +28,18 @@ rm -rf -- \
     "$home/.codex/hooks.json" "$home/.config" "$home/.mcp.json" "$home/CLAUDE.md" \
     "$home/AGENTS.md" "$home/.bashrc" "$home/.profile" "$home/.bash_profile" \
     "$home/.bash_login" "$home/.npmrc" "$home/.gitconfig" "$home/.curlrc" "$home/.wgetrc"
+
+# Per-project memory and settings; find does not follow links (-P), -prune keeps it from
+# descending into what it removes.
+if [ -d "$home/.claude/projects" ]; then
+    find -P "$home/.claude/projects" -mindepth 1 \( -name memory \
+        -o -name 'settings*.json' -o -name 'CLAUDE*.md' -o -name 'AGENTS*.md' \) \
+        -prune -exec rm -rf -- {} +
+fi
+rm -rf -- "$home/.codex/memories" "$home"/.codex/memory*
+if [ -d "$home/.codex" ]; then
+    find -P "$home/.codex" -mindepth 1 -name 'AGENTS*.md' -exec rm -f -- {} +
+fi
 
 # ~/.claude.json holds the login state plus per-user/per-project MCP servers and hooks.
 state="$home/.claude.json"

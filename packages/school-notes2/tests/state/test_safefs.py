@@ -1,6 +1,7 @@
 """T7: symlink-safe access to container-controlled trees."""
 
 import os
+import time
 
 import pytest
 
@@ -78,3 +79,35 @@ def test_fallback_walk_without_openat2(tree, monkeypatch):
     with pytest.raises(UnsafePath):
         safefs.read_text(root, "evil/secret")
     assert safefs.read_text(root, "wiki/a.md") == "a\n"
+
+
+def test_link_planted_between_mkdir_and_open_is_unsafe(tmp_path, monkeypatch):
+    """Verification review 3.10: the open after mkdir maps ELOOP to UnsafePath too."""
+    from school_notes2.state import safefs
+    root, outside = tmp_path / "root", tmp_path / "outside"
+    root.mkdir()
+    outside.mkdir()
+    real_mkdir = os.mkdir
+
+    def racing_mkdir(name, mode=0o777, *, dir_fd=None):
+        os.symlink(outside, name, dir_fd=dir_fd)      # the container wins the race
+
+    monkeypatch.setattr(safefs.os, "mkdir", racing_mkdir)
+    with pytest.raises(safefs.UnsafePath):
+        safefs.write_bytes(root, "new/file.txt", b"x")
+    monkeypatch.setattr(safefs.os, "mkdir", real_mkdir)
+    assert list(outside.iterdir()) == []
+
+
+def test_stale_temp_files_are_swept_but_fresh_ones_kept(tmp_path):
+    from school_notes2.state import safefs
+    root = tmp_path / "root"
+    (root / "d").mkdir(parents=True)
+    old, fresh = root / "d/.sn-tmp-old", root / "d/.sn-tmp-fresh"
+    old.write_text("x")
+    fresh.write_text("y")
+    os.utime(old, (time.time() - 3600, time.time() - 3600))
+    os.symlink(tmp_path / "victim", root / "d/.sn-tmp-link")
+    safefs.write_bytes(root, "d/f.txt", b"z")
+    assert not old.exists() and fresh.exists()
+    assert not os.path.lexists(root / "d/.sn-tmp-link") and not (tmp_path / "victim").exists()

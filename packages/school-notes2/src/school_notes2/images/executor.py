@@ -38,25 +38,19 @@ def read_key(key_file: Path) -> str:
     raise ExecutorError("OpenRouter key missing in the secrets file")
 
 
-# The folders learning_image.py writes into inside the worktree. It resolves and contains
-# its own paths; refusing a symlink here first means it never starts on a planted link.
-WRITTEN_DIRS = (".school-notes", ".school-notes/images", "wiki", "wiki/assets",
-                "wiki/assets/banner", "wiki/assets/infographic", "docs", "docs/evidence",
-                "docs/evidence/media")
-
-
-def assert_no_links(worktree: Path) -> None:
-    for rel in WRITTEN_DIRS:
-        safefs.exists(worktree, rel)          # raises UnsafePath on any symlink component
-
-
 def call(settings: ImageSettings, command: str, args: list[str], target: str,
          with_key: bool = False, files: dict[str, str] | None = None) -> dict:
-    """Run one learning_image.py command; `files` are written next to the config first."""
-    assert_no_links(settings.worktree)
+    """Run one learning_image.py command; `files` are written next to the config first.
+
+    learning_image.py never sees the worktree: its inputs are staged into a private copy
+    with safefs, and what it writes there is copied back with safefs to the allowed places."""
     with tempfile.TemporaryDirectory(prefix="li-", dir=_scratch(settings)) as tmp:
         folder = Path(tmp)
-        config = settings.write_executor_config(folder, target)
+        stage = folder / "repo"
+        stage.mkdir()
+        job = _job_of(args)
+        inputs = stage_inputs(settings.worktree, stage, job) if job else {}
+        config = settings.write_executor_config(folder, target, stage)
         for name, text in (files or {}).items():
             (folder / name).write_text(text, encoding="utf-8")
         argv = [settings.python, str(settings.script), "--config", str(config), command,
@@ -69,9 +63,54 @@ def call(settings: ImageSettings, command: str, args: list[str], target: str,
                                   timeout=settings.timeout_s, cwd=tmp)
         except subprocess.TimeoutExpired:
             raise ExecutorTimeout(f"learning_image {command} timed out") from None
-    if proc.returncode != 0:
-        raise ExecutorError(_error_text(proc.stderr))
+        if proc.returncode != 0:
+            raise ExecutorError(_error_text(proc.stderr))
+        if job:
+            copy_back(settings.worktree, stage, job, inputs)
     return json.loads(proc.stdout) if proc.stdout.strip() else {}
+
+
+def _job_of(args: list[str]) -> dict | None:
+    """The job file named by `--job` (it lives in the host plans folder, not the worktree)."""
+    if "--job" not in args:
+        return None
+    return json.loads(Path(args[args.index("--job") + 1]).read_text(encoding="utf-8"))
+
+
+def stage_inputs(worktree: Path, stage: Path, job: dict) -> dict[str, bytes]:
+    """Copy the job's target and sources from the worktree (safefs: no link is followed).
+    A missing file is left out, so learning_image.py reports it as stale."""
+    staged = {}
+    for rel in dict.fromkeys([job["target"], *(s["path"] for s in job.get("sources", []))]):
+        try:
+            data = safefs.read_bytes(worktree, rel)
+        except FileNotFoundError:
+            continue
+        dest = stage / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+        staged[rel] = data
+    return staged
+
+
+def copy_back(worktree: Path, stage: Path, job: dict, inputs: dict[str, bytes]) -> list[str]:
+    """Copy learning_image.py's outputs into the worktree: only the job's receipt folder and
+    its published asset; an existing asset with other bytes is refused (as the tool does)."""
+    written = []
+    receipts = f"docs/evidence/media/{job['id']}/"
+    for path in sorted(p for p in stage.rglob("*") if p.is_file() and not p.is_symlink()):
+        rel = path.relative_to(stage).as_posix()
+        data = path.read_bytes()
+        if inputs.get(rel) == data:
+            continue
+        asset = rel.startswith("wiki/assets/") and Path(rel).stem.startswith(job["id"])
+        if not (rel.startswith(receipts) or asset):
+            raise ExecutorError(f"learning_image wrote an unexpected file: {rel}")
+        if asset and safefs.is_file(worktree, rel) and safefs.read_bytes(worktree, rel) != data:
+            raise ExecutorError("Destination exists with different bytes")
+        safefs.write_bytes(worktree, rel, data)
+        written.append(rel)
+    return written
 
 
 def ensure_ledger(settings: ImageSettings, target: str) -> None:

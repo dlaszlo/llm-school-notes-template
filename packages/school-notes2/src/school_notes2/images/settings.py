@@ -69,13 +69,16 @@ class ImageSettings:
             return {"request_id": self.request_id, "jobs": {}}
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def write_executor_config(self, folder: Path, target: str) -> Path:
-        """learning_image.py's config for one call; it allows exactly one target file."""
+    def write_executor_config(self, folder: Path, target: str, repo: Path) -> Path:
+        """learning_image.py's config for one call; it allows exactly one target file.
+
+        `repo` is a host-private staging copy, never the worktree: learning_image.py opens
+        files by path and would follow a link the container planted (S6)."""
         path = folder / "learning-images.json"
         write_json(path, {
             "request_id": self.request_id, "state_dir": str(self.state_dir),
             "max_total_usd": str(self.max_total_usd), "reservation_usd": str(self.reservation_usd),
             "max_attempts": self.max_attempts,
-            "learners": {self.learner: {"repo": str(self.worktree), "targets": [target],
+            "learners": {self.learner: {"repo": str(repo), "targets": [target],
                                         "max_usd": str(self.learner_max_usd)}}})
         return path

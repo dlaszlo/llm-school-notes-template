@@ -66,6 +66,32 @@ def test_clean_home_keeps_login_and_removes_planted_config(tmp_path):
     assert state == {"oauthAccount": {"a": 1}, "projects": {"/work": {"k": 1}}}
 
 
+def test_clean_home_removes_project_memory_and_codex_memories(tmp_path):
+    """Verification review 3.8: per-project memory/settings would carry instructions over."""
+    home = tmp_path / "home"
+    keep = [".claude/projects/-work/session.jsonl", ".claude/.credentials.json"]
+    drop = [".claude/projects/-work/memory/MEMORY.md", ".claude/projects/-work/settings.json",
+            ".claude/projects/-work/settings.local.json", ".claude/projects/-work/CLAUDE.md",
+            ".claude/projects/-work/x/AGENTS.md", ".codex/memories/notes.md",
+            ".codex/sessions/AGENTS.md"]
+    for rel in keep + drop:
+        (home / rel).parent.mkdir(parents=True, exist_ok=True)
+        (home / rel).write_text("x")
+    victim = tmp_path / "victim"
+    victim.mkdir()
+    (victim / "MEMORY.md").write_text("keep me")
+    (home / ".claude/projects/-other").mkdir()
+    (home / ".claude/projects/-other/memory").symlink_to(victim)
+    script = (DIR / "clean-home.sh").read_text().replace("home=/home/agent", f"home={home}")
+    assert subprocess.run(["bash", "-c", script]).returncode == 0
+    for rel in keep:
+        assert (home / rel).exists(), rel
+    for rel in drop:
+        assert not (home / rel).exists(), rel
+    assert (victim / "MEMORY.md").exists()
+    assert not (home / ".claude/projects/-other/memory").is_symlink()   # the link itself goes
+
+
 def test_clean_home_removes_a_symlinked_config_dir_without_following(tmp_path):
     home, target = tmp_path / "home", tmp_path / "victim"
     target.mkdir()
