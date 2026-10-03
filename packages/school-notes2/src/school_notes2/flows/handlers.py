@@ -58,8 +58,7 @@ def check(ctx: Ctx, task) -> dict:
             listed = {(i["file"], i["item_id"]) for i in fetch["open_review_items"]}
             problems += check_result(ctx.notes_path, result, fetch, listed,
                                      ctx.cfg.limits.review_closures_per_run, whole_run=False)
-    changed = [c["path"] for c in workbranch.changed_files(ctx.worktree("notes"), task.get("base"))]
-    problems += wiki_check.check_files(ctx.notes_path, changed)
+    problems += wiki_check.check_files(ctx.notes_path, steps.changed_paths(ctx, task))
     steps.write_check_items(ctx, problems)
     errors = wiki_check.errors(problems)
     return {"ok": not errors, "errors": len(errors), "problems": problems[:50]}

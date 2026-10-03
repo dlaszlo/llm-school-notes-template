@@ -39,10 +39,20 @@ class Prepared:
     new_owner: list[dict] = field(default_factory=list)
 
 
+def base_of(task: Task) -> str:
+    """What the run's changes are measured against: the recorded base, or – while the owner
+    resolves a rebase conflict – HEAD, the new upstream the run is being replayed onto."""
+    return "HEAD" if task.get("rebase") == "conflict" else task.get("base")
+
+
+def changed_paths(ctx: Ctx, task: Task) -> list[str]:
+    return [c["path"] for c in workbranch.changed_files(ctx.worktree("notes"), base_of(task))]
+
+
 def guard_step(ctx: Ctx, task: Task) -> None:
     """Step 1: the path guard. Owner-class violations stop the run; others go back."""
     wt = ctx.worktree("notes")
-    base = task.get("base")
+    base = base_of(task)
     changes = [guard.Change(c["path"], c["status"])
                for c in workbranch.changed_files(wt, base)]
 
@@ -65,26 +75,30 @@ def guard_step(ctx: Ctx, task: Task) -> None:
 
 
 def merged_result(ctx: Ctx, task: Task) -> dict:
-    """Step 2: the saved result-<k>.json files; an interactive session's own result.json."""
+    """Step 2: the saved result-<k>.json files. A session's own result.json stands for the
+    range it worked on (writing_k); in a session earlier ranges are optional (5.8)."""
+    n = len(task.get("ranges"))
     if task.mode == "interactive":
         own = read_json(ctx.notes_path / workbranch.WORKDIR / "result.json")
         if own is not None:
             validate("result", own)
-            n = len(task.get("ranges"))
-            write_json(task.dir / f"result-{n}.json", own)
+            write_json(task.dir / f"result-{min(task.get('writing_k', n), n)}.json", own)
     if task.get("skip_writer"):
         return {"status": "done"}
-    try:
-        return writer.merge(writer.results(task))
-    except BadWork:
+    found = writer.results(task, required=task.mode != "interactive")
+    if not found:
         if task.mode == "interactive" and not any(not p["duplicate_of"]
                                                   for p in task.get("pages", [])):
             return {"status": "done"}     # free editing in a session needs no result.json
-        raise
+        raise BadWork("no result.json for this run")
+    return writer.merge(found)
 
 
 def content_steps(ctx: Ctx, task: Task) -> Prepared:
-    """Steps 1–6. Raises CheckFailed (back to the writer) or NeedsOwner."""
+    """Steps 1–6. Raises CheckFailed (back to the writer) or NeedsOwner.
+
+    Closures and evidence are written only after the check passed, so a run sent back to
+    the writer never leaves a stale closure (both writers replace their own run's part)."""
     guard_step(ctx, task)
     result = merged_result(ctx, task)
     repo = ctx.notes_path
@@ -97,26 +111,38 @@ def content_steps(ctx: Ctx, task: Task) -> Prepared:
     by, at = _writer_label(ctx), now_iso()
     parts = machine.write_lesson_notes(repo, result.get("notes", []), fetch,
                                        ctx.student.grade, by, at)
-    changed = [c["path"] for c in workbranch.changed_files(ctx.worktree("notes"), task.get("base"))]
-    parts += machine.stamp_generated(repo, changed, by, at)
+    parts += machine.stamp_generated(repo, changed_paths(ctx, task), by, at)
     machine.add_subjects(repo, result.get("new_subjects", []), _drive_names(task))
+    _record_writes(task, repo, whole=[], parts=parts)
+    check_changed(ctx, task)
     outcome = review_files.apply_closure(repo, task.run_id, result.get("review_closure", []),
                                          listed, ctx.cfg.limits.owner_after_open)
     evidence = records.append(repo, records.from_writer(result.get("checks", [])),
                               run_id=task.run_id, checker=by, at=at, fetch_pages=fetch["pages"])
-    _record_writes(task, repo, whole=outcome.written + evidence, parts=parts)
-    regenerate(ctx, task)
+    _record_writes(task, repo, whole=outcome.written + evidence, parts=[])
+    generate_all(ctx, task)
     return Prepared(result, result["status"] == "question", outcome.new_owner)
 
 
 def regenerate(ctx: Ctx, task: Task) -> None:
-    """Steps 5–6: check the changed files, then generate indexes and public.json."""
-    repo = ctx.notes_path
-    changed = [c["path"] for c in workbranch.changed_files(ctx.worktree("notes"), task.get("base"))]
-    items = wiki_check.check_files(repo, changed)
+    """Steps 5–6 again on a rebased tree (G4)."""
+    check_changed(ctx, task)
+    generate_all(ctx, task)
+
+
+def check_changed(ctx: Ctx, task: Task) -> None:
+    """Step 5: the mechanical check of the run's changed files."""
+    items = wiki_check.check_files(ctx.notes_path, changed_paths(ctx, task))
     errors = wiki_check.errors(items)
     if errors:
         raise CheckFailed(errors)
+    write_json(ctx.notes_path / workbranch.WORKDIR / "check.json",
+               [i for i in items if i.get("severity") == "warning"], mode=0o644)
+
+
+def generate_all(ctx: Ctx, task: Task) -> None:
+    """Step 6: indexes, public.json and the review index."""
+    repo = ctx.notes_path
     indexes = generate.write_indexes(repo)
     try:
         public.write(repo, public.either(public.render_rights(repo), generated_rights(ctx)))
@@ -125,8 +151,6 @@ def regenerate(ctx: Ctx, task: Task) -> None:
                                                     "or image ledger)") for p in exc.paths])
     review_index.update(repo)
     _record_writes(task, repo, whole=list(TOOL_WHOLE_FILES), parts=indexes)
-    write_json(repo / workbranch.WORKDIR / "check.json",
-               [i for i in items if i.get("severity") == "warning"], mode=0o644)
 
 
 def generated_rights(ctx: Ctx):
@@ -187,7 +211,7 @@ def llm_snapshot(ctx: Ctx, task: Task) -> dict:
     A file whose LLM-written part equals the base is left out, so the tool's own writes
     (machine keys, generated blocks, whole tool files) never look like an edit."""
     wt = ctx.worktree("notes")
-    base = task.get("base")
+    base = base_of(task)
     out = {}
     for c in workbranch.changed_files(wt, base):
         rel = c["path"]
@@ -203,6 +227,7 @@ def llm_snapshot(ctx: Ctx, task: Task) -> dict:
 
 
 def _llm_hash(rel: str, data: bytes) -> str:
+    data = data.replace(b"\r\n", b"\n").rstrip(b"\n")   # the check's own auto-fixes
     if rel.endswith(".md"):
         data = _llm_part(data.decode("utf-8", "replace")).encode("utf-8")
     return hashlib.sha256(data).hexdigest()

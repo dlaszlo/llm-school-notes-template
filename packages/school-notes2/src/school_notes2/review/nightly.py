@@ -44,7 +44,7 @@ def fetch(repo: Git, timeout: float) -> None:
     def step():
         try:
             repos.fetch(repo, timeout, repos.MAIN_SPEC, repos.REVIEWED_SPEC)
-        except Transient as exc:
+        except (Transient, NeedsOwner) as exc:
             if "couldn't find remote ref" in str(exc):
                 raise NeedsOwner("claude-reviewed marker not created yet on origin",
                                  todo="create it once at the cut-over (plan 6.9/4)") from None

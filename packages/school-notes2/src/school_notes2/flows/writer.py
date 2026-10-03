@@ -22,7 +22,8 @@ def write_inputs(ctx: Ctx, task: Task, k: int) -> None:
 
 
 def write_changes(ctx: Ctx, task: Task) -> None:
-    changed = workbranch.changed_files(ctx.worktree("notes"), task.get("base"))
+    from .steps import base_of
+    changed = workbranch.changed_files(ctx.worktree("notes"), base_of(task))
     data = {"base": task.get("base"), "changed": changed}
     validate("changes", data)
     write_json(ctx.notes_path / workbranch.WORKDIR / "changes.json", data, mode=0o644)
@@ -59,12 +60,14 @@ def _call(ctx: Ctx, task: Task, k: int, role, harness, handlers) -> dict:
     return outcome.output
 
 
-def results(task: Task) -> list[dict]:
-    """The saved result-<k>.json files in range order."""
+def results(task: Task, required: bool = True) -> list[dict]:
+    """The saved result-<k>.json files in range order (all of them when `required`)."""
     out = []
     for k in range(1, len(task.get("ranges")) + 1):
         data = read_json(task.dir / f"result-{k}.json")
         if data is None:
+            if not required:
+                continue
             raise BadWork(f"result-{k}.json is missing")
         validate("result", data)
         out.append(data)
