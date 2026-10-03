@@ -63,6 +63,9 @@ def _call(ctx: Ctx, task: Task, k: int, role, harness, handlers) -> dict:
         finally:
             # A job the writer left behind (check, image) must not run beside finish.
             JobStore(task.dir / "jobs", ctx.log).stop_all(30)
+            # The MCP handlers saved the run meanwhile (tool writes, closures); a later save
+            # from this stale copy would drop them.
+            task.reload()
     return outcome.output
 
 

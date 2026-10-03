@@ -48,6 +48,13 @@ class Task:
     def path(self) -> Path:
         return self.dir / "phase.json"
 
+    def reload(self) -> None:
+        """Take over what another holder of this run wrote meanwhile (the MCP handlers load
+        and save the run themselves, e.g. the tool's own writes on image acceptance)."""
+        fresh = load(self.dir)
+        if fresh is not None:
+            self.data = fresh.data
+
     def save(self) -> None:
         self.data["updated"] = now_iso()
         validate("phase", self.data)
