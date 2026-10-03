@@ -200,6 +200,10 @@ test('public export: every page type and section; private files, links and citat
     // The notebook footnote cites a private source: left out with its reference.
     assert.doesNotMatch(visible,/Füzet, 01\.jpg|nem nyilvános forrás|footnote/);
     assert.equal(payload.sourceNote,'A jegyzet Minta füzetbe írt jegyzetei alapján készült.');
+    for (const [i,bad] of ['', ' ', 'x'.repeat(301), 7].entries()) await assert.rejects(run('note'+i,{...config,sourceNote:bad}),/source note/);
+    const {payload:noNote}=await run('nonote',{...config,sourceNote:undefined});
+    assert.equal(noNote.sourceNote,undefined);
+    assert.notEqual(noNote.collections[0].pdf.key,payload.collections[0].pdf.key);
     assert.equal(payload.pages[1].lastUpdated,'2026-10-03T10:00:00+02:00');assert.equal(payload.pages[1].path,page);
     assert.equal(payload.pages[0].lastUpdated,undefined);
     await assert.rejects(run('rights',{...config,assets:[{...config.assets[0],rights:undefined}]}),/rights class/);

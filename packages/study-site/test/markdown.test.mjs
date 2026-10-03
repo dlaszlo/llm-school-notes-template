@@ -48,3 +48,34 @@ test('public view: private photo lists, private footnotes and the grade prefix a
   assert.match(preview.html, /1\. fotó/);
   assert.equal((preview.html.match(/data-footnote-ref/g) || []).length, 2);
 });
+
+test('public view: footnotes stay consistent when private items, headings or citations go', async () => {
+  const { renderMarkdown } = await import('../lib/markdown.mjs');
+  const resolveUrl = async h => /(^|\/)(sources|references)\//.test(h) ? { citationOnly: true } : h;
+  const render = source => renderMarkdown('---\ntitle: T\n---\n' + source, { resolveUrl, publicView: true });
+  // A kept web footnote that starts with a private link keeps its item and its reference.
+  let out = await render('Szöveg.[^t]\n\n[^t]: [Tankönyv 12. o.](../references/tk/README.md); online: [OpenStax](https://openstax.org/x)\n');
+  assert.match(out.html, /data-footnote-ref[^>]*>1<\/a>/);
+  assert.match(out.html, /Tankönyv 12\. o\.; online: <a href="https:\/\/openstax\.org\/x">OpenStax<\/a>/);
+  // A footnote referenced only from a dropped list item goes; the others are renumbered.
+  out = await render('Első.[^a]\n\n* [1. fotó](../sources/a/01.jpg) - Venn[^w]\n\nHarmadik.[^b]\n\n[^a]: [A](https://a.example)\n[^w]: [W](https://w.example)\n[^b]: [B](https://b.example)\n');
+  assert.doesNotMatch(out.html, /w\.example|fn-w|Venn/);
+  assert.deepEqual([...out.html.matchAll(/data-footnote-ref[^>]*>(\d+)<\/a>/g)].map(m => m[1]), ['1', '2']);
+  assert.equal((out.html.match(/<li id="[^"]*fn-/g) || []).length, 2);
+  // A footnote referenced twice, once from a dropped item: it stays, its dead back-reference goes.
+  out = await render('Első.[^a]\n\n* [1. fotó](../sources/a/01.jpg) - kép[^a]\n\n[^a]: [A](https://a.example)\n');
+  assert.equal((out.html.match(/data-footnote-ref/g) || []).length, 1);
+  assert.equal((out.html.match(/data-footnote-backref=""/g) || []).length, 1);
+  // Only a private footnote: no footnote section at all.
+  out = await render('Szöveg.[^f]\n\n[^f]: Füzet, 3. fotó.\n');
+  assert.doesNotMatch(out.html, /footnote|Források/);
+  // A parent heading emptied by its emptied sub-headings goes as well; nested lists too.
+  out = await render('# Fotók\n\n## Óra 1\n\n* [a](../sources/a.jpg)\n  * [b](../sources/b.jpg)\n\n## Óra 2\n\n* [c](../sources/c.jpg)\n\n# Kérdések\n\nX\n');
+  assert.deepEqual(out.headings.map(h => h.text), ['Kérdések']);
+  assert.doesNotMatch(out.html, /Fotók|Óra|<ul/);
+  // A web source written as a reference link or raw HTML stays.
+  out = await render('A.[^r] B.[^h]\n\n[^r]: [OpenStax][os]\n[^h]: <a href="https://h.example">H</a>\n\n[os]: https://openstax.org\n');
+  assert.equal((out.html.match(/data-footnote-ref/g) || []).length, 2);
+  // A title that is only a grade prefix keeps its text.
+  assert.equal((await renderMarkdown('# 9. évfolyam: *Halmazok*\n', { resolveUrl, publicView: true })).title, '9. évfolyam: ');
+});

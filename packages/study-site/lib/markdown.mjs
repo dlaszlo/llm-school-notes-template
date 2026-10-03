@@ -7,7 +7,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
 import rehypeMathjax from 'rehype-mathjax/svg';
-import { visit } from 'unist-util-visit';
+import { visit, SKIP } from 'unist-util-visit';
 import { toText } from 'hast-util-to-text';
 import GithubSlugger from 'github-slugger';
 import { parse as parseYaml } from 'yaml';
@@ -42,10 +42,16 @@ const isJumpTarget = n => isElement(n, 'a') && !n.properties.href && !n.children
 // prefix ("9. évfolyam: ") is dropped too: one repository holds one school year.
 const WEB_URL = /^https?:\/\//i;
 const GRADE_PREFIX = /^(\P{L}*?)\d{1,2}\. évfolyam: /u;
-export const withoutGrade = text => text.replace(GRADE_PREFIX, '$1');
-const hasWebLink = n => (n.type === 'link' && WEB_URL.test(n.url)) || (n.children || []).some(hasWebLink);
+export const withoutGrade = text => text.replace(GRADE_PREFIX, '$1').trim() ? text.replace(GRADE_PREFIX, '$1') : text;
 
 function publicMarkdown(tree) {
+  const urls = new Map();
+  visit(tree, 'definition', node => { urls.set(node.identifier, node.url); });
+  // A web link written inline, as a reference ([text][id]) or as raw HTML.
+  const hasWebLink = n => (n.type === 'link' && WEB_URL.test(n.url))
+    || (n.type === 'linkReference' && WEB_URL.test(urls.get(n.identifier) || ''))
+    || (n.type === 'html' && /href\s*=\s*["']?https?:\/\//i.test(n.value))
+    || (n.children || []).some(hasWebLink);
   const dropped = new Set();
   visit(tree, 'footnoteDefinition', (node, index, parent) => {
     if (hasWebLink(node)) return;
@@ -68,11 +74,13 @@ const blank = n => (n.type === 'text' && !n.value.trim()) || isElement(n, 'br')
   || (isElement(n, 'p') && n.properties.className?.includes('study-spacer'));
 const isPrivateMark = n => isElement(n, 'span') && n.properties.dataPrivateLink !== undefined;
 const isHeading = n => isElement(n) && /^h[1-6]$/.test(n.tagName);
+const isFootnotes = n => isElement(n, 'section') && n.properties.dataFootnotes !== undefined;
 
 function emptyHeadings(tree) {
   // A heading with nothing but spacing before the next heading of the same or higher rank.
   const found = new Set();
   visit(tree, (node) => {
+    if (isFootnotes(node)) return SKIP;
     const kids = node.children || [];
     kids.forEach((h, i) => {
       if (!isHeading(h)) return;
@@ -97,28 +105,65 @@ function tidyPrivateLinks(tree) {
     if (isElement(kids[0], 'p')) kids = kids[0].children.filter(c => !blank(c));
     return kids.length > 0 && isPrivateMark(kids[0]);
   };
+  // The footnote list is the renderer's own; its items are kept or dropped by fixFootnotes.
   visit(tree, 'element', (node, index, parent) => {
+    if (isFootnotes(node)) return SKIP;
     if (!isElement(node, 'li') || !leadsWithPrivate(node)) return;
     parent.children.splice(index, 1);
     return index;
   });
   visit(tree, 'element', (node, index, parent) => {
+    if (isFootnotes(node)) return SKIP;
     if (!['ul', 'ol'].includes(node.tagName) || node.children.some(c => isElement(c, 'li'))) return;
     parent.children.splice(index, 1);
     return index;
   });
-  for (const h of emptyHeadings(tree)) {
-    if (before.has(h)) continue;
-    visit(tree, (node) => {
-      const i = (node.children || []).indexOf(h);
-      if (i >= 0) node.children.splice(i, 1);
-    });
+  // Repeat: removing emptied sub-headings can empty their parent heading's section.
+  for (;;) {
+    const emptied = [...emptyHeadings(tree)].filter(h => !before.has(h));
+    if (!emptied.length) break;
+    for (const h of emptied) {
+      visit(tree, (node) => {
+        const i = (node.children || []).indexOf(h);
+        if (i >= 0) node.children.splice(i, 1);
+      });
+    }
   }
   visit(tree, 'element', (node, index, parent) => {
     if (!isPrivateMark(node)) return;
     parent.children.splice(index, 1, ...node.children);
     return index;
   });
+  fixFootnotes(tree);
+}
+
+// After items or headings were dropped: a footnote no reference points to any more goes, a
+// back-reference to a dropped reference goes, and the references are numbered again.
+function fixFootnotes(tree) {
+  const refs = [];
+  visit(tree, 'element', node => { if (isElement(node, 'a') && node.properties.dataFootnoteRef !== undefined) refs.push(node); });
+  const target = a => String(a.properties.href || '').slice(1);
+  const refIds = new Set(refs.map(r => String(r.properties.id)));
+  const used = new Set(refs.map(target));
+  visit(tree, 'element', (section, index, parent) => {
+    if (!isFootnotes(section)) return;
+    const ol = section.children.find(c => isElement(c, 'ol'));
+    if (ol) {
+      visit(ol, 'element', (node, i, p) => {
+        if (!isElement(node, 'a') || node.properties.dataFootnoteBackref === undefined || refIds.has(target(node))) return;
+        p.children.splice(i, 1);
+        return i;
+      });
+      ol.children = ol.children.filter(li => !isElement(li, 'li') || used.has(String(li.properties.id)));
+    }
+    if (!ol || !ol.children.some(c => isElement(c, 'li'))) { parent.children.splice(index, 1); return index; }
+    return SKIP;
+  });
+  const numbers = new Map();
+  for (const r of refs) {
+    if (!numbers.has(target(r))) numbers.set(target(r), numbers.size + 1);
+    r.children = [{ type: 'text', value: String(numbers.get(target(r))) }];
+  }
 }
 
 export async function renderMarkdown(source, { resolveUrl, mermaid, pageId = '', footnoteLabel = 'Források', publicView = false } = {}) {

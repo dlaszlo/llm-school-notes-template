@@ -50,3 +50,12 @@ def test_assets_keep_rights_and_classify_new_ones(repo):
 def test_write_is_byte_stable(repo):
     assert public.write(repo, public.render_rights(repo)) is True
     assert public.write(repo, public.render_rights(repo)) is False
+
+
+def test_build_keeps_the_source_note_after_the_fixed_fields(repo):
+    existing = public.read_existing(repo)
+    existing["sourceNote"] = "A jegyzet Minta füzetbe írt jegyzetei alapján készült."
+    value = public.build(repo, public.render_rights(repo), existing)
+    assert value["sourceNote"] == existing["sourceNote"]
+    keys = list(value)
+    assert keys.index("sourceNote") < keys.index("pages")
