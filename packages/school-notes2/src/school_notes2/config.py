@@ -103,6 +103,11 @@ class Config:
     ssh_port: int = 22
     release_dir: Path = Path("/srv/school-notes/current")
     browser: Path = Path("~/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome").expanduser()
+    # The container firewall's allow-list (7.3); logins need a few more hosts (7.4).
+    provider_domains: tuple[str, ...] = ("api.anthropic.com", "api.openai.com",
+                                         "auth.openai.com", "chatgpt.com")
+    login_domains: tuple[str, ...] = ("claude.ai", "platform.claude.com",
+                                      "console.anthropic.com")
 
     def student(self, name: str) -> Student:
         if name not in self.students:
@@ -204,6 +209,7 @@ def parse(data: dict) -> Config:
         limits=_sub(Limits, data.get("limits")),
         release_dir=_path(data.get("release_dir", "/srv/school-notes/current")),
         **({"browser": _path(data["browser"])} if "browser" in data else {}),
+        **{k: tuple(data[k]) for k in ("provider_domains", "login_domains") if k in data},
     )
 
 
