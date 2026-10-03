@@ -2,6 +2,11 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.16.1 - 2026-10-03
+
+- Every visual engine is available in a run: Python/matplotlib, Graphviz, PlantUML, POV-Ray (also animations: MP4 with a static poster) and FreeCAD; choose the engine that best supports the figure.
+- Original teaching files (PPTX, DOCX, PDF) stay on Drive; the repository keeps only the extracted material.
+
 ## 1.16.0 — 2026-10-03
 
 - v2 way of working: learner work happens only in a run of the `school-notes` tool (hourly or in the owner's `school-notes chat`). New module [Working in a school-notes run](instructions/school-notes-run.md): run files (`fetch.json`, `changes.json`, `check.json`, `result.json`), MCP tools, where the writer may write, stable order. The tool files sources (at most 2000 px JPEG, notebook PDF as page images), computes hashes, writes machine frontmatter, generates the index blocks and `public.json`, keeps review-file state and evidence records, generates and inserts images, commits, pushes and publishes; the corresponding v1 bookkeeping rules are removed from the writer's modules.
