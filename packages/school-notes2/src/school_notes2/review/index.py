@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from ..state.files import write_text
+from ..state import safefs
 from ..wiki import frontmatter as fm
 from ..wiki import markers
 from .files import OPEN, OWNER, REVIEW_DIR, review_files
@@ -21,7 +21,7 @@ def render(repo: Path) -> str:
     """The block content: Nyitott / Tulajdonosra vár / Lezárt, newest file first."""
     lists: dict[str, list[str]] = {"Nyitott": [], "Tulajdonosra vár": [], "Lezárt": []}
     for path in reversed(review_files(repo)):
-        meta = fm.split(path.read_text(encoding="utf-8")).meta
+        meta = fm.split(safefs.read_text(repo, safefs.rel_of(repo, path))).meta
         items = meta.get("items")
         if not isinstance(items, dict):
             continue
@@ -39,13 +39,14 @@ def render(repo: Path) -> str:
 
 def update(repo: Path) -> Path:
     """Rewrite only the generated block; insert it at the top when the file has none."""
-    path = repo / REVIEW_DIR / "index.md"
-    old = path.read_text(encoding="utf-8") if path.exists() else ""
+    rel = f"{REVIEW_DIR}/index.md"
+    path = repo / rel
+    old = safefs.read_text(repo, rel) if safefs.exists(repo, rel) else ""
     content = render(repo)
     if BLOCK in markers.names(old):
         new = markers.replace(old, BLOCK, content)
     else:
         new = markers.wrap(BLOCK, content) + ("\n" + old if old else "")
     if new != old:
-        write_text(path, new, 0o644)
+        safefs.write_text(repo, rel, new)
     return path

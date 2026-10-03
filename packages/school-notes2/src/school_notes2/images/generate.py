@@ -5,11 +5,11 @@ them: generated, accepted, waiting-unknown, budget-exhausted, exhausted, failed,
 unknown, error. Retries only on a connection error and on 429.
 """
 
-import shutil
 import time
 from pathlib import Path
 
 from ..log import Log
+from ..state import safefs
 from . import plans
 from .budget import budget_left, images_lock, unknown_calls
 from .executor import ExecutorError, ExecutorTimeout, call, ensure_ledger
@@ -129,14 +129,13 @@ def _preview(settings: ImageSettings, job: dict, result: dict) -> dict:
     preview = call(settings, command, ["--job", str(plans.job_path(settings, plan_id))],
                    job["target"])
     folder = Path(preview["path"]).parent
-    settings.work_images.mkdir(parents=True, exist_ok=True)
     stem = f"{plan_id}-{result['number']}"
-    image = settings.work_images / f"{stem}.png"
-    publication = settings.work_images / f"{stem}-publication.webp"
-    shutil.copyfile(folder / "image.png", image)
-    shutil.copyfile(preview["path"], publication)
-    return {"image": image.relative_to(settings.worktree).as_posix(),
-            "preview": publication.relative_to(settings.worktree).as_posix(),
+    image = f".school-notes/images/{stem}.png"
+    publication = f".school-notes/images/{stem}-publication.webp"
+    # Into the container-controlled tree: never through a planted symlink (7.6).
+    safefs.copy_in(folder / "image.png", settings.worktree, image)
+    safefs.copy_in(Path(preview["path"]), settings.worktree, publication)
+    return {"image": image, "preview": publication,
             "preview_sha256": preview["sha256"]}
 
 

@@ -8,6 +8,7 @@ separately for `status` and the one-time e-mail.
 from datetime import date
 from pathlib import Path
 
+from ..state import safefs
 from ..state.files import read_json, write_json
 from . import plans
 from .budget import budget_left, unknown_calls
@@ -37,7 +38,7 @@ def scan(settings: ImageSettings) -> dict:
 
 
 def _plan_exists(settings: ImageSettings, plan_id: str) -> bool:
-    return ((settings.worktree / plans.target(plan_id)).is_file()
+    return (safefs.is_file(settings.worktree, plans.target(plan_id))
             or (settings.plans_dir / f"{plan_id}.json").is_file())
 
 

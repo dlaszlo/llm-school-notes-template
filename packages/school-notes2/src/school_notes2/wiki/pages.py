@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..state import safefs
 from . import frontmatter
 
 CODE_FENCE = re.compile(r"^(```|~~~).*?^\1[^\n]*$", re.S | re.M)
@@ -24,29 +25,40 @@ class Link:
     line: int
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+# Every access is relative to the repo root through safefs: the worktree is the container's
+# and may hold planted symlinks (plan 7.6).
+
+def sha256(repo: Path, rel: str) -> str:
+    return hashlib.sha256(safefs.read_bytes(repo, rel)).hexdigest()
 
 
-def read_page(path: Path) -> frontmatter.Page:
-    return frontmatter.split(path.read_text(encoding="utf-8"))
+def read_text(repo: Path, rel: str) -> str:
+    return safefs.read_text(repo, rel)
+
+
+def read_page(repo: Path, rel: str) -> frontmatter.Page:
+    return frontmatter.split(safefs.read_text(repo, rel))
+
+
+def is_file(repo: Path, rel: str) -> bool:
+    return safefs.is_file(repo, rel)
+
+
+def md_files(repo: Path, pattern: str = "wiki/**/*.md") -> list[str]:
+    """Repo-relative markdown paths matching `pattern`; symlinks are never followed."""
+    return safefs.glob(repo, "wiki", pattern)
 
 
 def wiki_pages(repo: Path) -> list[str]:
     """Repo-relative paths of every published markdown page (B7: no log, no asset READMEs)."""
-    out = []
-    for path in sorted((repo / "wiki").rglob("*.md")):
-        rel = path.relative_to(repo).as_posix()
-        if rel == "wiki/log.md" or rel.startswith("wiki/assets/"):
-            continue
-        out.append(rel)
-    return out
+    return [rel for rel in md_files(repo)
+            if rel != "wiki/log.md" and not rel.startswith("wiki/assets/")]
 
 
 def subjects(repo: Path) -> list[str]:
     """Subject folders: wiki/<subject>/ with an index.md (assets is not a subject)."""
-    return sorted(p.parent.name for p in (repo / "wiki").glob("*/index.md")
-                  if p.parent.name != "assets")
+    return sorted(rel.split("/")[1] for rel in md_files(repo, "wiki/*/index.md")
+                  if rel.split("/")[1] != "assets")
 
 
 def _blank(match: re.Match) -> str:

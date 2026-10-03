@@ -6,6 +6,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..state import safefs
 from .run import Git
 
 FULLY_GENERATED = ("publication/public.json",)
@@ -85,7 +86,7 @@ def _merge_blocks(wt: Git, path: str, empty_blocks) -> bool:
     conflicts, merged = _merge_file(emptied, ("base", ORIGIN_LABEL, "own"))
     if conflicts:
         return False
-    (wt.work_tree / path).write_bytes(merged)
+    safefs.write_bytes(wt.work_tree, path, merged)
     return True
 
 
@@ -96,7 +97,7 @@ def _relabel(wt: Git, path: str, run_id: str) -> None:
     if versions is None or any(b"\0" in v for v in versions):
         return
     _, merged = _merge_file(versions, ("base", ORIGIN_LABEL, f"futás {run_id}"))
-    (wt.work_tree / path).write_bytes(merged)
+    safefs.write_bytes(wt.work_tree, path, merged)
 
 
 def has_markers(text: str) -> bool:

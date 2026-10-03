@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Callable
 
 from . import generate
-from .pages import links, read_page, resolve, sha256, wiki_pages
+from ..state import safefs
+from .pages import is_file, links, read_text, resolve, sha256, wiki_pages
 
 FIXED = ("version", "mode", "title", "base", "branding", "feedbackRepository", "license", "site")
 PRIVATE_PREFIXES = ("sources/", "references/")
@@ -48,7 +49,7 @@ def page_order(repo: Path) -> list[str]:
 
 
 def page_entry(repo: Path, rel: str) -> dict:
-    entry = {"path": rel, "sha256": sha256(repo / rel)}
+    entry = {"path": rel, "sha256": sha256(repo, rel)}
     parts = rel.split("/")
     if rel == "wiki/index.md":
         entry["navigationLabel"] = "🏠 Kezdőlap"
@@ -84,7 +85,7 @@ def linked_targets(repo: Path, pages: list[str]) -> tuple[set[str], set[str]]:
     """(images inside wiki/, citation targets under sources/ or references/)."""
     images, citations = set(), set()
     for rel in pages:
-        for link in links((repo / rel).read_text(encoding="utf-8")):
+        for link in links(read_text(repo, rel)):
             target = resolve(rel, link.target)
             if target is None:
                 continue
@@ -96,7 +97,7 @@ def linked_targets(repo: Path, pages: list[str]) -> tuple[set[str], set[str]]:
 
 
 def asset_entry(repo: Path, rel: str, known: dict, rights: RightsLookup) -> dict | None:
-    entry = {"path": rel, "sha256": sha256(repo / rel)}
+    entry = {"path": rel, "sha256": sha256(repo, rel)}
     old = known.get(rel)
     if old and old.get("rights"):
         entry["rights"] = old["rights"]
@@ -120,7 +121,7 @@ def build(repo: Path, rights: RightsLookup, existing: dict | None = None) -> dic
     value.setdefault("version", 1)
     value["pages"] = [page_entry(repo, rel) for rel in order]
     assets = {rel: asset_entry(repo, rel, known, rights)
-              for rel in sorted(i for i in images if (repo / i).is_file())}
+              for rel in sorted(i for i in images if is_file(repo, i))}
     unknown = [rel for rel, entry in assets.items() if entry is None]
     if unknown:
         raise PublicError(unknown)
@@ -134,8 +135,10 @@ def build(repo: Path, rights: RightsLookup, existing: dict | None = None) -> dic
 
 
 def read_existing(repo: Path) -> dict:
-    path = repo / "publication" / "public.json"
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    try:
+        return json.loads(read_text(repo, "publication/public.json"))
+    except FileNotFoundError:
+        return {}
 
 
 def dumps(value: dict) -> str:
@@ -144,12 +147,11 @@ def dumps(value: dict) -> str:
 
 def write(repo: Path, rights: RightsLookup) -> bool:
     """Write public.json; True if it changed."""
-    path = repo / "publication" / "public.json"
+    rel = "publication/public.json"
     text = dumps(build(repo, rights))
-    if path.exists() and path.read_text(encoding="utf-8") == text:
+    if is_file(repo, rel) and read_text(repo, rel) == text:
         return False
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    safefs.write_text(repo, rel, text)
     return True
 
 
@@ -159,28 +161,28 @@ def source_copies(repo: Path, new_assets: list[str]) -> list[str]:
         return []
     from ..sources.duplicates import known_hashes      # sources imports wiki: import late
     sources = set(known_hashes(repo).content)
-    return [rel for rel in new_assets if sha256(repo / rel) in sources]
+    return [rel for rel in new_assets if sha256(repo, rel) in sources]
 
 
 def media_receipt_rights(repo: Path) -> RightsLookup:
     """A generated image: its receipt folder docs/evidence/media/<file stem>/ exists (B10)."""
     def lookup(rel: str):
         receipt = f"docs/evidence/media/{Path(rel).stem}"
-        return ("generated", receipt) if (repo / receipt).is_dir() else None
+        return ("generated", receipt) if safefs.is_dir(repo, receipt) else None
     return lookup
 
 
 def render_rights(repo: Path) -> RightsLookup:
     """Default lookup: an image listed in a render.json `outputs` is the tool-rendered kind."""
     owners: dict[str, str] = {}
-    for receipt in (repo / "wiki" / "assets").rglob("render.json"):
+    for receipt in safefs.glob(repo, "wiki/assets", "wiki/assets/**/render.json"):
         try:
-            data = json.loads(receipt.read_text(encoding="utf-8"))
+            data = json.loads(read_text(repo, receipt))
         except (OSError, ValueError):
             continue
-        base = receipt.parent.relative_to(repo).as_posix()
+        base = receipt.rsplit("/", 1)[0]
         for out in data.get("outputs") or {}:
-            owners[f"{base}/{out}"] = receipt.relative_to(repo).as_posix()
+            owners[f"{base}/{out}"] = receipt
 
     def lookup(rel: str):
         return ("authored", owners[rel]) if rel in owners else None

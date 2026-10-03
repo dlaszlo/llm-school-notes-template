@@ -17,6 +17,7 @@ from ..schemas import validate
 from ..state import phase
 from ..state.errors import NeedsOwner, Transient
 from ..sources.order import natural_key
+from ..state import safefs
 from ..state.files import read_json, write_bytes, write_json, write_text
 from ..wiki import markers
 
@@ -178,6 +179,13 @@ def resume_prepared(task: phase.Task, repo: Git, wt: Git, rasterize: Rasterize) 
     task.update(input_ready=True)
 
 
+def _page_exists(worktree: Path, page: str) -> bool:
+    try:
+        return safefs.is_file(worktree, page)
+    except safefs.UnsafePath:
+        return False
+
+
 def record_review(task: phase.Task, review: dict, worktree: Path | None = None) -> None:
     """A valid review.json closes the LLM part; from here on no LLM call is needed.
 
@@ -200,7 +208,7 @@ def _valid_figures(task: phase.Task, figures: list[dict], worktree: Path | None)
         path = by_input.get(fig["file"], fig["file"])
         page = fig["page"]
         page_ok = (page.startswith("wiki/") and page.endswith(".md") and ".." not in page
-                   and (worktree is None or (worktree / page).is_file()))
+                   and (worktree is None or _page_exists(worktree, page)))
         if page_ok and path in reviewed:
             kept.append({**fig, "file": path})
         else:

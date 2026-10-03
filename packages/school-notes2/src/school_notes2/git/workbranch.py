@@ -1,8 +1,8 @@
 """The run's work branch in the durable notes worktree (plan 6.5) and changes.json (4.4)."""
 
-import shutil
 from pathlib import Path
 
+from ..state import safefs
 from ..state.errors import NeedsOwner
 from .run import Git, GitFailed
 
@@ -39,13 +39,9 @@ def start(wt: Git, run_id: str, base: str, interactive: bool) -> None:
 
 def reset_workdir(worktree: Path) -> Path:
     """Delete and recreate .school-notes/ (never trusted across runs)."""
-    workdir = worktree / WORKDIR
-    if workdir.is_symlink() or workdir.is_file():
-        workdir.unlink()
-    elif workdir.exists():
-        shutil.rmtree(workdir)
-    workdir.mkdir()
-    return workdir
+    safefs.rmtree(worktree, WORKDIR)      # a planted symlink is removed, never followed
+    safefs.makedirs(worktree, WORKDIR)
+    return worktree / WORKDIR
 
 
 def changed_files(wt: Git, base: str) -> list[dict]:

@@ -9,6 +9,7 @@ from ..images import pending as image_pending
 from ..log import TZ
 from ..review import files as review_files
 from ..state import phase
+from ..state import safefs
 from ..state.files import read_json
 from .context import Ctx
 
@@ -86,20 +87,29 @@ def _last(tasks: list[phase.Task], kind: str) -> str | None:
 
 def _open_questions(repo: Path) -> list[str]:
     out = []
-    for page in sorted((repo / "wiki").rglob("*.md")) if (repo / "wiki").is_dir() else []:
-        text = page.read_text(encoding="utf-8", errors="replace")
+    for rel in safefs.glob(repo, "wiki", "wiki/**/*.md") if repo.is_dir() else []:
+        try:
+            text = safefs.read_text(repo, rel, errors="replace")
+        except (OSError, safefs.UnsafePath):
+            continue                     # status never fails on the worktree's state
         if OPEN_QUESTIONS.search(text):
-            out.append(page.relative_to(repo).as_posix())
+            out.append(rel)
     return out
 
 
 def _unmapped(repo: Path) -> list[str]:
     """Big reference material without a map: the writer must not read it (5.9, B29)."""
     out = []
-    refs = repo / "references"
-    for doc in sorted(refs.rglob("document.md")) if refs.is_dir() else []:
-        if doc.stat().st_size >= BIG_REFERENCE and not (doc.parent / "index.md").is_file():
-            out.append(doc.parent.relative_to(repo).as_posix())
+    for rel in safefs.glob(repo, "references", "references/**/document.md") \
+            if repo.is_dir() else []:
+        folder = rel.rsplit("/", 1)[0]
+        try:
+            big = len(safefs.read_bytes(repo, rel)) >= BIG_REFERENCE
+            mapped = safefs.is_file(repo, f"{folder}/index.md")
+        except (OSError, safefs.UnsafePath):
+            continue
+        if big and not mapped:
+            out.append(folder)
     return out
 
 

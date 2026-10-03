@@ -9,6 +9,7 @@ import json
 import posixpath
 from pathlib import Path
 
+from ..state import safefs
 from ..sources.duplicates import original_key
 from . import frontmatter, generate, markers
 
@@ -107,15 +108,14 @@ def write_lesson_notes(repo: Path, notes: list[dict], fetch: dict, grade, by: st
     """Apply machine keys to every lesson-notes page of the run; returns changed paths."""
     changed = []
     for note in notes:
-        path = repo / note["file"]
-        text = path.read_text(encoding="utf-8")
+        text = safefs.read_text(repo, note["file"])
         meta = frontmatter.split(text).meta
         values = lesson_values(note["file"], note["pages"], fetch, grade, by, at,
                                old=meta if meta.get("type") == "lesson-notes" else None)
         values["sources"] = merge_sources(meta.get("sources"), values["sources"])
         new = frontmatter.set_keys(text, values)
         if new != text:
-            path.write_text(new, encoding="utf-8")
+            safefs.write_text(repo, note["file"], new)
             changed.append(note["file"])
     return changed
 
@@ -127,13 +127,12 @@ def stamp_generated(repo: Path, paths: list[str], by: str, at: str) -> list[str]
         name = posixpath.basename(rel)
         if not rel.startswith("wiki/") or not rel.endswith(".md") or name in ("index.md", "log.md"):
             continue
-        if rel.startswith("wiki/assets/") or not (repo / rel).is_file():
+        if rel.startswith("wiki/assets/") or not safefs.is_file(repo, rel):
             continue
-        path = repo / rel
-        text = path.read_text(encoding="utf-8")
+        text = safefs.read_text(repo, rel)
         new = frontmatter.set_keys(text, {"generated": {"by": by, "at": at}})
         if new != text:
-            path.write_text(new, encoding="utf-8")
+            safefs.write_text(repo, rel, new)
             changed.append(rel)
     return changed
 
@@ -146,7 +145,6 @@ def light_tint(color: str, amount: float = 0.8) -> str:
 
 def add_subjects(repo: Path, new_subjects: list[dict], names: dict[str, str]) -> bool:
     """Add the LLM's emoji/colour choice for subjects new in this run; never overwrite."""
-    path = repo / "tools" / "subjects.json"
     data = generate.load_subjects_json(repo)
     subjects = data.setdefault("subjects", {})
     added = False
@@ -158,8 +156,8 @@ def add_subjects(repo: Path, new_subjects: list[dict], names: dict[str, str]) ->
                           "dark": item["color"].lower(), "light": light_tint(item["color"])}
         added = True
     if added:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        safefs.write_text(repo, "tools/subjects.json",
+                          json.dumps(data, ensure_ascii=False, indent=2) + "\n")
     return added
 
 
@@ -177,9 +175,8 @@ def subject_skeleton(name: str, banner_id: str) -> str:
 
 def create_subject(repo: Path, slug: str, name: str, banner_id: str) -> str | None:
     """Write the skeleton if the subject index does not exist yet; returns its path."""
-    path = repo / "wiki" / slug / "index.md"
-    if path.exists():
+    rel = f"wiki/{slug}/index.md"
+    if safefs.exists(repo, rel):
         return None
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(subject_skeleton(name, banner_id), encoding="utf-8")
-    return path.relative_to(repo).as_posix()
+    safefs.write_text(repo, rel, subject_skeleton(name, banner_id))
+    return rel

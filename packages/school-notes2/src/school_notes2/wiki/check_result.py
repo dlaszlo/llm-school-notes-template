@@ -2,6 +2,7 @@
 
 from pathlib import Path, PurePosixPath
 
+from ..state import safefs
 from .check import item
 
 # A check's image must be a committed file: a source page or a wiki asset (4.5, 4.8).
@@ -26,7 +27,7 @@ def check_result(repo: Path, result: dict, fetch: dict, open_items: set[tuple[st
     if len([c for c in closures if c["status"] != "open"]) > closure_limit:
         out.append(item(RESULT, None, f"review_closure: at most {closure_limit} items per run"))
     for c in closures:
-        if not (repo / c["file"]).is_file():
+        if not safefs.is_file(repo, c["file"]):
             out.append(item(RESULT, None, f"review_closure: {c['file']} does not exist"))
         elif (c["file"], c["item_id"]) not in open_items:
             out.append(item(RESULT, None, f"review_closure: {c['file']} {c['item_id']} is not open"))
@@ -45,7 +46,7 @@ def check_coverage(repo: Path, result: dict, fetch: dict, whole_run: bool = True
     out = []
     for note in result.get("notes") or []:
         covered |= set(note["pages"])
-        if not (repo / note["file"]).is_file():
+        if not safefs.is_file(repo, note["file"]):
             out.append(item(RESULT, None, f"notes: {note['file']} does not exist"))
         unknown = sorted(set(note["pages"]) - known)
         if unknown:
@@ -60,7 +61,7 @@ def check_checks(repo: Path, result: dict, fetch: dict) -> list[dict]:
     seqs = {p["seq"] for p in fetch["pages"]}
     out = []
     for n, c in enumerate(result.get("checks") or [], start=1):
-        if not (repo / c["page"]).is_file():
+        if not safefs.is_file(repo, c["page"]):
             out.append(item(RESULT, None, f"checks[{n}]: page {c['page']} does not exist"))
         image = c["image"]
         if isinstance(image, int) or str(image).isdigit():
@@ -76,4 +77,4 @@ def committed_image(repo: Path, rel: str) -> bool:
     """A repo-relative file under sources/ or wiki/assets/, without `..`."""
     pure = PurePosixPath(rel)
     return (not pure.is_absolute() and ".." not in pure.parts and rel.startswith(IMAGE_ROOTS)
-            and (repo / rel).is_file())
+            and safefs.is_file(repo, rel))

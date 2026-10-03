@@ -6,6 +6,7 @@ from ..llm import launch
 from ..mcp.jobs import JobStore
 from ..schemas import validate
 from ..state.errors import BadWork
+from ..state import safefs
 from ..state.files import read_json, write_json
 from ..state.phase import Task
 from . import fetch as fetch_flow
@@ -15,11 +16,10 @@ from .session import mcp
 
 def write_inputs(ctx: Ctx, task: Task, k: int) -> None:
     """fetch.json and changes.json for range k; the old result.json is removed (5.3)."""
-    workdir = ctx.notes_path / workbranch.WORKDIR
-    workdir.mkdir(exist_ok=True)
-    write_json(workdir / "fetch.json", fetch_flow.fetch_json(task, k), mode=0o644)
+    root, workdir = ctx.notes_path, workbranch.WORKDIR
+    safefs.write_json(root, f"{workdir}/fetch.json", fetch_flow.fetch_json(task, k))
     write_changes(ctx, task)
-    (workdir / "result.json").unlink(missing_ok=True)
+    safefs.unlink(root, f"{workdir}/result.json")
 
 
 def write_changes(ctx: Ctx, task: Task) -> None:
@@ -27,7 +27,7 @@ def write_changes(ctx: Ctx, task: Task) -> None:
     changed = workbranch.changed_files(ctx.worktree("notes"), base_of(task))
     data = {"base": task.get("base"), "changed": changed}
     validate("changes", data)
-    write_json(ctx.notes_path / workbranch.WORKDIR / "changes.json", data, mode=0o644)
+    safefs.write_json(ctx.notes_path, f"{workbranch.WORKDIR}/changes.json", data)
 
 
 def run_ranges(ctx: Ctx, task: Task, handlers) -> str:

@@ -14,6 +14,7 @@ from typing import Callable
 
 from ..config import Harness, Role
 from ..log import Log
+from ..state import safefs
 from ..state.errors import BadWork, NeedsOwner, Prerequisite, Transient
 from . import metrics as metrics_mod
 from .output import extract_stdout, read_file
@@ -100,8 +101,21 @@ def _read_output(run: RoleRun, transcript: Path) -> tuple[dict | None, list[str]
         text = transcript.read_text(encoding="utf-8", errors="replace")
         value, problems = extract_stdout(text, run.schema)
         return value, problems, value is not None
-    value, problems = read_file(run.output_host, run.schema)
-    return value, problems, run.output_host.exists()
+    root = _output_root(run)
+    value, problems = read_file(run.output_host, run.schema, root)
+    try:
+        produced = safefs.exists(root, safefs.rel_of(root, run.output_host))
+    except safefs.UnsafePath:
+        produced = True                 # something was written there, just not usable
+    return value, problems, produced
+
+
+def _output_root(run: RoleRun) -> Path:
+    """The container-controlled tree holding the output file (worktree or out/)."""
+    for root in (run.mounts.out_dir, run.mounts.work):
+        if root and run.output_host.is_relative_to(root):
+            return root
+    return run.output_host.parent
 
 
 class TimedOut(BadWork):
