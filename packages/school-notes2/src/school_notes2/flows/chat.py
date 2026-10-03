@@ -30,9 +30,11 @@ def chat(ctx: Ctx, harness_name: str | None, ask=input, say=print) -> int:
         if task is not None and not _settle(ctx, task, ask, say):
             return 0
         task = phase.open_task(ctx.task_root(), ctx.name, "notes") or interactive_fetch(ctx)
-        _launch(ctx, task, harness_name)
-        if task.get("question"):
-            _after_question_session(ctx, phase.load(task.dir))
+        try:
+            _launch(ctx, task, harness_name)
+        finally:
+            if task.get("question"):     # also after Ctrl-C or a failed launch (5.3)
+                _after_question_session(ctx, phase.load(task.dir))
         return 0
     except Exception as exc:  # noqa: BLE001 - one error policy for every entry point (8)
         policy.on_error(exc, task=task, student=ctx.name, step="chat", log=ctx.log,
@@ -130,19 +132,32 @@ def _current_run(ctx: Ctx) -> str:
 
 
 def _after_question_session(ctx: Ctx, task: phase.Task) -> None:
-    """5.3: the session's result.json replaces result-<k>; cron goes on with range k+1."""
-    if not save_session_result(ctx, task):
+    """5.3: the session's result.json replaces result-<k>; cron goes on with range k+1.
+    A question the session did not settle goes back to the owner."""
+    if task.get("question") and not save_session_result(ctx, task):
         task.mark_needs_owner("the blocking question is still open",
                               f"answer it in `school-notes chat {ctx.name}`", "needs_owner")
 
 
 def save_session_result(ctx: Ctx, task: phase.Task) -> bool:
-    """Store a valid `done` result.json of a question session as result-<k>."""
+    """Store a valid `done` result.json of a question session as result-<k>, once.
+
+    For an earlier range the file is removed, so a second call (MCP finish, then the end
+    of the session) cannot store it again as range k+1. For the last range the run becomes
+    interactive: the session finishes it and keeps correcting its own result.json."""
+    task = phase.load(task.dir)
+    if not task.get("question"):
+        return False
     own = safefs.read_json(ctx.notes_path, ".school-notes/result.json")
     if own is None or schema_errors("result", own) or own.get("status") != "done":
         return False
-    k = min(task.get("writing_k", 1), len(task.get("ranges")))
+    n = len(task.get("ranges"))
+    k = min(task.get("writing_k", 1), n)
     write_json(task.dir / f"result-{k}.json", own)
+    if k < n:
+        safefs.unlink(ctx.notes_path, ".school-notes/result.json")
+    else:
+        task.data["mode"] = "interactive"
     task.update(writing_k=k + 1, question=None)
     return True
 
@@ -168,6 +183,7 @@ def session_finish(ctx: Ctx) -> dict:
     if task.get("question"):
         if not save_session_result(ctx, task):
             return {"state": "question_open", "message": "write a result.json with status done"}
+        task = phase.load(task.dir)
         if task.get("writing_k") <= len(task.get("ranges")):
             return {"state": "saved", "message": "the remaining ranges continue in cron"}
     try:

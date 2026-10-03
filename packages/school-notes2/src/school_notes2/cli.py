@@ -84,11 +84,16 @@ def _dispatch(ctx, args) -> int:
 
 def _owner_step(ctx, command: str) -> int:
     """`fetch`/`finish` from the host shell: the same functions as the session's MCP."""
-    from .flows import chat
+    from .flows import chat, policy
     lock = ctx.lock()
     lock.acquire(command, on_wait=lambda h: print(f"várok a zárra ({h.get('kind')})…"))
     try:
         answer = chat.session_fetch(ctx) if command == "fetch" else chat.session_finish(ctx)
+    except Exception as exc:  # noqa: BLE001 - one error policy for every entry point (8)
+        policy.on_error(exc, task=None, student=ctx.name, step=command, log=ctx.log,
+                        mailer=None, interactive=True)
+        print(f"Hiba: {exc}", file=sys.stderr)
+        return 1
     finally:
         lock.release()
     print(json.dumps(answer, ensure_ascii=False, indent=2))

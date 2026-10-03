@@ -31,6 +31,7 @@ class Hooks:
     message: Callable[[], str]              # the commit message (6.4)
     snapshot: Callable[[], dict]            # hashes of the LLM-writable files (5.4/9)
     empty_blocks: Callable[[str], str]      # empty generated blocks (6.7)
+    rerecord: Callable[[list[str]], None] = lambda paths: None   # Git merged tool files
     extra_paths: tuple[str, ...] = field(default_factory=tuple)   # interactive: references
 
 
@@ -76,10 +77,14 @@ def run(task: Task, wt: Git, hooks: Hooks, t: Timeouts, start_snapshot: dict) ->
 
 
 def own_commit(task: Task, wt: Git) -> str:
-    """The run's commit as recorded; HEAD must agree (it differs only mid-rebase)."""
+    """The run's commit as recorded; HEAD must agree. After a crash between a finished
+    rebase and recording its result, HEAD carries this run's Run-Id and is adopted."""
     commit = task.get("commit")
     current = head(wt)
     if commit and commit != current:
+        if task.get("rebasing") and _head_is_ours(wt, task.run_id, task.get("base")):
+            task.update(commit=current, rebasing=False, regen_pending=True)
+            return current
         raise RuntimeError(f"HEAD {current[:7]} is not the run's commit {commit[:7]}")
     return current
 
@@ -110,7 +115,12 @@ def _continue_conflicted_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
                              todo="resolve the markers in `school-notes chat`, then finish")
     _add(wt, hooks)
     wt.run("rebase", "--continue", timeout=LOCAL_TIMEOUT_S)
-    task.update(rebase=None, conflict_files=[], base=repos.rev(wt, "refs/remotes/origin/main"),
+    upstream = repos.rev(wt, "refs/remotes/origin/main")
+    if head(wt) == upstream:            # the owner kept the upstream version: nothing left
+        task.update(rebase=None, conflict_files=[], base=upstream, commit=upstream)
+        task.set_phase("pushed")
+        return
+    task.update(rebase=None, conflict_files=[], base=upstream, commit=head(wt),
                 regen_pending=True)
     _regenerate_and_amend(task, wt, hooks)
 
@@ -181,20 +191,24 @@ def g4_rebase(task: Task, wt: Git, hooks: Hooks) -> str:
     upstream = repos.rev(wt, "refs/remotes/origin/main")
     if upstream == task.get("base"):
         return "same"
+    task.update(rebasing=True)
     try:
         wt.run("rebase", "--no-verify", "refs/remotes/origin/main", timeout=LOCAL_TIMEOUT_S)
     except GitFailed:
         outcome = conflicts.resolve(wt, task.run_id, hooks.empty_blocks)
         if outcome.content:
-            task.update(rebase="conflict", conflict_files=outcome.content)
+            # What Git merged cleanly (tool files, emptied generated blocks) is not the
+            # writer's edit: record it so the guard judges only the owner's resolution.
+            hooks.rerecord(outcome.resolved)
+            task.update(rebase="conflict", conflict_files=outcome.content, rebasing=False)
             raise NeedsOwner("content conflict while rebasing on origin/main",
                              todo="resolve in `school-notes chat`",
                              details={"files": outcome.content}) from None
         wt.run("rebase", "--continue", timeout=LOCAL_TIMEOUT_S)
     if head(wt) == upstream:
-        task.update(base=upstream, commit=upstream)
+        task.update(base=upstream, commit=upstream, rebasing=False)
         return "empty"                 # Git dropped our commit: its change was upstream
-    task.update(base=upstream, commit=head(wt), regen_pending=True)
+    task.update(base=upstream, commit=head(wt), regen_pending=True, rebasing=False)
     _regenerate_and_amend(task, wt, hooks)
     return "rebased"
 

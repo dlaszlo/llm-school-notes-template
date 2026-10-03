@@ -19,6 +19,11 @@ def clear(ctx: Ctx, kind: str, action: str) -> str:
     if action == "continue":
         if kind == "notes" and (task.get("rebase") == "conflict" or task.get("question")):
             return "kérdés vagy tartalmi ütközés: csak `school-notes chat`-ben folytatható"
+        if task.get("stuck"):
+            # The owner raised the reviewer timeout: the marker closes, next night retries.
+            task.data["closed"] = True
+            task.clear_needs_owner()
+            return f"{task.run_id}: a következő éjszaka újra próbálja (emelt időkorláttal)"
         task.clear_needs_owner()
         return f"{task.run_id}: folytatható a(z) {task.phase} fázistól"
     lock = ctx.lock()

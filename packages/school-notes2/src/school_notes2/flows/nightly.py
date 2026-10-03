@@ -59,12 +59,16 @@ def _unfinished(tasks: list[phase.Task]):
 def _prepare(ctx: Ctx, tasks: list[phase.Task]):
     stuck = review.stuck_commit([t for t in tasks if not t.open or t.data.get("closed")])
     if stuck:
+        # D85: one marker task holds the stop, so later nights skip instead of piling up.
         task = phase.create(ctx.task_root(), ctx.name, "review", "cron", "prepared")
         task.update(commits=[stuck], stuck=True)
-        raise NeedsOwner(f"commit {stuck[:7]} ran out of review time on two nights",
+        exc = NeedsOwner(f"commit {stuck[:7]} ran out of review time on two nights",
                          todo=f"`school-notes status --clear {ctx.name} review --discard` "
-                              "(not reviewed: timeout) or raise the reviewer timeout and "
-                              "`--continue`")
+                              "(not reviewed: timeout), or raise the reviewer timeout in "
+                              "config.toml and `--continue`")
+        policy.on_error(exc, task=task, student=ctx.name, step="nightly", log=ctx.log,
+                        mailer=ctx.mailer)
+        return None
     previous = tasks[-1] if tasks else None
     return review.prepare(ctx.task_root(), ctx.name, ctx.bare(), ctx.worktree("review"),
                           max_images=ctx.cfg.limits.review_max_images,

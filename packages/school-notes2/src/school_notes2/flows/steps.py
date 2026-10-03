@@ -165,6 +165,15 @@ def is_llm_writable(rel: str) -> bool:
     return rel.startswith("wiki/") and not rel.startswith("wiki/assets/")
 
 
+def rerecord(ctx: Ctx, task: Task, merged: list[str]) -> None:
+    """After Git merged files during a conflicted rebase (6.7): the tool's earlier writes and
+    the cleanly merged files are recorded as they are now, so only the owner's resolution of
+    the conflicting files is judged by the guard."""
+    known = set(task.get("tool_writes", {})) | set(task.get("tool_parts", {})) | set(merged)
+    present = [rel for rel in sorted(known) if safefs.is_file(ctx.notes_path, rel)]
+    record_tool_files(task, ctx.notes_path, present)
+
+
 def record_tool_files(task: Task, repo: Path, written: list[str]) -> None:
     """Record the tool's own writes for the path guard (5.4/1)."""
     whole = [r for r in written if not is_llm_writable(r)]

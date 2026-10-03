@@ -44,6 +44,7 @@ def finish(ctx: Ctx, task: Task, *, notify_owner_items) -> str:
         message=lambda: message(ctx, task),
         snapshot=lambda: _snapshot(ctx, task),
         empty_blocks=markers.empty_all,
+        rerecord=lambda paths: steps.rerecord(ctx, task, paths),
         extra_paths=("references",) if task.mode == "interactive" else ())
     t = git_finish.Timeouts(ctx.cfg.timeouts.fetch_s, ctx.cfg.timeouts.push_s,
                             ctx.cfg.timeouts.ls_remote_s)
