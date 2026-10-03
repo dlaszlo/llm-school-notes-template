@@ -50,7 +50,12 @@ def ensure_worktree(git: Git, path: Path, start: str) -> Path:
     if not dot_git.is_file():
         git.run("worktree", "prune", check=False)
         path.parent.mkdir(parents=True, exist_ok=True)
-        git.run("worktree", "add", "--detach", "--force", str(path), start, cwd=git.git_dir)
+        git.run("worktree", "add", "--detach", "--force", str(path), start, cwd=git.git_dir,
+                timeout=1800)
+    expected = f"gitdir: {git.git_dir / 'worktrees' / path.name}"
+    if dot_git.read_text(encoding="utf-8").strip() != expected:
+        raise RuntimeError(f"{path}: worktree registered under an unexpected name; "
+                           "remove the stale entry in worktrees/ and run setup again")
     return dot_git
 
 

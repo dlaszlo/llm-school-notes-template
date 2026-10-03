@@ -27,6 +27,7 @@ TRANSIENT = (
     "No space left on device", "Connection refused", "Network is unreachable",
 )
 PERMANENT = (
+    "couldn't find remote ref",          # a ref the step needs does not exist (yet)
     "Permission denied (publickey)", "Host key verification failed", "Repository not found",
     "protected branch", "pre-receive hook declined", "GH0", "exceeds GitHub's file size limit",
     "large files detected",

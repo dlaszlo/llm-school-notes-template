@@ -279,3 +279,51 @@ def test_user_hooks_and_gitconfig_have_no_effect(env, monkeypatch, tmp_path):
     hooks.message = fixed_message(task)
     assert finish.run(task, env.wt, hooks, T, {}) == "done"
     assert not Path("/tmp/sn-hook-ran").exists()
+
+
+def test_crash_inside_a_rebase_never_looks_pushed(env):
+    """R1-B1: a rebase killed before its state was recorded is aborted, not taken as pushed."""
+    task = env.start_run()
+    (env.path / "wiki/a.md").write_text("line 1\nours\nline 3\n")
+    hooks = env.hooks()
+    hooks.message = fixed_message(task)
+    finish.g1_commit(task, env.wt, hooks, {})
+    env.other_push("wiki/a.md", "line 1\ntheirs\nline 3\n")
+    repos.fetch(env.wt, 60)
+    env.wt.run("rebase", "refs/remotes/origin/main", check=False)   # killed mid-way
+    assert (env.wt.git_dir / "rebase-merge").exists()
+    with pytest.raises(NeedsOwner, match="content conflict"):
+        finish.run(task, env.wt, hooks, T, {})
+    assert task.phase == "committed"
+    assert f"Run-Id: {task.run_id}" not in env.origin_log()
+
+
+def test_own_change_already_upstream_finishes_without_push(env):
+    task = env.start_run()
+    (env.path / "wiki/a.md").write_text("same everywhere\n")
+    hooks = env.hooks()
+    hooks.message = fixed_message(task)
+    finish.g1_commit(task, env.wt, hooks, {})
+    env.other_push("wiki/a.md", "same everywhere\n")
+    assert finish.run(task, env.wt, hooks, T, {}) == "done"
+    assert f"Run-Id: {task.run_id}" not in env.origin_log()
+
+
+def test_unknown_phase_is_refused(env):
+    task = env.start_run()
+    task.set_phase("downloading")
+    with pytest.raises(RuntimeError, match="cannot continue"):
+        finish.run(task, env.wt, env.hooks(), T, {})
+
+
+def test_discard_keeps_uncommitted_edits_on_a_detached_head(env):
+    """R1-M1: no branch (interrupted fetch), dirty worktree → still bundled first."""
+    task = env.start_run()
+    env.wt.run("switch", "--detach", "HEAD")
+    env.wt.run("branch", "-D", f"notes/{task.run_id}")
+    (env.path / "wiki/a.md").write_text("owner's unsaved work\n")
+    bundle = discard.discard(env.wt, task.run_id, env.tmp / "archive")
+    assert bundle and bundle.exists()
+    listed = subprocess.run(["git", "bundle", "list-heads", str(bundle)], capture_output=True,
+                            text=True).stdout
+    assert f"notes/{task.run_id}" in listed

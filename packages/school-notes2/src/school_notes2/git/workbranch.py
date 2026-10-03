@@ -23,7 +23,7 @@ def start(wt: Git, run_id: str, base: str, interactive: bool) -> None:
     if current == branch and wt.out("merge-base", "HEAD", base).strip() == base:
         return
     try:
-        wt.run("switch", "-C", branch, base)
+        wt.run("switch", "-C", branch, base, timeout=600)
     except GitFailed as exc:
         files = [ln.strip() for ln in exc.stderr.splitlines() if ln.startswith(("\t", "    "))]
         raise NeedsOwner("uncommitted edits in the worktree clash with origin/main",

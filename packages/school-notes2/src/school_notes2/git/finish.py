@@ -41,16 +41,24 @@ class Timeouts:
     retry_delays: tuple[float, ...] = (15, 60, 180)
 
 
+RESUMABLE = ("prepared", "writing", "finishing", "committed", "built", "pushing", "pushed",
+             "done")
+LOCAL_TIMEOUT_S = 600        # rebase, switch, commit on a big repository
+
+
 def run(task: Task, wt: Git, hooks: Hooks, t: Timeouts, start_snapshot: dict) -> str:
     """Run G0–G9 from the recorded phase; returns the final phase ('done')."""
-    phase = task.phase
-    if task.get("rebase") == "conflict":
-        g0_cleanup(task, wt, hooks)          # the owner resolved it; finish the rebase
-    if phase in ("finishing", "writing", "prepared"):
+    if task.phase not in RESUMABLE:
+        raise RuntimeError(f"finish cannot continue from phase {task.phase!r}")
+    if task.phase not in ("pushed", "done"):
+        # Always first: an interrupted rebase must never make the run look pushed (8.2).
         g0_cleanup(task, wt, hooks)
+    if task.phase in ("finishing", "writing", "prepared"):
         if not g1_commit(task, wt, hooks, start_snapshot):
             return _finish_without_commit(task, wt)
-        phase = task.phase
+    if task.get("regen_pending"):
+        _regenerate_and_amend(task, wt, hooks)
+    phase = task.phase
     if phase == "pushing":
         phase = _after_lost_reply(task, wt, t)
     for _ in range(MAX_PUSH_ROUNDS):
@@ -64,6 +72,15 @@ def run(task: Task, wt: Git, hooks: Hooks, t: Timeouts, start_snapshot: dict) ->
         g8_release(task, hooks, wt)
         g9_cleanup(task, wt)
     return task.phase
+
+
+def own_commit(task: Task, wt: Git) -> str:
+    """The run's commit as recorded; HEAD must agree (it differs only mid-rebase)."""
+    commit = task.get("commit")
+    current = head(wt)
+    if commit and commit != current:
+        raise RuntimeError(f"HEAD {current[:7]} is not the run's commit {commit[:7]}")
+    return current
 
 
 def head(wt: Git) -> str:
@@ -91,9 +108,10 @@ def _continue_conflicted_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
             raise NeedsOwner(f"{path} still has conflict markers",
                              todo="resolve the markers in `school-notes chat`, then finish")
     _add(wt, hooks)
-    wt.run("rebase", "--continue")
-    task.update(rebase=None, conflict_files=[], base=repos.rev(wt, "refs/remotes/origin/main"))
-    _regenerate_and_amend(wt, hooks)
+    wt.run("rebase", "--continue", timeout=LOCAL_TIMEOUT_S)
+    task.update(rebase=None, conflict_files=[], base=repos.rev(wt, "refs/remotes/origin/main"),
+                regen_pending=True)
+    _regenerate_and_amend(task, wt, hooks)
 
 
 def _add(wt: Git, hooks: Hooks) -> None:
@@ -118,7 +136,8 @@ def g1_commit(task: Task, wt: Git, hooks: Hooks, start_snapshot: dict) -> bool:
     if staged:
         message = hooks.message()
         args = ["commit", "--no-verify", "--cleanup=strip", "-F", "-"]
-        wt.run(*(args + ["--amend"] if ours else args), input=message.encode("utf-8"))
+        wt.run(*(args + ["--amend"] if ours else args), input=message.encode("utf-8"),
+               timeout=LOCAL_TIMEOUT_S)
     task.set_phase("committed", commit=head(wt))
     return True
 
@@ -142,25 +161,27 @@ def _no_other_changes(wt: Git) -> None:
 def _publish_round(task: Task, wt: Git, hooks: Hooks, t: Timeouts) -> str:
     """G2–G7: fetch, rebase if needed, build, push, verify."""
     with_retries(lambda: repos.fetch(wt, t.fetch_s), delays=t.retry_delays, log=wt.log)
-    if repos.is_ancestor(wt, "HEAD", "refs/remotes/origin/main"):
+    if repos.is_ancestor(wt, own_commit(task, wt), "refs/remotes/origin/main"):
         task.set_phase("pushed")                               # G3: already pushed
         return "pushed"
-    g4_rebase(task, wt, hooks)
+    if g4_rebase(task, wt, hooks) == "empty":
+        task.set_phase("pushed")       # the change is already upstream; nothing to push
+        return "pushed"
     g5_build(task, wt, hooks)
     try:
         g6_push(task, wt, t)
     except Race:
-        task.set_phase("committed")
+        task.set_phase("committed", pushed_commit=None)
         return "committed"
     return _verify(task, wt, t)
 
 
-def g4_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
+def g4_rebase(task: Task, wt: Git, hooks: Hooks) -> str:
     upstream = repos.rev(wt, "refs/remotes/origin/main")
     if upstream == task.get("base"):
-        return
+        return "same"
     try:
-        wt.run("rebase", "--no-verify", "refs/remotes/origin/main")
+        wt.run("rebase", "--no-verify", "refs/remotes/origin/main", timeout=LOCAL_TIMEOUT_S)
     except GitFailed:
         outcome = conflicts.resolve(wt, task.run_id, hooks.empty_blocks)
         if outcome.content:
@@ -168,22 +189,27 @@ def g4_rebase(task: Task, wt: Git, hooks: Hooks) -> None:
             raise NeedsOwner("content conflict while rebasing on origin/main",
                              todo="resolve in `school-notes chat`",
                              details={"files": outcome.content}) from None
-        wt.run("rebase", "--continue")
-    task.update(base=upstream)
-    _regenerate_and_amend(wt, hooks)
-    task.update(commit=head(wt))
+        wt.run("rebase", "--continue", timeout=LOCAL_TIMEOUT_S)
+    if head(wt) == upstream:
+        task.update(base=upstream, commit=upstream)
+        return "empty"                 # Git dropped our commit: its change was upstream
+    task.update(base=upstream, commit=head(wt), regen_pending=True)
+    _regenerate_and_amend(task, wt, hooks)
+    return "rebased"
 
 
-def _regenerate_and_amend(wt: Git, hooks: Hooks) -> None:
-    """A text-clean merge can still be semantically stale (hashes, dates): regenerate."""
+def _regenerate_and_amend(task: Task, wt: Git, hooks: Hooks) -> None:
+    """A text-clean merge can still be semantically stale (hashes, dates): regenerate.
+    `regen_pending` survives a crash between the rebase and this step."""
     hooks.regenerate()
     _add(wt, hooks)
     if not wt.ok("diff", "--cached", "--quiet"):
-        wt.run("commit", "--no-verify", "--amend", "--no-edit")
+        wt.run("commit", "--no-verify", "--amend", "--no-edit", timeout=LOCAL_TIMEOUT_S)
+    task.update(regen_pending=False, commit=head(wt))
 
 
 def g5_build(task: Task, wt: Git, hooks: Hooks) -> None:
-    commit = head(wt)
+    commit = own_commit(task, wt)
     if task.get("build", {}).get("commit") == commit:
         return
     record = hooks.build(commit)
@@ -211,7 +237,7 @@ def g6_push(task: Task, wt: Git, t: Timeouts) -> None:
 def _after_lost_reply(task: Task, wt: Git, t: Timeouts) -> str:
     """`pushing` on restart or after a lost reply: ls-remote decides (6.6)."""
     remote = repos.ls_remote(wt, "refs/heads/main", t.ls_remote_s)
-    mine = head(wt)
+    mine = task.get("pushed_commit") or own_commit(task, wt)
     if remote == mine:
         task.set_phase("pushed")
         return "pushed"
@@ -219,7 +245,7 @@ def _after_lost_reply(task: Task, wt: Git, t: Timeouts) -> str:
     if repos.is_ancestor(wt, mine, "refs/remotes/origin/main"):
         task.set_phase("pushed")
         return "pushed"
-    task.set_phase("committed")
+    task.set_phase("committed", pushed_commit=None)
     return "committed"
 
 
