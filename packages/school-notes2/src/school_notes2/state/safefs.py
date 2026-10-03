@@ -278,8 +278,8 @@ def walk_files(root, rel="") -> list[str]:
     base = "/".join(_parts(rel))
     try:
         fd = _open_dir(root, base, create=False)
-    except (FileNotFoundError, NotADirectoryError):
-        return []
+    except (FileNotFoundError, NotADirectoryError, UnsafePath):
+        return []            # missing, or a link: never entered (the guard reports links)
     out: list[str] = []
     _walk(fd, base, out)
     return sorted(out)
