@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ..state import safefs
 from . import markers
+from ..sources.order import natural_key
 from .pages import md_files, read_page, read_text
 from .pages import subjects as subject_slugs
 
@@ -88,12 +89,36 @@ def lesson_date(lesson: dict) -> str:
     return f"? ({note})" if note else "?"
 
 
+def notebook_position(meta: dict) -> tuple:
+    """Where a lesson page's material starts in the notebook: its first source page, in the
+    fixed page order (4.3). Pages of one notebook thus keep the notebook's order."""
+    first = ""
+    source_file = meta.get("source_file")
+    if isinstance(source_file, list):
+        source_file = source_file[0] if source_file else ""
+    hashes = meta.get("content_sha256")
+    if isinstance(source_file, str) and source_file:
+        first = source_file
+        if source_file.endswith("/") and isinstance(hashes, dict) and hashes:
+            first += sorted(hashes, key=natural_key)[0]
+    if not first:
+        for key in ("sources", "source_files"):
+            for item in meta.get(key) or []:
+                if isinstance(item, dict) and "sources/" in str(item.get("resource", "")):
+                    first = str(item["resource"]).split("sources/", 1)[1]
+                    break
+            if first:
+                break
+    return natural_key(first.removeprefix("sources/"))
+
+
 def lesson_sort_key(page: SubjectPage, index: int, lesson: dict) -> tuple:
-    # Undated lessons sort by the latest date their range allows (the wiki's own rule).
+    # Undated lessons sort by the latest date their range allows (the wiki's own rule); a tie
+    # is settled by where the page's material starts in the notebook, then by the file name –
+    # always the same order, taken from the content (owner, 2026-10-03).
     dates = ISO.findall(str(lesson.get("date") or "")) or ISO.findall(lesson.get("date_note") or "")
-    # The full file name settles a tie between pages explicitly: the order never depends on
-    # how the files were listed (owner, 2026-10-03: no list may change between runs).
-    return (max(dates) if dates else "", page.file[:10], page.file, index)
+    return (max(dates) if dates else "", page.file[:10], notebook_position(page.meta),
+            page.file, index)
 
 
 def lessons(subject: Subject) -> list[tuple[SubjectPage, dict]]:

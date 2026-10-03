@@ -56,3 +56,13 @@ def test_a_full_date_in_the_note_keeps_the_question_mark_form():
     from school_notes2.wiki.generate import lesson_date
     assert lesson_date({"date_note": "2026-09-11 után, legkésőbb 2026-09-25"}) == \
         "? (2026-09-11 után, legkésőbb 2026-09-25)"
+
+
+def test_equal_undated_lessons_follow_the_notebook():
+    from school_notes2.wiki.generate import SubjectPage, lesson_sort_key
+    early = SubjectPage("2026-09-26-vetuletek-jegyzet.md", {"source_file": "sources/f/page-10.jpeg"})
+    late = SubjectPage("2026-09-26-erorendszer-jegyzet.md", {"source_file": "sources/f/page-15.jpeg"})
+    note = {"date_note": "2026-09-15 után, legkésőbb 2026-09-26"}
+    keys = sorted([(lesson_sort_key(early, 0, note), "early"), (lesson_sort_key(late, 0, note), "late")],
+                  reverse=True)
+    assert [k[1] for k in keys] == ["late", "early"]       # newest first: page 15 before page 10
