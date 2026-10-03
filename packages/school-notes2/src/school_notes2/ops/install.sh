@@ -52,6 +52,8 @@ unpack() {
     closed tar -x -f "$RELEASE.tar" -C "$RELEASE"
     rm -f "$RELEASE.tar"
     closed uv --directory "$RELEASE/$PKG" sync --frozen --no-dev --quiet
+    # The public-site renderer (Astro) needs its locked Node modules in the release too.
+    closed npm --prefix "$RELEASE/packages/study-site" ci --no-audit --no-fund --loglevel=error
     mkdir -p "$RELEASE/bin"
     cat > "$RELEASE/bin/school-notes" <<WRAP
 #!/bin/sh
