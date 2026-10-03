@@ -176,3 +176,26 @@ def test_package_deadline_bounds_the_whole_download(client, fake, tree, tmp_path
     fid = fake.file("1.jpg", pkg, b"abc")
     with pytest.raises(Transient, match="out of time"):
         client.download(dict(fake.items[fid]), tmp_path / "1.jpg", _time.monotonic() - 1)
+
+
+def test_package_with_two_same_named_files_is_not_taken(fake, client, tree):
+    from school_notes2.drive import inventory
+    from tests.drive.fakedrive import NOW
+    pkg = fake.folder("Óra", tree["ready"], minutes_ago=60)
+    fake.file("1.jpg", pkg, b"a")
+    fake.file("1.jpg", pkg, b"b")
+    inv = inventory.scan(client, tree["root"], now=NOW)
+    assert not inv.ready
+    assert any("same name" in i["reason"] for i in inv.summary()["ignored"])
+
+
+def test_equal_packages_are_ordered_by_id(fake, client, tree):
+    from school_notes2.drive import inventory
+    from tests.drive.fakedrive import NOW
+    for _ in range(3):
+        pkg = fake.folder("Óra", tree["ready"], minutes_ago=60)
+        fake.file("1.jpg", pkg, b"a", created_ago=60)
+    first = [p.id for p in inventory.scan(client, tree["root"], now=NOW).ready]
+    fake.items = dict(reversed(list(fake.items.items())))       # Drive answers in another order
+    assert [p.id for p in inventory.scan(client, tree["root"], now=NOW).ready] == first
+    assert first == sorted(first)

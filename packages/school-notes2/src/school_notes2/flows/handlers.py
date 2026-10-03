@@ -48,6 +48,7 @@ def check(ctx: Ctx, task) -> dict:
         steps.guard_step(ctx, task)
     except steps.CheckFailed as exc:
         problems += exc.items
+    problems += steps.order_step(ctx, task)
     result = safefs.read_json(ctx.notes_path, f"{workbranch.WORKDIR}/result.json")
     if result is not None:
         invalid = schema_errors("result", result)

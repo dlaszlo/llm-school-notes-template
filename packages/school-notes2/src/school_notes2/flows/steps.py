@@ -17,6 +17,7 @@ from ..state.files import write_json
 from ..state.phase import Task
 from ..wiki import check as wiki_check
 from ..wiki import frontmatter, generate, guard, machine, markers, public
+from ..wiki import order as wiki_order
 from ..wiki.check_result import check_result
 from . import fetch as fetch_flow
 from . import writer
@@ -75,6 +76,26 @@ def guard_step(ctx: Ctx, task: Task) -> None:
         raise CheckFailed([wiki_check.item(v.path, None, v.message) for v in found])
 
 
+def order_step(ctx: Ctx, task: Task) -> list[dict]:
+    """Cron runs keep the order of existing chapters, lessons, topics and pages (owner rule);
+    an interactive session may re-order on purpose."""
+    if task.mode == "interactive":
+        return []
+    wt = ctx.worktree("notes")
+    out = []
+    for rel in changed_paths(ctx, task):
+        if not (rel.startswith("wiki/") and rel.endswith(".md")) or not safefs.is_file(
+                ctx.notes_path, rel):
+            continue
+        old = wt.run("show", f"{base_of(task)}:{rel}", check=False)
+        if old.returncode != 0:
+            continue
+        new = safefs.read_text(ctx.notes_path, rel)
+        out += [wiki_check.item(rel, None, m) for m in
+                wiki_order.problems(rel, old.stdout.decode("utf-8", "replace"), new)]
+    return out
+
+
 def merged_result(ctx: Ctx, task: Task) -> dict:
     """Step 2: the saved result-<k>.json files. A session's own result.json stands for the
     range it worked on (writing_k); in a session earlier ranges are optional (5.8)."""
@@ -101,6 +122,9 @@ def content_steps(ctx: Ctx, task: Task) -> Prepared:
     Closures and evidence are written only after the check passed, so a run sent back to
     the writer never leaves a stale closure (both writers replace their own run's part)."""
     guard_step(ctx, task)
+    reordered = order_step(ctx, task)
+    if reordered:
+        raise CheckFailed(reordered)
     result = merged_result(ctx, task)
     repo = ctx.notes_path
     fetch = fetch_flow.fetch_json(task, len(task.get("ranges")))

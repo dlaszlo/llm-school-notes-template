@@ -115,7 +115,10 @@ def scan(client: DriveClient, root_id: str, now: datetime | None = None,
             ready = child_folder(client, subject["id"], READY)
             if ready is not None:
                 _scan_ready(client, inv, ready["id"], subject, role, now, ready_after_s)
-    inv.ready.sort(key=lambda p: (p.latest, p.label))
+    # A total order: equal times and equal names fall back to the Drive id.
+    inv.ready.sort(key=lambda p: (p.latest, p.label, p.id))
+    inv.waiting.sort(key=lambda p: (p.latest, p.label, p.id))
+    inv.ignored.sort(key=lambda i: (i["path"], i["reason"]))
     return inv
 
 
@@ -129,6 +132,7 @@ def _scan_ready(client, inv, ready_id, subject, role, now, ready_after_s) -> Non
         pkg = build_package(client, item, subject, role, ready_id)
         if not pkg.files:
             inv.ignored.append({"path": f"{where}/{pkg.name}", "reason": "no usable file"})
+            inv.ignored += [dict(i, path=f"{where}/{pkg.name}/{i['path']}") for i in pkg.ignored]
         elif (now - pkg.latest).total_seconds() >= ready_after_s:
             inv.ready.append(pkg)
         else:
@@ -156,7 +160,22 @@ def build_package(client: DriveClient, folder: dict, subject: dict, role: str,
             pkg.files.append(DriveFile(item["id"], rel, int(item.get("size", 0)),
                                        item.get("md5Checksum", ""), item["mimeType"]))
     pkg.listed.sort()
+    _refuse_duplicate_names(pkg)
+    pkg.files.sort(key=lambda f: (f.rel, f.id))
     return pkg
+
+
+def _refuse_duplicate_names(pkg: Package) -> None:
+    """Drive allows two files with one name; their order would be Drive's choice, so such a
+    package is not taken until a file is renamed (the order must be fixed, plan 4.3)."""
+    seen: dict[str, int] = {}
+    for f in pkg.files:
+        seen[f.rel] = seen.get(f.rel, 0) + 1
+    clashes = sorted(rel for rel, n in seen.items() if n > 1)
+    if clashes:
+        pkg.ignored += [{"path": rel, "reason": "two files with the same name; rename one on "
+                                                 "Drive"} for rel in clashes]
+        pkg.files = []
 
 
 def snapshot_entry(rel: str, item: dict) -> list:

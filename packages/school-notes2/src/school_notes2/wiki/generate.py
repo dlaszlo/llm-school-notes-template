@@ -91,7 +91,9 @@ def lesson_date(lesson: dict) -> str:
 def lesson_sort_key(page: SubjectPage, index: int, lesson: dict) -> tuple:
     # Undated lessons sort by the latest date their range allows (the wiki's own rule).
     dates = ISO.findall(str(lesson.get("date") or "")) or ISO.findall(lesson.get("date_note") or "")
-    return (max(dates) if dates else "", page.file[:10], index)
+    # The full file name settles a tie between pages explicitly: the order never depends on
+    # how the files were listed (owner, 2026-10-03: no list may change between runs).
+    return (max(dates) if dates else "", page.file[:10], page.file, index)
 
 
 def lessons(subject: Subject) -> list[tuple[SubjectPage, dict]]:
