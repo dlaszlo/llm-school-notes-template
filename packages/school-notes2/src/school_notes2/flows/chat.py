@@ -163,6 +163,7 @@ def session_finish(ctx: Ctx) -> dict:
     task = phase.open_task(ctx.task_root(), ctx.name, "notes")
     if task is None:
         raise NeedsOwner("there is no open run to finish", todo="call fetch first")
+    ctx.lock().note("finish")       # this detached job holds the inherited lock (7.8)
     if task.get("question"):
         if not save_session_result(ctx, task):
             return {"state": "question_open", "message": "write a result.json with status done"}

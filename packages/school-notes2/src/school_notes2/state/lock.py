@@ -29,6 +29,18 @@ class StudentLock:
         self._held(fd, kind)
         return True
 
+    def probe(self) -> bool:
+        """True when nobody holds the lock; holder.json stays untouched."""
+        self.dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        finally:
+            os.close(fd)
+        return True
+
     def acquire(self, kind: str, poll_s: float = 5.0, on_wait=None) -> None:
         """Blocking acquire for `chat` and `--discard`; `on_wait(holder)` is told who holds it."""
         told = False

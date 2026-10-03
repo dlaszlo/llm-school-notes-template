@@ -5,6 +5,7 @@ from datetime import datetime
 from ..git import workbranch
 from ..images import generate as image_generate
 from ..images import pending as image_pending
+from ..images import plans as image_plans
 from ..llm import launch
 from ..log import TZ
 from ..notify import Notice
@@ -29,6 +30,7 @@ def run(ctx: Ctx) -> int:
         _settle_images(ctx)
         task = phase.open_task(ctx.task_root(), ctx.name, "notes")
         if not _may_run(ctx, task):
+            publish.catch_up(ctx)        # 8.3: the kinds are independent
             return 0
         _prerequisites(ctx, task)
         if task is None:
@@ -39,6 +41,7 @@ def run(ctx: Ctx) -> int:
         task = ctx_bind(ctx, task)
         advance(ctx, task)
         policy.on_success(task)
+        image_notices(ctx)
         return 0
     except Exception as exc:  # noqa: BLE001 - every error has one documented outcome (8.1)
         policy.on_error(exc, task=task, student=ctx.name, step="run", log=ctx.log,
@@ -110,9 +113,23 @@ def advance(ctx: Ctx, task: Task) -> None:
 def owner_items(ctx: Ctx, task: Task, items: list[dict]) -> None:
     """4.7: an item left open five times waits for the owner; one e-mail each."""
     for item in items:
-        ctx.mailer.send(Notice(ctx.name, f"review_owner:{item['file']}:{item['item_id']}",
+        ctx.mailer.send_once(Notice(ctx.name, f"review_owner:{item['file']}:{item['item_id']}",
                                task.run_id, "finish", "owner", f"{item['file']} {item['item_id']}"
                                " stayed open five times", "settle it in `school-notes chat`"))
+
+
+def image_notices(ctx: Ctx) -> None:
+    """5.5: a used-up daily budget (daily) and an image out of attempts (once) are mailed."""
+    found = image_pending.scan(ctx.image_settings())
+    waiting = found["exhausted"] or image_plans.find_markers(ctx.notes_path)
+    if not found["budget_left"] and waiting:
+        ctx.mailer.send(Notice(ctx.name, "image_budget", "", "images", "image",
+                               "the daily image budget is used up; markers stay invisible",
+                               "nothing to do; generation continues tomorrow"))
+    for item in found["exhausted"]:
+        ctx.mailer.send_once(Notice(ctx.name, f"image_exhausted:{item['plan_id']}", "", "images",
+                                    "image", f"image {item['plan_id']} ({item['page']}) failed "
+                                    "three times", "retry it in `school-notes chat`"))
 
 
 def _settle_images(ctx: Ctx) -> None:

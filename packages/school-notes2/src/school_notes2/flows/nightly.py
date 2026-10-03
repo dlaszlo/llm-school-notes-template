@@ -9,7 +9,7 @@ from ..review import close as review_close
 from ..review import nightly as review
 from ..state import phase
 from ..state.errors import NeedsOwner, Prerequisite
-from . import policy, prereq, setup
+from . import cleanup, policy, prereq, setup
 from .context import Ctx
 
 RASTERIZE = ["bash", "-c", 'for f in /in/*.svg; do rsvg-convert -o "/out/$(basename "${f%.svg}").png" "$f"'
@@ -28,15 +28,16 @@ def nightly(ctx: Ctx) -> int:
         if any(t.open and t.data.get("needs_owner") for t in tasks):
             ctx.log.event("nightly.skip", "needs_owner")
             return 0
-        task = review.pending_close(tasks)
+        task = review.pending_close(tasks) or _unfinished(tasks)
         if task is None:
             task = _prepare(ctx, tasks)
-            if task is None:
-                return 0
-            _review(ctx, task)
-        if task.phase in review.ACTIVE:
-            _close(ctx, task)
-        policy.on_success(task)
+        if task is not None:
+            if task.phase in ("prepared", "reviewing"):
+                _review(ctx, task)              # 8.2: the same H/T as recorded
+            if task.phase in review.ACTIVE:
+                _close(ctx, task)
+            policy.on_success(task)
+        cleanup.old_tasks(ctx)
         return 0
     except Exception as exc:  # noqa: BLE001 - one documented outcome per error (8.1)
         policy.on_error(exc, task=task, student=ctx.name, step="nightly", log=ctx.log,
@@ -44,6 +45,15 @@ def nightly(ctx: Ctx) -> int:
         return 1
     finally:
         lock.release()
+
+
+def _unfinished(tasks: list[phase.Task]):
+    """An interrupted review (no review.json yet) resumes instead of a new one."""
+    for task in tasks:
+        if task.open and task.phase in ("prepared", "reviewing") and not task.get("stuck") \
+                and not task.data.get("closed"):
+            return task
+    return None
 
 
 def _prepare(ctx: Ctx, tasks: list[phase.Task]):
@@ -55,13 +65,6 @@ def _prepare(ctx: Ctx, tasks: list[phase.Task]):
                          todo=f"`school-notes status --clear {ctx.name} review --discard` "
                               "(not reviewed: timeout) or raise the reviewer timeout and "
                               "`--continue`")
-    prereq.disk(ctx.cfg.root, ctx.cfg.limits.min_free_gb)
-    prereq.podman()
-    role, harness = ctx.cfg.role("reviewer")
-    if not launch.login_ok(learner=ctx.name, run_id="", harness=harness, image=ctx.image_tag(),
-                           log=ctx.log):
-        raise Prerequisite(f"the {harness.name} login in the container expired",
-                           todo=f"log in once in `school-notes chat {ctx.name} claude`")
     previous = tasks[-1] if tasks else None
     return review.prepare(ctx.task_root(), ctx.name, ctx.bare(), ctx.worktree("review"),
                           max_images=ctx.cfg.limits.review_max_images,
@@ -81,7 +84,18 @@ def _rasterize(ctx: Ctx, svgs: list[Path], out_dir: Path) -> list[Path]:
     return [out_dir / f"{s.stem}.png" for s in svgs if (out_dir / f"{s.stem}.png").is_file()]
 
 
+def _prerequisites(ctx: Ctx) -> None:
+    prereq.disk(ctx.cfg.root, ctx.cfg.limits.min_free_gb)
+    prereq.podman()
+    role, harness = ctx.cfg.role("reviewer")
+    if not launch.login_ok(learner=ctx.name, run_id="", harness=harness, image=ctx.image_tag(),
+                           log=ctx.log):
+        raise Prerequisite(f"the {harness.name} login in the container expired",
+                           todo=f"log in once: `school-notes login {ctx.name} reviewer`")
+
+
 def _review(ctx: Ctx, task: phase.Task) -> None:
+    _prerequisites(ctx)
     review.resume_prepared(task, ctx.bare(), ctx.worktree("review"),
                            lambda svgs, out: _rasterize(ctx, svgs, out))
     role, harness = ctx.cfg.role("reviewer")

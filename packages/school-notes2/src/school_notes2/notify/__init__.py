@@ -47,6 +47,19 @@ class Mailer:
         self.log.event("notify.mail", target=key)
         return True
 
+    def send_once(self, notice: Notice) -> bool:
+        """Mail a notice only once ever (4.7, 5.5: \"egyszer e-mail megy\")."""
+        path = self.state.with_name("notify-once.json")
+        done = set(read_json(path, []) or [])
+        key = f"{notice.student}:{notice.kind}"
+        if key in done:
+            return False
+        if self._deliver(render(notice, self.to)):
+            write_json(path, sorted(done | {key}))
+            self.log.event("notify.mail_once", target=key)
+            return True
+        return False
+
     def _deliver(self, message: EmailMessage) -> bool:
         try:
             proc = subprocess.run([self.msmtp, f"--file={self.msmtprc}", "-t"],

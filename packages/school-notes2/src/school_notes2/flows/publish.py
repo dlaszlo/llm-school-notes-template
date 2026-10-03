@@ -23,6 +23,10 @@ def catch_up(ctx: Ctx) -> None:
     if task is not None and task.data.get("needs_owner"):
         return
     try:
+        if task is not None and _stale(ctx, task):
+            task.data["closed"] = True
+            task.save()
+            task = None
         if task is None:
             task = _start(ctx)
             if task is None:
@@ -32,6 +36,12 @@ def catch_up(ctx: Ctx) -> None:
     except Exception as exc:  # noqa: BLE001 - a release error never stops the notes runs
         policy.on_error(exc, task=task, student=ctx.name, step="publish", log=ctx.log,
                         mailer=ctx.mailer)
+
+
+def _stale(ctx: Ctx, task) -> bool:
+    """A half-done release of an older origin/main must not overwrite a newer one."""
+    with_retries(lambda: repos.fetch(ctx.bare(), ctx.cfg.timeouts.fetch_s), log=ctx.log)
+    return task.get("source") != repos.rev(ctx.bare(), "refs/remotes/origin/main")
 
 
 def _start(ctx: Ctx):
@@ -73,3 +83,4 @@ def _advance(ctx: Ctx, task) -> None:
                              push_s=ctx.cfg.timeouts.push_s,
                              ls_remote_s=ctx.cfg.timeouts.ls_remote_s)
         task.set_phase("done")
+        finish_flow.check_live(ctx, Path(build["output"]), build["commit"])

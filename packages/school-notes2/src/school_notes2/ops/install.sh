@@ -16,6 +16,16 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "tag must look like v2.0.0" >&2; exit 2; }
 
+LOCK_FDS=()
+
+closed() {
+    # Children must not inherit the lock descriptors: a long-lived helper (e.g. Podman's
+    # rootless pause process) would otherwise keep the learners locked after the install.
+    local redirs=""
+    for fd in "${LOCK_FDS[@]}"; do redirs+=" $fd>&-"; done
+    eval "\"\$@\" $redirs"
+}
+
 hold_locks() {
     # Keep every learner's lock for the whole install: no run sees a half-switched release.
     local fd=20
@@ -24,6 +34,7 @@ hold_locks() {
         eval "exec $fd>>\"$ROOT/state/$learner/lock\""
         echo "waiting for the lock of $learner ..."
         flock "$fd"
+        LOCK_FDS+=("$fd")
         fd=$((fd + 1))
     done
 }
@@ -31,14 +42,16 @@ hold_locks() {
 unpack() {
     # Unpacked in place: a venv cannot be moved after `uv sync` (absolute shebangs), so an
     # interrupted install is marked by .installing and redone from scratch.
-    git -C "$SOURCE" fetch --tags --quiet origin
+    closed git -C "$SOURCE" fetch --tags --quiet origin
     git -C "$SOURCE" rev-parse --verify --quiet "refs/tags/$TAG^{commit}" >/dev/null \
         || { echo "unknown tag $TAG" >&2; exit 2; }
     rm -rf "$RELEASE"
     mkdir -p "$RELEASE"
     touch "$RELEASE/.installing"
-    git -C "$SOURCE" archive "$TAG" | tar -x -C "$RELEASE"
-    (cd "$RELEASE/$PKG" && uv sync --frozen --no-dev --quiet)
+    closed git -C "$SOURCE" archive --output="$RELEASE.tar" "$TAG"
+    closed tar -x -f "$RELEASE.tar" -C "$RELEASE"
+    rm -f "$RELEASE.tar"
+    closed uv --directory "$RELEASE/$PKG" sync --frozen --no-dev --quiet
     mkdir -p "$RELEASE/bin"
     cat > "$RELEASE/bin/school-notes" <<WRAP
 #!/bin/sh
@@ -49,17 +62,17 @@ WRAP
 }
 
 build_image() {
-    if podman image exists "localhost/school-notes-agent:$TAG"; then
+    if closed podman image exists "localhost/school-notes-agent:$TAG"; then
         return
     fi
-    podman build --quiet --build-arg "AGENT_UID=$(id -u)" --build-arg "AGENT_GID=$(id -g)" \
+    closed podman build --quiet --build-arg "AGENT_UID=$(id -u)" --build-arg "AGENT_GID=$(id -g)" \
         -t "localhost/school-notes-agent:$TAG" \
         -f "$RELEASE/$PKG/src/school_notes2/container/Containerfile" "$RELEASE"
 }
 
 check_open_tasks() {
     # A newer phase.json than this release understands means: finish or discard that run first.
-    "$RELEASE/bin/school-notes" verify-tasks
+    closed "$RELEASE/bin/school-notes" verify-tasks
 }
 
 switch_current() {

@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import resource
 import sys
 from pathlib import Path
@@ -11,7 +12,8 @@ from .state import phase
 
 
 def _harden() -> None:
-    """No core dumps of a process that holds secrets (7.2)."""
+    """No core dumps of a process that holds secrets (7.2); files private by default."""
+    os.umask(0o077)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     try:
         import ctypes

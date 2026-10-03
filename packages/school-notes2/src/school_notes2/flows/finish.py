@@ -97,6 +97,14 @@ def _publish(ctx: Ctx, task: Task, record: dict) -> None:
         fetch_s=ctx.cfg.timeouts.fetch_s, push_s=ctx.cfg.timeouts.push_s,
         ls_remote_s=ctx.cfg.timeouts.ls_remote_s)
     task.update(published=published.commit)
+    check_live(ctx, Path(record["output"]), record["commit"])
+
+
+def check_live(ctx: Ctx, build_dir: Path, commit: str) -> None:
+    """6.10: poll the live publish.json; a timeout is only a warning."""
+    url = site_publish.live_url(build_dir)
+    if url:
+        site_publish.wait_until_live(url, commit, ctx.log)
 
 
 def message(ctx: Ctx, task: Task) -> str:

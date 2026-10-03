@@ -27,7 +27,8 @@ def on_error(exc: BaseException, *, task: Task | None, student: str, step: str, 
         _mail(mailer, student, f"prerequisite:{step}", task, step, exc)
         return kind
     if task is None:
-        _mail(mailer, student, f"{kind}:{step}", None, step, exc)
+        if not isinstance(exc, Transient):   # 8.4: no mail about an intermediate error
+            _mail(mailer, student, f"{kind}:{step}", None, step, exc)
         return kind
     task.record_error(kind, str(exc))
     if isinstance(exc, Transient):

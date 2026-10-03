@@ -38,8 +38,7 @@ def summary(ctx: Ctx) -> dict:
 
 def _lock(ctx: Ctx) -> dict:
     lock = ctx.lock()
-    if lock.try_acquire("status"):
-        lock.release()
+    if lock.probe():
         return {"held": False}
     return {"held": True, **lock.holder()}
 
