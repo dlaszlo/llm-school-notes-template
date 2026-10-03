@@ -2,6 +2,13 @@
 
 Newest first. Each entry says what changed in the shared files and what an existing wiki must do when it applies the update (see *Template updates* in [Wiki workflows](instructions/wiki-workflows.md)). A wiki records the version it is on in `PROFILE.md`.
 
+## 1.16.0 — 2026-10-03
+
+- v2 way of working: learner work happens only in a run of the `school-notes` tool (hourly or in the owner's `school-notes chat`). New module [Working in a school-notes run](instructions/school-notes-run.md): run files (`fetch.json`, `changes.json`, `check.json`, `result.json`), MCP tools, where the writer may write, stable order. The tool files sources (at most 2000 px JPEG, notebook PDF as page images), computes hashes, writes machine frontmatter, generates the index blocks and `public.json`, keeps review-file state and evidence records, generates and inserts images, commits, pushes and publishes; the corresponding v1 bookkeeping rules are removed from the writer's modules.
+- Wiki data: topic pages carry `chapter` and a sparse `order`; the subject index keeps a `chapters` list; lesson-notes pages use `lessons` (date | date_note | title | topics | optional anchor) instead of `lesson_dates`; the lessons table has four columns and is generated. The public site is the wiki 1:1 without the files of `sources/` and `references/`, which are never linked publicly. The order of existing lists never changes between runs (owner rule, 2026-10-03).
+- Removed: `tools/banner.py` (headers are image plans generated through MCP), the task-execution module from the ingest reading map, the `docs/evidence/index.md` pointer (records are computed per page). `.gitignore`: `.school-notes/` and renderer logs.
+- Migration: the v2 migration (`python -m school_notes2.migration`) converts indexes and page fields; then synchronize the shared set (byte-identical) and record this release.
+
 ## 1.15.7 — 2026-10-01
 
 - Preserve explicitly authorized private notebook/teacher-to-learn photo originals byte-for-byte, with verified archive and prepared-copy hashes. Git `sources/` still contains the metadata-free prepared photo. The original archive is append-only and excluded from public derivatives; archive authorization grants no new sharing permission. Teacher-background and book/reference originals and conversions remain local and never enter Drive archives or exports.

@@ -13,8 +13,9 @@
       "heading": "Wiki structure",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "91416c932747a9e5a95b2c27ba7babf2ac8229afd251016b069bc5c142cb0b98",
-      "migrated_sha256": "9955301132d9bfe797e445cbe31c49d12aab30595c067bcaf2f93a2af37aff3d",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "17d7d09c4b9fea65faaf9767e10efcd543aec4bd7b8810fe16450a483ac48fe8",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Principles",
@@ -27,8 +28,9 @@
       "heading": "Directory layout",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "f027c737ea05d94efc4a7c80acb1616a8ba3b11548fd975e81637a63b20eeb5b",
-      "migrated_sha256": "f027c737ea05d94efc4a7c80acb1616a8ba3b11548fd975e81637a63b20eeb5b",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "348e2ade2bdf095fe39399700f818859b7ee6ef5bf333c07c6ab38b0fc89f1ac",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "`type` vocabulary",
@@ -62,22 +64,25 @@
       "heading": "Formatting rules",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "5b51121ac36a5e48a851e8595b92c956288c9ccca8eb266c1fa9edd58eb8bc28",
-      "migrated_sha256": "5b51121ac36a5e48a851e8595b92c956288c9ccca8eb266c1fa9edd58eb8bc28",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "b10086e8432424aa5b52827c98902fc1a5e97563a820690b3f0e9a2cdf0ada6f",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Obsidian and platform compatibility",
       "destination": "instructions/wiki-structure.md",
       "source_sha256": "45072aed42bbd8dc8a4b0e53adac398ece5e6691c379feac9f5e4144fb5837e5",
-      "migrated_sha256": "45072aed42bbd8dc8a4b0e53adac398ece5e6691c379feac9f5e4144fb5837e5",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "f14e38b13e6af71df8f99388ba8b091b224e38404d27a6e6ea9bff7b95cff1d7",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Sources",
       "destination": "instructions/sources-and-evidence.md",
       "source_sha256": "666eba81e2908049ac684ac9238acd1008b77d14afc370bec536d9045bb5c503",
-      "migrated_sha256": "c63052629a731e8bfd099d683d44b1e4696ffebef4fab318f95026f139c746bb",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "3dd901d7a6cf87dd50fc4dc94e4c9103d6c2305799daf68bfd97b911504fcb20",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "References",
@@ -90,8 +95,9 @@
       "heading": "Visual evidence checks",
       "destination": "instructions/sources-and-evidence.md",
       "source_sha256": "71e9c646327f405920b5a2b4331118f077bb5ba5e336f7f834864d732cae9bca",
-      "migrated_sha256": "71e9c646327f405920b5a2b4331118f077bb5ba5e336f7f834864d732cae9bca",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "1216b34eb456a1d537c3abd831cb694150459aaae4ed71b9ac546ce2b2fac0bd",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Content rules",
@@ -111,15 +117,17 @@
       "heading": "Workflows",
       "destination": "instructions/wiki-workflows.md",
       "source_sha256": "4002b650b71d3afec1c296105ed32cc47d22be691ef1ca640204d1a696c97abc",
-      "migrated_sha256": "99a25a8eb350f7f986389effb440e0206ff3e463280b635da222ebe2588f2c7d",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "66e49d63ff332fb8d35423c53bf6434d4e80c729b8a1fb6b8a652a8286590c77",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Choosing and replacing authored visuals",
       "destination": "instructions/visual-policy.md",
       "source_sha256": "d6180905164864ce436be307edf626132fea3f122b9f5ba0596dad6208c27ba5",
-      "migrated_sha256": "bf4a7f0c86fe051d6516353415272721173ba28b91145fa7e5d7e2bc32d560f7",
-      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below."
+      "migrated_sha256": "bafaef6f6e1b0c81e420d8b6d8b7d3752024c818b070dfbd03635cfa8a13f275",
+      "change": "Preserved with relative documentation links rebased; semantic changes, if any, listed below.",
+      "updated_in": "1.16.0: section rewritten for the v2 run model (school-notes tool does filing, hashes, indexes, Git)"
     },
     {
       "heading": "Printable study notes",

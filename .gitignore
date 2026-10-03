@@ -41,3 +41,9 @@ visual-tools.local.json
 
 # Reproducible page-check dependency lock (other ad-hoc npm locks stay ignored).
 !tools/page-check/package-lock.json
+
+# School Notes v2: the run's working files and renderer logs are never committed.
+.school-notes/
+wiki/assets/**/stdout.log
+wiki/assets/**/stderr.log
+wiki/assets/**/freecad-user.cfg
