@@ -10,8 +10,10 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..state import safefs
 from . import markers
-from .pages import read_page
+from .pages import md_files, read_page, read_text
+from .pages import subjects as subject_slugs
 
 ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
 TABLE_HEAD = "| Dátum | Óra | Jegyzet | Témakörök |\n|---|---|---|---|\n"
@@ -39,13 +41,13 @@ class Subject:
 
 
 def load_subject(repo: Path, slug: str) -> Subject:
-    folder = repo / "wiki" / slug
-    index = read_page(folder / "index.md")
+    index = read_page(repo, f"wiki/{slug}/index.md")
     heading = next((ln[2:].strip() for ln in index.body.splitlines() if ln.startswith("# ")), slug)
     subject = Subject(slug, index.meta, heading)
-    for path in sorted(folder.glob("*.md")):
-        if path.name != "index.md":
-            subject.pages.append(SubjectPage(path.name, read_page(path).meta))
+    for rel in md_files(repo, f"wiki/{slug}/*.md"):
+        name = rel.rsplit("/", 1)[1]
+        if name != "index.md":
+            subject.pages.append(SubjectPage(name, read_page(repo, rel).meta))
     return subject
 
 
@@ -135,8 +137,7 @@ def notes_block(subject: Subject) -> str:
 
 def subject_index(repo: Path, slug: str) -> str:
     """The subject index text with every generated block refreshed."""
-    path = repo / "wiki" / slug / "index.md"
-    text = path.read_text(encoding="utf-8")
+    text = read_text(repo, f"wiki/{slug}/index.md")
     subject = load_subject(repo, slug)
     bodies = {"chapters": chapters_block(subject), "lessons": lessons_block(subject),
               "review": review_block(subject), "notes": notes_block(subject)}
@@ -149,13 +150,15 @@ def subject_index(repo: Path, slug: str) -> str:
 def subject_order(repo: Path) -> list[str]:
     """subjects.json order (new subjects are appended), then any other subject folder."""
     known = list(load_subjects_json(repo).get("subjects", {}))
-    folders = {p.parent.name for p in (repo / "wiki").glob("*/index.md")} - {"assets"}
+    folders = set(subject_slugs(repo))
     return [s for s in known if s in folders] + sorted(folders - set(known))
 
 
 def load_subjects_json(repo: Path) -> dict:
-    path = repo / "tools" / "subjects.json"
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"subjects": {}}
+    try:
+        return json.loads(read_text(repo, "tools/subjects.json"))
+    except FileNotFoundError:
+        return {"subjects": {}}
 
 
 def subject_sentence(name: str) -> str:
@@ -176,14 +179,14 @@ def root_block(repo: Path) -> str:
         entry = subjects.get(slug, {})
         name = entry.get("name", slug)
         emoji = f"{entry['emoji']} " if entry.get("emoji") else ""
-        meta = read_page(repo / "wiki" / slug / "index.md").meta
+        meta = read_page(repo, f"wiki/{slug}/index.md").meta
         lines.append(f"* {emoji}[{name}]({slug}/index.md) - "
                      f"{meta.get('description') or subject_sentence(name)}")
     return "".join(ln + "\n" for ln in lines)
 
 
 def root_index(repo: Path) -> str:
-    text = (repo / "wiki" / "index.md").read_text(encoding="utf-8")
+    text = read_text(repo, "wiki/index.md")
     if "subjects" in markers.names(text):
         text = markers.replace(text, "subjects", root_block(repo))
     return text
@@ -195,10 +198,9 @@ def write_indexes(repo: Path) -> list[str]:
     targets = [(f"wiki/{s}/index.md", lambda s=s: subject_index(repo, s)) for s in subject_order(repo)]
     targets.append(("wiki/index.md", lambda: root_index(repo)))
     for rel, build in targets:
-        path = repo / rel
-        old = path.read_text(encoding="utf-8")
+        old = read_text(repo, rel)
         new = build()
         if new != old:
-            path.write_text(new, encoding="utf-8")
+            safefs.write_text(repo, rel, new)
             changed.append(rel)
     return changed

@@ -147,6 +147,11 @@ def _kind(root, rel) -> int | None:
     return mode
 
 
+def mode(root, rel) -> int | None:
+    """st_mode of `rel` without following anything; None when it does not exist."""
+    return _kind(root, rel)
+
+
 def exists(root, rel) -> bool:
     return _kind(root, rel) is not None
 

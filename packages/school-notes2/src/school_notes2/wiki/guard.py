@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from ..state import safefs
 from . import frontmatter, markers
 from .machine import machine_keys
 
@@ -68,13 +69,15 @@ def _allowed(path: str, g: GuardInput) -> bool:
     return path.startswith(prefixes) or path in g.conflict_files
 
 
-def _file_kind(path: Path) -> str | None:
+def _file_kind(root: Path, rel: str) -> str | None:
+    """None for a regular file (or none at all); otherwise what is wrong with it. A symlink
+    anywhere on the path counts, not only at its end (plan 7.6)."""
     try:
-        mode = path.lstat().st_mode
-    except FileNotFoundError:
-        return None
-    if stat.S_ISLNK(mode):
+        mode = safefs.mode(root, rel)
+    except safefs.UnsafePath:
         return "symlink"
+    if mode is None:
+        return None
     return None if stat.S_ISREG(mode) else "not a regular file"
 
 
@@ -86,13 +89,15 @@ def check_change(change: Change, g: GuardInput) -> list[Violation]:
         if path in g.tool_files:
             return [Violation(path, "a file the tool wrote was deleted", True)]
         return [Violation(path, "deleting or renaming a file that existed before the run", False)]
-    full = g.worktree / path
-    kind = _file_kind(full)
+    kind = _file_kind(g.worktree, path)
     if kind:
         return [Violation(path, f"{kind} in the worktree", True)]
     if path in g.conflict_files:
         return []        # 6.7: the owner resolved this file in the session, whatever it holds
-    data = full.read_bytes()
+    try:
+        data = safefs.read_bytes(g.worktree, path)
+    except safefs.UnsafePath:                  # swapped for a link after the check
+        return [Violation(path, "symlink in the worktree", True)]
     if path in g.tool_files:
         if _sha(data) != g.tool_files[path]:
             return [Violation(path, "a file the tool wrote was changed afterwards", True)]
@@ -133,8 +138,8 @@ def _without_machine(text: str) -> str:
 def run(g: GuardInput) -> list[Violation]:
     found: list[Violation] = []
     if g.git_file is not None:
-        actual = g.worktree / ".git"
-        if _file_kind(actual) or not actual.exists() or actual.read_bytes() != g.git_file:
+        if _file_kind(g.worktree, ".git") or not safefs.exists(g.worktree, ".git") \
+                or safefs.read_bytes(g.worktree, ".git") != g.git_file:
             found.append(Violation(".git", "the worktree's .git file was replaced", True))
     for change in g.changes:
         found += check_change(change, g)

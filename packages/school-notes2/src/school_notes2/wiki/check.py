@@ -9,6 +9,7 @@ import json
 import re
 from pathlib import Path
 
+from ..state import safefs
 from . import frontmatter, markers
 from .pages import CODE_FENCE, links, resolve, sha256
 
@@ -40,14 +41,14 @@ def item(file: str, line: int | None, message: str, severity: str = "error") -> 
     return {"file": file, "line": line, "message": message, "severity": severity}
 
 
-def autofix(path: Path) -> bool:
+def autofix(repo: Path, rel: str) -> bool:
     """CRLF to LF and a final newline: unambiguous, so the tool fixes them itself."""
-    data = path.read_bytes()
+    data = safefs.read_bytes(repo, rel)
     fixed = data.replace(b"\r\n", b"\n")
     if fixed and not fixed.endswith(b"\n"):
         fixed += b"\n"
     if fixed != data:
-        path.write_bytes(fixed)
+        safefs.write_bytes(repo, rel, fixed)
         return True
     return False
 
@@ -118,18 +119,18 @@ def check_links(repo: Path, rel: str, text: str) -> list[dict]:
         elif link.image and resolved.startswith(("sources/", "references/")):
             out.append(item(rel, link.line, "a source or reference image may not be embedded; "
                                             "link it instead"))
-        elif target.endswith("/") or (repo / resolved).is_dir():
+        elif target.endswith("/") or safefs.is_dir(repo, resolved):
             out.append(item(rel, link.line, f"link to a directory {target!r}; link its index.md"))
-        elif not (repo / resolved).is_file():
+        elif not safefs.is_file(repo, resolved):
             out.append(item(rel, link.line, f"link target does not exist: {target!r}"))
     return out
 
 
 def chapter_ids(repo: Path, rel: str) -> set[str] | None:
-    index = repo / Path(rel).parent / "index.md"
-    if not index.is_file():
+    index = f"{Path(rel).parent.as_posix()}/index.md"
+    if not safefs.is_file(repo, index):
         return None
-    chapters = frontmatter.split(index.read_text(encoding="utf-8")).meta.get("chapters") or []
+    chapters = frontmatter.split(safefs.read_text(repo, index)).meta.get("chapters") or []
     return {c.get("id") for c in chapters if isinstance(c, dict)}
 
 
@@ -198,7 +199,7 @@ def check_lessons(repo: Path, rel: str, meta: dict) -> list[dict]:
     if not isinstance(lessons, list):
         return [item(rel, None, "`lessons` list missing")]
     out = []
-    folder = repo / Path(rel).parent
+    folder = Path(rel).parent.as_posix()
     for n, lesson in enumerate(lessons, start=1):
         if not isinstance(lesson, dict) or not str(lesson.get("title", "")).strip():
             out.append(item(rel, None, f"lesson {n}: `title` missing"))
@@ -206,27 +207,35 @@ def check_lessons(repo: Path, rel: str, meta: dict) -> list[dict]:
         if lesson.get("date") and not ISO.match(str(lesson["date"])):
             out.append(item(rel, None, f"lesson {n}: `date` must be YYYY-MM-DD"))
         for topic in lesson.get("topics") or []:
-            if not (folder / str(topic).split("#", 1)[0]).is_file():
+            if not _topic_exists(repo, folder, str(topic).split("#", 1)[0]):
                 out.append(item(rel, None, f"lesson {n}: topic page {topic!r} does not exist"))
     return out
+
+
+def _topic_exists(repo: Path, folder: str, topic: str) -> bool:
+    target = resolve(f"{folder}/index.md", topic)
+    return target is not None and safefs.is_file(repo, target)
+
+
+def _same(repo: Path, rel: str, sha: str | None) -> bool:
+    target = resolve("x", rel) if rel else None      # normalised, refuses leaving the repo
+    return bool(target) and safefs.is_file(repo, target) and sha256(repo, target) == sha
 
 
 def check_renders(repo: Path) -> list[dict]:
     """render.json must still describe its source and outputs (no re-rendering here)."""
     out = []
-    for receipt in sorted((repo / "wiki" / "assets").rglob("render.json")):
-        rel = receipt.relative_to(repo).as_posix()
+    for rel in safefs.glob(repo, "wiki/assets", "wiki/assets/**/render.json"):
         try:
-            data = json.loads(receipt.read_text(encoding="utf-8"))
+            data = json.loads(safefs.read_text(repo, rel))
         except ValueError:
             out.append(item(rel, None, "render.json is not valid JSON"))
             continue
-        source = repo / str(data.get("source", ""))
-        if not source.is_file() or sha256(source) != data.get("source_sha256"):
+        if not _same(repo, str(data.get("source", "")), data.get("source_sha256")):
             out.append(item(rel, None, "the figure source changed after rendering; render again"))
+        base = rel.rsplit("/", 1)[0]
         for name, info in (data.get("outputs") or {}).items():
-            output = receipt.parent / name
-            if not output.is_file() or sha256(output) != (info or {}).get("sha256"):
+            if not _same(repo, f"{base}/{name}", (info or {}).get("sha256")):
                 out.append(item(rel, None, f"rendered output {name!r} differs from render.json"))
     return out
 
@@ -239,16 +248,15 @@ def check_files(repo: Path, paths: list[str]) -> list[dict]:
     docs/evidence, sources/) are never reported to the writer, who could not fix them."""
     out = []
     for rel in sorted(set(paths)):
-        path = repo / rel
-        if not rel.endswith(".md") or not path.is_file():
+        if not rel.endswith(".md") or not safefs.is_file(repo, rel):
             continue
         if rel.startswith("references/"):
-            out += check_secrets(rel, path.read_text(encoding="utf-8", errors="replace"))
+            out += check_secrets(rel, safefs.read_text(repo, rel, errors="replace"))
             continue
         if not rel.startswith("wiki/") or rel.startswith("wiki/assets/"):
             continue
-        autofix(path)
-        text = path.read_text(encoding="utf-8")
+        autofix(repo, rel)
+        text = safefs.read_text(repo, rel)
         out += check_text(rel, text)
         try:
             page = frontmatter.split(text)
