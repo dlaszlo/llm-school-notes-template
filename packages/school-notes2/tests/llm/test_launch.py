@@ -45,7 +45,11 @@ def test_success_argv_prompt_and_transcript(fake, role, harness, tmp_path, log, 
     for flag in ("--userns=keep-id", "no-new-privileges", "core=0", "--cap-add=NET_ADMIN,NET_RAW"):
         assert flag in argv
     assert f"{fake['FAKE_WORK']}:/work:rw" in argv
-    assert "sn-agent-home-benedek:/home/agent" in argv
+    assert "sn-agent-home-benedek-writer:/home/agent" in argv
+    assert f"{tmp_path / 'sess'}:/run/sn:ro" in argv
+    for flag in ("--init", "--pids-limit=512", "--memory=2g"):
+        assert flag in argv
+    assert "SN_MODEL_PROBE=https://api.openai.com/" in argv
     assert argv[-5:] == ["codex", "-m", "gpt-6-astra", "exec", "-"]
     env = [argv[i + 1] for i, a in enumerate(argv) if a == "-e"]
     assert {e.split("=")[0] for e in env} == {"SN_RUN_ID", "SN_ALLOWED_DOMAINS", "SN_MODEL_PROBE"}
@@ -60,7 +64,8 @@ def test_success_argv_prompt_and_transcript(fake, role, harness, tmp_path, log, 
     ("changed_fail", BadWork),     # non-zero after changing files
     ("zero_noout", BadWork),       # exit 0 without result.json
     ("bad_json", BadWork),
-    ("10", NeedsOwner), ("12", NeedsOwner), ("11", Transient), ("125", Prerequisite),
+    ("210", NeedsOwner), ("212", NeedsOwner), ("211", Transient), ("125", Prerequisite),
+    ("10", Transient),             # a harness exit 10 is not the preflight: did not work
     ("127", NeedsOwner),
 ])
 def test_outcome_classes(fake, role, harness, tmp_path, log, monkeypatch, mode, error):
@@ -91,7 +96,8 @@ def test_stdout_mode_reviewer(fake, role, tmp_path, log, monkeypatch):
     assert outcome.output == {"verdict": "ok", "findings": []}
     argv = argv_lines(fake)
     assert f"{fake['FAKE_WORK']}:/work:ro" in argv and f"{tmp_path / 'in'}:/in:ro" in argv
-    assert f"{out}:/out:rw" in argv and not any(a.endswith(":/run/sn") for a in argv)
+    assert f"{out}:/out:rw" in argv and not any("/run/sn" in a for a in argv)
+    assert "sn-agent-home-barna-reviewer:/home/agent" in argv
     assert "/out/review.json" not in fake["FAKE_STDIN"].read_text()
 
 
@@ -103,18 +109,19 @@ def test_metrics_never_fail_and_are_logged(fake, role, harness, tmp_path, log, m
 
 def test_login_check(fake, harness, tmp_path, log, monkeypatch):
     set_mode(monkeypatch, "login_in")
-    assert launch.login_ok(learner="benedek", run_id="r", harness=harness, image="img",
-                           log=log, podman=str(FAKE))
+    assert launch.login_ok(learner="benedek", run_id="r", role="reviewer", harness=harness,
+                           image="img", log=log, podman=str(FAKE))
     argv = argv_lines(fake)
+    assert "sn-agent-home-benedek-reviewer:/home/agent" in argv
     assert argv[3] == "school-notes-benedek-login" and argv[-3:] == ["codex", "login", "status"]
     assert not any(a.endswith(":/work:rw") for a in argv)
     set_mode(monkeypatch, "login_out")
-    assert not launch.login_ok(learner="benedek", run_id="r", harness=harness, image="img",
-                               log=log, podman=str(FAKE))
-    set_mode(monkeypatch, "11")
+    assert not launch.login_ok(learner="benedek", run_id="r", role="writer", harness=harness,
+                               image="img", log=log, podman=str(FAKE))
+    set_mode(monkeypatch, "211")
     with pytest.raises(Transient):
-        launch.login_ok(learner="benedek", run_id="r", harness=harness, image="img", log=log,
-                        podman=str(FAKE))
+        launch.login_ok(learner="benedek", run_id="r", role="writer", harness=harness,
+                        image="img", log=log, podman=str(FAKE))
 
 
 def test_offline_helper_has_no_network(fake, tmp_path, log, monkeypatch):
@@ -133,6 +140,32 @@ def test_interactive_argv_has_tty(role, harness):
                               mounts=launch.Mounts(work=launch.Path("/w")), name="n",
                               interactive=True)
     assert "-it" in argv and "-i" not in argv
+
+
+def test_prompt_as_argument_when_the_template_wants_no_stdin(fake, role, harness, tmp_path,
+                                                              log, monkeypatch):
+    set_mode(monkeypatch, "ok")
+    argless = dataclasses.replace(harness, prompt_stdin=False)
+    go(make_run(fake, role, argless, tmp_path), log)
+    first_line = launch.prompt("writer").splitlines()[0]
+    assert first_line in argv_lines(fake)
+    assert fake["FAKE_STDIN"].read_text() == ""
+
+
+def test_login_run_uses_the_role_volume_and_login_domains(fake, harness, log, monkeypatch):
+    set_mode(monkeypatch, "login_in")
+    rc = launch.run_login(learner="barna", role="reviewer", harness=harness, image="img", log=log,
+                          allowed_domains=("api.openai.com", "auth.openai.com", "claude.ai"),
+                          podman=str(FAKE))
+    argv = argv_lines(fake)
+    assert rc == 0 and "sn-agent-home-barna-reviewer:/home/agent" in argv
+    assert "SN_ALLOWED_DOMAINS=api.openai.com,auth.openai.com,claude.ai" in argv
+    assert argv[-3:] == ["codex", "login", "--device-auth"] and "-it" in argv
+
+
+def test_unknown_role_volume_is_refused():
+    with pytest.raises(ValueError):
+        launch.home_volume("barna", "intruder")
 
 
 def test_expand_keeps_json_braces(role):

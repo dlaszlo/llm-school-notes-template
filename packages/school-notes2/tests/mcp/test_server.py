@@ -18,8 +18,7 @@ def handlers(**over):
                 image_generate=lambda plan_id, note: {"plan_id": plan_id, "note": note},
                 image_accept=lambda plan_id, review: {"accepted": plan_id},
                 status=lambda: {"phase": "writing"},
-                fetch=lambda: {"run_id": "new"}, finish=lambda: {"pushed": True},
-                validate_review=lambda review: [] if "decision" in review else ["decision missing"])
+                fetch=lambda: {"run_id": "new"}, finish=lambda: {"pushed": True})
     base.update(over)
     return Handlers(**base)
 
@@ -209,3 +208,93 @@ def test_redact_patterns():
     out = redact({"k": [text]})
     assert "PRIVATE KEY" not in out["k"][0] and "ya29." not in out["k"][0]
     assert "1//0g" not in out["k"][0] and "ghp_" not in out["k"][0]
+
+
+def _serving(server, sess):
+    stop = threading.Event()
+    thread = threading.Thread(target=server.serve, args=(sess / "mcp.sock", stop.is_set))
+    thread.start()
+    for _ in range(50):
+        if (sess / "mcp.sock").exists():
+            break
+        time.sleep(0.05)
+    return stop, thread
+
+
+def _rpc(sock_path, *messages):
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(str(sock_path))
+        stream = s.makefile("rwb")
+        for m in messages:
+            stream.write(m if isinstance(m, bytes) else json.dumps(m).encode() + b"\n")
+        stream.flush()
+        return json.loads(stream.readline())
+
+
+def test_bad_clients_never_stop_the_server(make, tmp_path):
+    sess = tmp_path / "sess"
+    sess.mkdir(mode=0o700)
+    server = make()
+    stop, thread = _serving(server, sess)
+    try:
+        bad = _rpc(sess / "mcp.sock", {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                                       "params": "x"})
+        assert bad["error"]["code"] == -32602
+        deep = b"[" * 100000 + b"\n"
+        assert _rpc(sess / "mcp.sock", deep)["error"]["code"] == -32700
+        with socket.socket(socket.AF_UNIX) as s:     # an endless line is cut off, not kept
+            s.connect(str(sess / "mcp.sock"))
+            try:
+                s.sendall(b"x" * (2 * 1024 * 1024))
+            except (BrokenPipeError, ConnectionResetError):
+                pass                                   # the server hung up: as intended
+        ok = _rpc(sess / "mcp.sock", {"jsonrpc": "2.0", "id": 2, "method": "ping"})
+        assert ok["result"] == {} and thread.is_alive()
+    finally:
+        stop.set()
+        thread.join(5)
+
+
+def test_worktree_writers_are_refused_while_finish_runs(make):
+    server = make(finish=lambda: (time.sleep(3), {"pushed": True})[1])
+    started = call(server, "finish")
+    assert started["ok"]
+    for name, args in (("check", {}), ("image_generate", {"plan_id": "x"})):
+        busy = call(server, name, args)
+        assert not busy["ok"] and busy["error"]["code"] == "busy"
+        assert busy["error"]["job_id"] == started["result"]["job_id"]
+    again = call(server, "finish")
+    assert again["ok"] and again["result"]["job_id"] == started["result"]["job_id"]
+    assert call(server, "status")["ok"]
+
+
+def test_stop_all_ends_running_jobs(make):
+    server = make(check=lambda: (time.sleep(30), {})[1])
+    job = call(server, "check")["result"]["job_id"]
+    for _ in range(50):
+        if server.jobs.get(job).get("pid"):
+            break
+        time.sleep(0.05)
+    assert server.jobs.running_any()
+    assert server.jobs.stop_all(timeout_s=5) == [job]
+    assert server.jobs.get(job)["state"] == "error" and server.jobs.running_any() is None
+
+
+def test_a_reused_pid_is_not_a_live_job(make, tmp_path):
+    server = make()
+    server.jobs.folder.mkdir(parents=True, exist_ok=True)
+    import os
+    from school_notes2.state.files import write_json
+    write_json(server.jobs.path("finish-dead"), {
+        "id": "finish-dead", "tool": "finish", "run_id": "r", "state": "running",
+        "started": "x", "created": time.time(), "pid": os.getpid(), "pid_start": "1"})
+    assert server.jobs.get("finish-dead")["state"] == "error"
+    write_json(server.jobs.path("finish-never"), {
+        "id": "finish-never", "tool": "finish", "run_id": "r", "state": "running",
+        "started": "x", "created": time.time() - 3600, "pid": None, "pid_start": None})
+    assert server.jobs.get("finish-never")["state"] == "error"
+
+
+def test_image_accept_review_is_schema_checked(make):
+    response = call(make(), "image_accept", {"plan_id": "ok", "review": {"observed": "x"}})
+    assert not response["ok"] and response["error"]["code"] == "invalid_params"

@@ -18,10 +18,11 @@ from pathlib import Path
 
 from ..git.run import Git
 from ..log import Log, Timer
-from ..state.errors import BadWork, Transient
+from ..state.errors import BadWork, NeedsOwner, Transient
 from ..state.files import read_json, write_json
 
 PRIVATE_TOP = ("sources", "references")
+BUILD_INPUTS = ("wiki", "publication")
 CONFIG = "publication/public.json"
 PAGE_ERROR = "study-site-page-error "
 RENDER_EXIT_PAGE = 3
@@ -101,8 +102,9 @@ def build(git: Git, commit: str, task_dir: Path, renderer: Renderer, *, changed:
 
 
 def extract(git: Git, commit: str, dest: Path) -> int:
-    """Unpack the commit's tree without sources/ and references/; only regular files."""
-    pathspec = ["--", "."] + [f":(exclude){top}" for top in PRIVATE_TOP]
+    """Unpack only what the site is built from (wiki/, publication/); never sources/ or
+    references/, and never the large private evidence files (memory on a small VM)."""
+    pathspec = ["--", *BUILD_INPUTS]
     data = git.run("archive", "--format=tar", commit, *pathspec, timeout=300).stdout
     count = 0
     dest.mkdir(parents=True)
@@ -112,7 +114,8 @@ def extract(git: Git, commit: str, dest: Path) -> int:
             if not parts or parts[0] in PRIVATE_TOP or not member.isfile():
                 continue
             if member.name.startswith("/") or ".." in parts:
-                raise Transient(f"unsafe path in archive: {member.name}")
+                raise NeedsOwner(f"unsafe path in the commit: {member.name}",
+                                 todo="inspect the commit; Git should never hold such a path")
             target = dest / member.name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(tar.extractfile(member).read())

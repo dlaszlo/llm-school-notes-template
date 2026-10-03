@@ -7,28 +7,29 @@ socat-bridged unix socket. Inside the container the harness runs
 """
 
 import json
-import os
-import selectors
 import socket
-import stat
-import time
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 import jsonschema
 
 from .. import VERSION
+from ..images.plans import PLAN_ID as PLAN_ID_RE
 from ..log import Log, Timer
+from ..schemas import errors as schema_errors
 from ..state.errors import SnError
+from . import transport
 from .jobs import JobStore
 from .redact import redact
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
-PLAN_ID = {"type": "string", "pattern": "^[a-z0-9-]{1,64}$"}
+PLAN_ID = {"type": "string", "pattern": PLAN_ID_RE.pattern}
 NO_ARGS = {"type": "object", "properties": {}, "additionalProperties": False}
 STATE_CHANGING = ("fetch", "finish")
+# While a fetch or finish job runs, nothing else may touch the worktree or phase.json.
+WORKTREE_WRITERS = ("check", "image_generate", "image_accept")
 
 
 @dataclass(frozen=True)
@@ -81,7 +82,6 @@ class Handlers:
     status: Callable[[], dict]
     fetch: Callable[[], dict] | None = None
     finish: Callable[[], dict] | None = None
-    validate_review: Callable[[dict], list[str]] = field(default=lambda review: [])
 
 
 class ToolError(Exception):
@@ -114,6 +114,8 @@ class McpServer:
             return None
         mid, method = message["id"], message.get("method")
         params = message.get("params") or {}
+        if not isinstance(params, dict):
+            return _rpc_error(mid, -32602, "params must be an object")
         if method == "initialize":
             asked = params.get("protocolVersion")
             return _rpc_result(mid, {
@@ -127,7 +129,8 @@ class McpServer:
                 {"name": n, "description": t.description, "inputSchema": t.schema}
                 for n, t in self.tools().items()]})
         if method == "tools/call":
-            response = self.call_tool(params.get("name"), params.get("arguments") or {})
+            arguments = params.get("arguments")
+            response = self.call_tool(params.get("name"), {} if arguments is None else arguments)
             return _rpc_result(mid, {
                 "content": [{"type": "text", "text": json.dumps(response, ensure_ascii=False)}],
                 "structuredContent": response, "isError": not response["ok"]})
@@ -173,14 +176,23 @@ class McpServer:
             raise ToolError("invalid_params", "; ".join(problems[:5]))
         if name == "wait":
             return self._wait(args["job_id"])
-        if name == "image_accept":
-            review_problems = self.handlers.validate_review(args["review"])
-            if review_problems:
-                raise ToolError("invalid_params", "review: " + "; ".join(review_problems[:10]))
-            return self.handlers.image_accept(args["plan_id"], args["review"])
         if name == "status":
             return self.handlers.status()
+        self._refuse_while_busy(name)
+        if name == "image_accept":
+            problems = schema_errors("image-accept", args["review"])
+            if problems:
+                raise ToolError("invalid_params", "review: " + "; ".join(problems[:10]))
+            return self.handlers.image_accept(args["plan_id"], args["review"])
         return self._start(name, args)
+
+    def _refuse_while_busy(self, name: str) -> None:
+        """A running fetch/finish owns the worktree and phase.json. A repeated fetch/finish
+        gets the running job id (idempotent, 7.5); anything else is told to wait."""
+        busy = self.jobs.running(STATE_CHANGING)
+        if busy and name in WORKTREE_WRITERS:
+            raise ToolError("busy", f"{busy['tool']} is running; wait for it first",
+                            job_id=busy["id"], tool=busy["tool"])
 
     def _start(self, name: str, args: dict) -> dict:
         watch = STATE_CHANGING if name in STATE_CHANGING else (name,) if name == "check" else ()
@@ -223,57 +235,7 @@ class McpServer:
     # --- socket ------------------------------------------------------------------------
     def serve(self, sock_path: Path, stop: Callable[[], bool] = lambda: False) -> None:
         """Serve until `stop()` is true. The session folder must be a private (0700) dir."""
-        folder = sock_path.parent
-        info = folder.stat()
-        if not stat.S_ISDIR(info.st_mode) or info.st_mode & 0o077 or info.st_uid != os.getuid():
-            raise PermissionError(f"{folder} must be a private directory (0700) of this user")
-        sock_path.unlink(missing_ok=True)
-        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        listener.bind(str(sock_path))
-        os.chmod(sock_path, 0o600)
-        listener.listen(4)
-        listener.setblocking(False)
-        self._sockets = [listener]
-        sel = selectors.DefaultSelector()
-        sel.register(listener, selectors.EVENT_READ, None)
-        buffers: dict[socket.socket, bytes] = {}
-        try:
-            while not stop():
-                for key, _ in sel.select(timeout=0.5):
-                    if key.fileobj is listener:
-                        conn, _ = listener.accept()
-                        conn.setblocking(True)
-                        sel.register(conn, selectors.EVENT_READ, None)
-                        buffers[conn] = b""
-                        self._sockets.append(conn)
-                    else:
-                        self._read(key.fileobj, sel, buffers)
-        finally:
-            for s in list(self._sockets):
-                s.close()
-            sock_path.unlink(missing_ok=True)
-
-    def _read(self, conn: socket.socket, sel, buffers: dict) -> None:
-        data = conn.recv(65536)
-        if not data:
-            sel.unregister(conn)
-            conn.close()
-            buffers.pop(conn, None)
-            self._sockets.remove(conn)
-            return
-        buffers[conn] += data
-        while b"\n" in buffers[conn]:
-            line, buffers[conn] = buffers[conn].split(b"\n", 1)
-            if not line.strip():
-                continue
-            try:
-                message = json.loads(line)
-            except json.JSONDecodeError:
-                reply = _rpc_error(None, -32700, "parse error")
-            else:
-                reply = self.handle(message)
-            if reply is not None:
-                conn.sendall(json.dumps(reply, ensure_ascii=False).encode() + b"\n")
+        transport.serve(sock_path, self.handle, self._sockets, stop)
 
     def _close_sockets(self) -> None:
         for s in self._sockets:
