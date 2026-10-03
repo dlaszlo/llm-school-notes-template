@@ -152,3 +152,27 @@ def test_invalid_grant_is_a_missing_prerequisite(tmp_path, monkeypatch):
                                         (401, Prerequisite)])
 def test_http_status_classes(status, cls):
     assert isinstance(client_mod._mapped(status), cls)
+
+
+def test_changed_or_missing_file_is_file_changed(client, fake, tree, tmp_path):
+    from school_notes2.drive.client import DriveClient, FileChanged
+    pkg = fake.folder("Csomag", tree["ready"])
+    fid = fake.file("1.jpg", pkg, b"abc")
+    item = dict(fake.items[fid])
+    fake.content[fid] = b"rotated"                      # replaced after the listing
+    with pytest.raises(FileChanged):
+        client.download(item, tmp_path / "1.jpg")
+
+    class Gone:
+        def stream(self, url, timeout):
+            raise NeedsOwner("Drive HTTP 404")
+    with pytest.raises(FileChanged):
+        DriveClient(Gone()).download(item, tmp_path / "2.jpg")
+
+
+def test_package_deadline_bounds_the_whole_download(client, fake, tree, tmp_path):
+    import time as _time
+    pkg = fake.folder("Csomag", tree["ready"])
+    fid = fake.file("1.jpg", pkg, b"abc")
+    with pytest.raises(Transient, match="out of time"):
+        client.download(dict(fake.items[fid]), tmp_path / "1.jpg", _time.monotonic() - 1)

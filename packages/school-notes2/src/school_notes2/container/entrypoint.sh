@@ -1,18 +1,20 @@
 #!/bin/bash
 # Entrypoint of the agent container (plan 7.3, 7.4, 7.7). Runs as container root
-# (--user 0): firewall, preflight, then drops to `agent` with every capability removed
-# and execs the harness argv with a clean environment.
-# Exit codes: 10 preflight security failure, 11 model API unreachable,
-# 12 firewall load failure, anything else is the harness's own exit code.
+# (--user 0): firewall, harness-home clean-up, preflight, then drops to `agent` with every
+# capability removed and execs the harness argv with a clean environment.
+# Exit codes: 210 preflight security failure, 211 model API unreachable, 212 firewall load
+# failure (high values, so a harness's own exit code cannot pass for them); anything else
+# is the harness's own exit code.
 set -u
 
 if [ "$(id -u)" != 0 ]; then
     echo "sn-entrypoint: must start as container root (--user 0)" >&2
-    exit 12
+    exit 212
 fi
 if [ "${SN_NO_NETWORK:-0}" != 1 ]; then
     /usr/local/sbin/sn-init-firewall || exit $?
 fi
+/usr/local/sbin/sn-clean-home || exit 210
 /usr/local/sbin/sn-preflight || exit $?
 
 keep=(PATH="/opt/visuals/.venv/bin:/usr/local/bin:/usr/bin:/bin" HOME=/home/agent

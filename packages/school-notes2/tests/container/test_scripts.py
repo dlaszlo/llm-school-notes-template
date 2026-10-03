@@ -6,7 +6,7 @@ from importlib import resources
 import pytest
 
 DIR = resources.files("school_notes2").joinpath("container")
-SCRIPTS = ("entrypoint.sh", "init-firewall.sh", "sn-preflight")
+SCRIPTS = ("entrypoint.sh", "init-firewall.sh", "sn-preflight", "clean-home.sh")
 
 
 @pytest.mark.parametrize("name", SCRIPTS)
@@ -23,13 +23,58 @@ def test_shellcheck(name):
 @pytest.mark.skipif(os.getuid() == 0, reason="needs a non-root user")
 def test_entrypoint_refuses_to_run_as_non_root():
     proc = subprocess.run(["bash", str(DIR / "entrypoint.sh"), "true"], capture_output=True)
-    assert proc.returncode == 12
+    assert proc.returncode == 212
 
 
-def test_firewall_without_domains_fails_with_12():
+def test_firewall_without_domains_fails_with_212():
     env = {"PATH": os.environ["PATH"]}
     proc = subprocess.run(["bash", str(DIR / "init-firewall.sh")], env=env, capture_output=True)
-    assert proc.returncode == 12
+    assert proc.returncode == 212
+
+
+def test_firewall_opens_dns_only_to_the_resolvers():
+    text = (DIR / "init-firewall.sh").read_text()
+    assert "/etc/resolv.conf" in text and '-d "$ns" -p udp --dport 53' in text
+    assert "--dport 53 -j ACCEPT" not in text.replace('-d "$ns" -p udp --dport 53 -j ACCEPT', "") \
+        .replace('-d "$ns" -p tcp --dport 53 -j ACCEPT', "")
+
+
+def test_preflight_probes_dns_over_tcp_and_planted_config():
+    text = (DIR / "sn-preflight").read_text()
+    assert "/dev/tcp/$candidate/53" in text and ".claude/settings.json" in text
+    assert "/work/.git" in text and "/work/.ssh" in text
+
+
+def test_clean_home_keeps_login_and_removes_planted_config(tmp_path):
+    home = tmp_path / "home"
+    keep = [".claude/.credentials.json", ".codex/auth.json", ".claude/projects/x/s.jsonl"]
+    drop = [".claude/settings.json", ".claude/hooks/stop.sh", ".claude/CLAUDE.md",
+            ".codex/AGENTS.md", ".codex/config.toml", ".bashrc", ".config/x"]
+    for rel in keep + drop:
+        (home / rel).parent.mkdir(parents=True, exist_ok=True)
+        (home / rel).write_text("x")
+    (home / ".claude.json").write_text('{"oauthAccount": {"a": 1}, "mcpServers": {"x": {}}, '
+                                       '"projects": {"/work": {"mcpServers": {"y": {}}, "k": 1}}}')
+    script = (DIR / "clean-home.sh").read_text().replace("home=/home/agent", f"home={home}")
+    assert subprocess.run(["bash", "-c", script]).returncode == 0
+    for rel in keep:
+        assert (home / rel).exists(), rel
+    for rel in drop:
+        assert not (home / rel).exists(), rel
+    import json
+    state = json.loads((home / ".claude.json").read_text())
+    assert state == {"oauthAccount": {"a": 1}, "projects": {"/work": {"k": 1}}}
+
+
+def test_clean_home_removes_a_symlinked_config_dir_without_following(tmp_path):
+    home, target = tmp_path / "home", tmp_path / "victim"
+    target.mkdir()
+    (target / "settings.json").write_text("keep me")
+    home.mkdir()
+    (home / ".claude").symlink_to(target)
+    script = (DIR / "clean-home.sh").read_text().replace("home=/home/agent", f"home={home}")
+    assert subprocess.run(["bash", "-c", script]).returncode == 0
+    assert not (home / ".claude").exists() and (target / "settings.json").exists()
 
 
 def test_containerfile_pins_base_and_versions():
@@ -38,6 +83,7 @@ def test_containerfile_pins_base_and_versions():
     assert "CLAUDE_CODE_VERSION=2.1.288" in text and "CODEX_VERSION=0.160.0" in text
     for tool in ("ripgrep", "socat", "iptables", "librsvg2-bin", "graphviz"):
         assert tool in text
+    assert "sn-clean-home" in text
     assert "ENTRYPOINT" in text and "UV_OFFLINE=1" in text
 
 

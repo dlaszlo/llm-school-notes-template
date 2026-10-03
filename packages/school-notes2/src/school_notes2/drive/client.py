@@ -5,6 +5,7 @@ network failures are transient, other 4xx need the owner.
 """
 
 import hashlib
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -19,6 +20,11 @@ API = "https://www.googleapis.com/drive/v3"
 FOLDER = "application/vnd.google-apps.folder"
 FIELDS = "id,name,mimeType,parents,size,md5Checksum,createdTime,modifiedTime,description,trashed"
 CHUNK = 1024 * 1024
+
+
+class FileChanged(Transient):
+    """A listed file no longer matches Drive (size/MD5 differ, or it is gone): the package
+    changed after the listing. The run drops only this package; it waits on Drive (4.1)."""
 
 
 class Transport(Protocol):
@@ -105,21 +111,31 @@ class DriveClient:
             if not token:
                 return items
 
-    def download(self, item: dict, dest: Path) -> str:
-        """Download to `dest` (via a .part file); verify size and MD5; return the SHA-256."""
+    def download(self, item: dict, dest: Path, deadline: float | None = None) -> str:
+        """Download to `dest` (via a .part file); verify size and MD5; return the SHA-256.
+
+        `deadline` (time.monotonic) bounds the whole package, not just one read (8.5)."""
         dest.parent.mkdir(parents=True, exist_ok=True)
         part = dest.with_name(dest.name + ".part")
         sha, md5, size = hashlib.sha256(), hashlib.md5(), 0
         url = f"{API}/files/{_q(item['id'])}?alt=media"
-        with self.t.stream(url, self.download_timeout_s) as response, open(part, "wb") as out:
+        try:
+            response = self.t.stream(url, self.download_timeout_s)
+        except NeedsOwner as exc:
+            if "404" in str(exc):
+                raise FileChanged(f"{item['name']!r} is no longer on Drive") from None
+            raise
+        with response, open(part, "wb") as out:
             while block := response.read(CHUNK):
+                if deadline is not None and time.monotonic() > deadline:
+                    raise Transient("the package download ran out of time")
                 size += len(block)
                 sha.update(block)
                 md5.update(block)
                 out.write(block)
         if str(size) != str(item.get("size")) or md5.hexdigest() != item.get("md5Checksum"):
             part.unlink()
-            raise Transient(f"download of {item['name']!r} does not match Drive size/MD5")
+            raise FileChanged(f"download of {item['name']!r} does not match Drive size/MD5")
         part.replace(dest)
         return sha.hexdigest()
 

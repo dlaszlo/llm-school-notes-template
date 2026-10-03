@@ -42,7 +42,9 @@ RUN if getent passwd "$AGENT_UID" >/dev/null; then userdel -r "$(getent passwd "
 COPY packages/school-notes2/src/school_notes2/container/entrypoint.sh /usr/local/sbin/sn-entrypoint
 COPY packages/school-notes2/src/school_notes2/container/init-firewall.sh /usr/local/sbin/sn-init-firewall
 COPY packages/school-notes2/src/school_notes2/container/sn-preflight /usr/local/sbin/sn-preflight
-RUN chmod 0755 /usr/local/sbin/sn-entrypoint /usr/local/sbin/sn-init-firewall /usr/local/sbin/sn-preflight
+COPY packages/school-notes2/src/school_notes2/container/clean-home.sh /usr/local/sbin/sn-clean-home
+RUN chmod 0755 /usr/local/sbin/sn-entrypoint /usr/local/sbin/sn-init-firewall \
+      /usr/local/sbin/sn-preflight /usr/local/sbin/sn-clean-home
 
 ENV SN_AGENT_UID=${AGENT_UID} \
     SN_AGENT_GID=${AGENT_GID} \

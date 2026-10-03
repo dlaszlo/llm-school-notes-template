@@ -51,7 +51,10 @@ class Log:
                 stream.write(line)
         if self.console:
             who = "/".join(x for x in (self.student, self.run_id) if x)
-            print(f"[{who}] {action} {outcome} {target}".rstrip(), file=sys.stderr)
+            try:
+                print(f"[{who}] {action} {outcome} {target}".rstrip(), file=sys.stderr)
+            except (OSError, ValueError):
+                pass    # a closed terminal (ended chat session) never stops the work
 
     def error(self, action: str, exc: BaseException, **counts) -> None:
         tb = exc.__traceback__

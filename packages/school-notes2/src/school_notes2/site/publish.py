@@ -21,7 +21,7 @@ from ..state.errors import Race, Transient
 BRANCH = "gh-pages"
 REMOTE_REF = "refs/remotes/origin/gh-pages"
 RECORD = "publish.json"
-PUBLISHED_INPUTS = ("wiki", "publication/public.json")
+PUBLISHED_INPUTS = ("wiki", "publication/public.json", "publication/assets")
 MAX_ROUNDS = 3
 
 
