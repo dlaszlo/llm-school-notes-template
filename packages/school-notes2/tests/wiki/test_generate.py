@@ -35,3 +35,10 @@ def test_undated_lesson_sorts_by_latest_possible_date(repo):
     subject = generate.load_subject(repo, "proba")
     titles = [lesson["title"] for _, lesson in generate.lessons(subject)]
     assert titles == ["Folytatás", "Bevezetés"]
+
+
+def test_partly_legible_date_is_kept_as_written():
+    from school_notes2.wiki.generate import lesson_date
+    assert lesson_date({"date_note": "2026-09-1? (levágva: 2026-09-10 és 2026-09-19 között)"}) == \
+        "2026-09-1? (levágva: 2026-09-10 és 2026-09-19 között)"
+    assert lesson_date({"date_note": "legkésőbb 2026-09-25"}) == "? (legkésőbb 2026-09-25)"

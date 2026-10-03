@@ -75,11 +75,16 @@ def chapters_block(subject: Subject) -> str:
     return "\n<br />\n\n".join(sections)
 
 
+PARTIAL_DATE = re.compile(r"^\d{4}-\d{2}-[0-9?]{2}")
+
+
 def lesson_date(lesson: dict) -> str:
     """The table's Dátum cell: the notebook date, or `?` with the range it must fall in."""
     date, note = lesson.get("date"), lesson.get("date_note")
     if date:
         return f"{date}; {note}" if note else str(date)
+    if note and PARTIAL_DATE.match(note):
+        return note          # a partly legible date ("2026-09-1? (levágva …)") stands as written
     return f"? ({note})" if note else "?"
 
 
